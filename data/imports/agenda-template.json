@@ -1,0 +1,21 @@
+{
+  "sessions": [
+    {
+      "id": "example-1",
+      "title": "Opening Keynote",
+      "description": "Welcome to ITC Vegas 2025",
+      "day": 1,
+      "startTime": "2025-10-14T09:00:00",
+      "endTime": "2025-10-14T10:00:00",
+      "location": "Main Hall",
+      "track": "Keynote",
+      "speakers": [
+        {
+          "name": "Speaker Name",
+          "role": "CEO",
+          "company": "Company Name"
+        }
+      ]
+    }
+  ]
+}

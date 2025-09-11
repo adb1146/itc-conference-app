@@ -1,0 +1,21 @@
+{
+  "status": "Limited data available",
+  "issue": "The webpage content retrieved does not contain the detailed speaker information visible in your screenshot. The page appears to use dynamic loading for speaker details.",
+  "sessionsFound": [
+    "Monetization challenges session",
+    "Insurance leaders session",
+    "AI-powered underwriting session",
+    "Performance marketing session",
+    "State Farm Startup Pitch Competition",
+    "Specialty lines sessions",
+    "Climate and property risk sessions",
+    "Cyber insurance sessions",
+    "Claims automation sessions",
+    "Embedded insurance sessions",
+    "Health and benefits sessions",
+    "Commercial insurance sessions"
+  ],
+  "speakersFound": [],
+  "note": "The speakers you mentioned (Manjit Rana, Scott Moore, Kim Garland, Matthew Cantle, Leonardo Redolfi, Hernan Fernandez, etc.) are not present in the retrieved HTML content. The page likely requires JavaScript execution or uses a separate API to load speaker data dynamically.",
+  "recommendation": "To extract the speaker information you're seeing in your screenshot, you would need either: 1) A tool that can execute JavaScript and wait for dynamic content to load, 2) Direct access to the API endpoints that load speaker data, or 3) The ability to interact with the page elements (click on tabs, expand sections, etc.)"
+}

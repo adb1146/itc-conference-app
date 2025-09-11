@@ -1,0 +1,114 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Session {
+  id          String   @id @default(cuid())
+  title       String   @unique
+  description String
+  startTime   DateTime
+  endTime     DateTime
+  location    String
+  track       String?
+  level       String?
+  tags        String[]
+  sourceUrl   String?
+  lastUpdated DateTime @default(now())
+  createdAt   DateTime @default(now())
+  
+  speakers    SessionSpeaker[]
+  favorites   Favorite[]
+}
+
+model Speaker {
+  id              String   @id @default(cuid())
+  name            String   @unique
+  bio             String?  @db.Text
+  company         String?
+  role            String?
+  imageUrl        String?
+  linkedinUrl     String?
+  twitterUrl      String?
+  websiteUrl      String?
+  profileSummary  String?  @db.Text
+  companyProfile  String?  @db.Text
+  expertise       String[] @default([])
+  achievements    String[] @default([])
+  lastProfileSync DateTime?
+  createdAt       DateTime @default(now())
+  
+  sessions  SessionSpeaker[]
+}
+
+model SessionSpeaker {
+  sessionId String
+  speakerId String
+  session   Session @relation(fields: [sessionId], references: [id])
+  speaker   Speaker @relation(fields: [speakerId], references: [id])
+  
+  @@id([sessionId, speakerId])
+}
+
+// User Authentication Models
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  name          String?
+  role          String?   // Executive, Developer, Product Manager, etc.
+  company       String?
+  interests     String[]  // AI, Claims, Cyber, etc.
+  goals         String[]  // Learning, Networking, etc.
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relations
+  favorites     Favorite[]
+  conversations Conversation[]
+  profile       UserProfile?
+}
+
+model UserProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  bio             String?
+  linkedinUrl     String?
+  position        String?
+  yearsExperience Int?
+  timezone        String?
+  notifications   Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Conversation {
+  id           String   @id @default(cuid())
+  userId       String
+  messages     Json[]   // Store conversation messages as JSON
+  context      Json?    // Store conversation context
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  sessionId String
+  userId    String
+  notes     String?  // User can add notes to favorites
+  reminder  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  
+  session   Session  @relation(fields: [sessionId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([sessionId, userId])
+}

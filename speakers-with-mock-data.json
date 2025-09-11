@@ -1,0 +1,1088 @@
+[
+  {
+    "id": "cmffpi08h00163z7ge0ae06ai",
+    "name": "Aaron Farmer",
+    "company": "Farmer",
+    "role": "Farmer"
+  },
+  {
+    "id": "cmffpi0cd003f3z7g5yu6l88p",
+    "name": "Abhi Bakre",
+    "company": "IBM Corporation",
+    "role": "Vice President"
+  },
+  {
+    "id": "cmffpi0ej004r3z7gb8d9dwjd",
+    "name": "Adarsh Rachmale",
+    "company": "CoverTree",
+    "role": "CEO"
+  },
+  {
+    "id": "cmffpi0gc006n3z7g8d9ezwtj",
+    "name": "Adrian Blidarus",
+    "company": "Encora",
+    "role": "Global Head of Insurance, President Encora Europe"
+  },
+  {
+    "id": "cmffpi0e3004f3z7grbbu5rcl",
+    "name": "Agim Emruli",
+    "company": "Flowable",
+    "role": "CEO"
+  },
+  {
+    "id": "cmffpi0c8003a3z7g8ojpjgav",
+    "name": "Alessandra Cox",
+    "company": "DXC Technology",
+    "role": "Product Leader, Life & Annuity"
+  },
+  {
+    "id": "cmffpi07k00083z7g6oj6nyoe",
+    "name": "Alex Horvitz",
+    "company": "HCS Capital",
+    "role": "CEO"
+  },
+  {
+    "id": "cmffpi09x001m3z7go5gi16xt",
+    "name": "Ali el Hassouni",
+    "company": "MarvelX",
+    "role": "CEO"
+  },
+  {
+    "id": "cmffpi07v000o3z7ge30tclwn",
+    "name": "Ali Safavi",
+    "company": "COVU",
+    "role": "CEO & Co-Founder"
+  },
+  {
+    "id": "cmffpi0go006t3z7gy5kog0v5",
+    "name": "Amy Antczak",
+    "company": "GreenieRE",
+    "role": "COO"
+  },
+  {
+    "id": "cmffpi0fw00683z7gtqwvay9n",
+    "name": "Andrea Collins",
+    "company": "Hippo",
+    "role": "CMO"
+  },
+  {
+    "id": "cmffpi0ez00573z7g7emchwq8",
+    "name": "Angela Grant",
+    "company": "Palomar",
+    "role": "Chief Legal Officer"
+  },
+  {
+    "id": "cmffpi0a3001o3z7g0jhi9nzs",
+    "name": "Ankur Patel",
+    "company": "Multimodal",
+    "role": "CEO & Founder"
+  },
+  {
+    "id": "cmffpi0c100303z7gzp9235sb",
+    "name": "Anthony Habayeb",
+    "company": "founder - Monitaur",
+    "role": "CEO and Co"
+  },
+  {
+    "id": "cmffpi0ek004s3z7gc18tqmnq",
+    "name": "Ashish Srivastava",
+    "company": "Insurance & Risk Management - Blackstone Real Estate",
+    "role": "COO"
+  },
+  {
+    "id": "cmffpi0dw00473z7gx6hl8kt8",
+    "name": "Benedikt Kalteier",
+    "company": "CLARK",
+    "role": "CEO"
+  },
+  {
+    "id": "cmffpi0eo004v3z7glml7nk7u",
+    "name": "Bill Brower",
+    "company": "Solera",
+    "role": "SVP of Global Industry Relations and Claims Solutions"
+  },
+  {
+    "id": "cmffpi0ae001u3z7glzpxnbpo",
+    "name": "Bing Wu",
+    "company": "Founder - Retell AI",
+    "role": "CEO & Co"
+  },
+  {
+    "id": "cmffpi0c300343z7g1bfqrzhd",
+    "name": "Bob Bastian",
+    "company": "Prudential Financial",
+    "role": "Chief Information & Technology Officer"
+  },
+  {
+    "id": "cmffpi08r001a3z7gj4eivgso",
+    "name": "Brad VanMiddlesworth",
+    "company": "CNO Financial Group",
+    "role": "VP, Data & Application Management"
+  },
+  {
+    "id": "cmffpi0e5004i3z7gn5z3uc0d",
+    "name": "Bruce F Broussard Jr",
+    "company": "Percipience",
+    "role": "Managing Director"
+  },
+  {
+    "id": "cmffpi0b200263z7g3t4k3fbg",
+    "name": "Bryan Brizzi",
+    "company": "Crum & Forster",
+    "role": "Chief Digital Officer"
+  },
+  {
+    "id": "cmffpi0bn002r3z7gzxj11eu4",
+    "name": "Busy Cummings",
+    "company": "Moody’s",
+    "role": "Sr. Director Mgr-Prod Strategy"
+  },
+  {
+    "id": "cmffpi07n000c3z7gog92o7lq",
+    "name": "Carlos Cendra Falcon",
+    "company": "MAPFRE",
+    "role": "Scouting & Investment Lead"
+  },
+  {
+    "id": "cmffpi0du00463z7gfw8pdkrf",
+    "name": "Carsten Middendorf",
+    "company": "Allianz X",
+    "role": "Chief Investment Officer"
+  },
+  {
+    "id": "cmffpi0cn003k3z7gu0n2s5w8",
+    "name": "Chase Courtney",
+    "company": "Technology Sales - AndDone",
+    "role": "VP"
+  },
+  {
+    "id": "cmffpi0g7006k3z7gmrqpgcpp",
+    "name": "Chaz Perera",
+    "company": "Founder & CEO - Roots",
+    "role": "Co"
+  },
+  {
+    "id": "cmffpi07u000m3z7gl5duk8al",
+    "name": "Chris Paradiso",
+    "company": "Paradiso Financial and Insurance Services",
+    "role": "Independent Insurance Agent"
+  },
+  {
+    "id": "cmffpi0fn005u3z7gc6t7g6xs",
+    "name": "Christopher Ahearn",
+    "company": "Secureworks",
+    "role": "Director of Incident Response"
+  },
+  {
+    "id": "cmffpi0fj005s3z7ge7se2kq1",
+    "name": "Christy Lane",
+    "company": "Founder - Flora",
+    "role": "CEO & Co"
+  },
+  {
+    "id": "cmffpi0c400363z7gx1s7dxnl",
+    "name": "CJ Przybyl",
+    "company": "Founder - Reserv",
+    "role": "CEO & Co"
+  },
+  {
+    "id": "cmffpi0gd006o3z7gd9i4kzag",
+    "name": "Cody Barbo",
+    "company": "Trust & Will",
+    "role": "CEO & Founder"
+  },
+  {
+    "id": "cmffpi07o000e3z7gqo9rkz6p",
+    "name": "Colleen Thomas",
+    "company": "CNA Insurance",
+    "role": "VP, Business Relationship Management & Innovation"
+  },
+  {
+    "id": "cmffpi080000x3z7gtg2gagy7",
+    "name": "Craig Weber",
+    "company": "Cognizant",
+    "role": "Head of Insurance Strategy"
+  },
+  {
+    "id": "cmffpi0ed004m3z7gpmuu4mzo",
+    "name": "Cristiane Chiacchio",
+    "company": "Prudential Financial",
+    "role": "CEO, Simplified Solutions"
+  },
+  {
+    "id": "cmffpi0c600373z7gnr4dj4c7",
+    "name": "Curt Hess",
+    "company": "Vitesse",
+    "role": "U.S. Executive President"
+  },
+  {
+    "id": "cmffpi07l00093z7gw3xyt697",
+    "name": "Dale Steinke",
+    "company": "Liberty Mutual",
+    "role": "Director, Agent for the Future Advisors"
+  },
+  {
+    "id": "cmffpi0b6002b3z7g0gxm0ukh",
+    "name": "Dan Donovan",
+    "company": "Shift Technology",
+    "role": "VP, Customer Success & Solution Consulting"
+  },
+  {
+    "id": "cmffpi0fv00673z7gzhyfa57n",
+    "name": "Danielle Cagan",
+    "company": "CSAA Insurance Group",
+    "role": "VP, External Affairs & Corporate Communications"
+  },
+  {
+    "id": "cmffpi0dy00493z7g13p8oo67",
+    "name": "Dave Rengachary",
+    "company": "RGA",
+    "role": "SVP, Head of Underwriting, U.S. Individual Life"
+  },
+  {
+    "id": "cmffpi09m001i3z7gw5ss1ue3",
+    "name": "David Zhang",
+    "company": "Chestnut",
+    "role": "CEO"
+  },
+  {
+    "id": "cmffpi0b300273z7gzspvk8x4",
+    "name": "Denise Garth",
+    "company": "Majesco",
+    "role": "Chief Strategy Officer"
+  },
+  {
+    "id": "cmffpi0f3005c3z7glj2ko0xz",
+    "name": "Dinh Lai",
+    "company": "bolt",
+    "role": "CMO"
+  },
+  {
+    "id": "cmffpi07p000f3z7gwld47e97",
+    "name": "Dorothy Kelly",
+    "company": "Verisk",
+    "role": "VP, Innovation"
+  },
+  {
+    "id": "cmffpi07m000b3z7gnatrdxvz",
+    "name": "Drew Aldrich",
+    "company": "Viewpoint Ventures",
+    "role": "Founder & Managing Partner"
+  },
+  {
+    "id": "cmffpi0bo002s3z7g9eamvpe0",
+    "name": "Duncan Anderson",
+    "company": "WTW IC&T",
+    "role": "Global Insurance Technology Leader"
+  },
+  {
+    "id": "cmffpi0ab001r3z7g2h671y8b",
+    "name": "Eduardo Viegas",
+    "company": "Kovr Seguradora",
+    "role": "COO"
+  },
+  {
+    "id": "cmffpi0fo005v3z7glrdlsdt5",
+    "name": "Eliron Ekstein",
+    "company": "Founder - Ravin.AI",
+    "role": "CEO & Co"
+  },
+  {
+    "id": "cmffpi0cx003s3z7gftaqoyad",
+    "name": "Eric Hoelzen",
+    "company": "Turo",
+    "role": "Head of Insurance"
+  },
+  {
+    "id": "cmffpi0b9002f3z7gxd95sgu0",
+    "name": "Erik Roen",
+    "company": "Claims - Travelers",
+    "role": "SVP & CIO"
+  },
+  {
+    "id": "cmffpi0fr00613z7gz9d3wfp7",
+    "name": "Eugenio Gonzalez",
+    "company": "Plug and Play",
+    "role": "Partner & Head of InsurTech"
+  },
+  {
+    "id": "cmffpi0ar00203z7gse09rnl8",
+    "name": "Expo Floor",
+    "company": "FloorEvent Information",
+    "role": "Event Information"
+  },
+  {
+    "id": "cmffpi0gy00763z7g7qtgcwhg",
+    "name": "Federico Spagnoli",
+    "company": "Gangkhar",
+    "role": "Founder and CEO"
+  },
+  {
+    "id": "cmffpi0fh005n3z7gdhw2gcop",
+    "name": "Fergal Madigan",
+    "company": "Stripe",
+    "role": "Global Financial Services GTM Lead"
+  },
+  {
+    "id": "cmffpi0bl002q3z7gtk000xtr",
+    "name": "Freddie Scarratt",
+    "company": "Gallagher Re",
+    "role": "Global Deputy Head, Insur Tech"
+  },
+  {
+    "id": "cmffpi0et004y3z7gkwtpf54u",
+    "name": "Gage Caligaris",
+    "company": "Ledgebrook",
+    "role": "Founder and CEO"
+  },
+  {
+    "id": "cmffpi07q000g3z7gman7d82k",
+    "name": "Garrett Koehn",
+    "company": "CRC Insurance Services",
+    "role": "Chief Innovation Officer and President, ProExec"
+  },
+  {
+    "id": "cmffpi0cm003j3z7gf71oqb1c",
+    "name": "Gary Korte",
+    "company": "Integrations and CRM - IPFS",
+    "role": "VP"
+  },
+  {
+    "id": "cmffpi0c300333z7gpwsdl3d2",
+    "name": "George Kichukov",
+    "company": "GitLab",
+    "role": "Field CTO for FSI"
+  },
+  {
+    "id": "cmffpi0fc005j3z7gxsxv20fl",
+    "name": "Gilad Shai",
+    "company": "InsurTech LA",
+    "role": "Partner"
+  },
+  {
+    "id": "cmffpi09o001j3z7g4dyf17ji",
+    "name": "Grace Hanson",
+    "company": "Elysian",
+    "role": "CEO"
+  },
+  {
+    "id": "cmffpi0eq004w3z7g4vot3aty",
+    "name": "Grant Beck",
+    "company": "KBA Group",
+    "role": "Head of Innovation & Optimisation"
+  },
+  {
+    "id": "cmffpi0e5004h3z7gzt1plwok",
+    "name": "Gustavo Sorotski",
+    "company": "In-Home Distribution & Partnerships - Disney+",
+    "role": "VP"
+  },
+  {
+    "id": "cmffpi0db003y3z7g0twocr0q",
+    "name": "Guy Vorster",
+    "company": "Reltio",
+    "role": "Principal Solution Consultant"
+  },
+  {
+    "id": "cmffpi0ag001v3z7guybo9pmr",
+    "name": "Haesun Brooks",
+    "company": "Founder - Sutro",
+    "role": "CEO & Co"
+  },
+  {
+    "id": "cmffpi09t001k3z7go9lrn532",
+    "name": "Harrison Brooks",
+    "company": "Reagan Consulting",
+    "role": "Partner"
+  },
+  {
+    "id": "cmffpi0gs006x3z7gn4sms4dl",
+    "name": "Hayk Tepanyan",
+    "company": "BlueQubit",
+    "role": "CEO & Founder"
+  },
+  {
+    "id": "cmffpi0ae001t3z7gq1dngnnj",
+    "name": "Heath Shearon",
+    "company": "Insurance Town",
+    "role": "Mayor"
+  },
+  {
+    "id": "cmffpi0ey00553z7gnohptgie",
+    "name": "Henry Lach",
+    "company": "Emailgistics",
+    "role": "CEO"
+  },
+  {
+    "id": "cmffpi07i00063z7gcz91ggiw",
+    "name": "Hernan Fernandez",
+    "company": "100% SEGURO",
+    "role": "Director"
+  },
+  {
+    "id": "cmffpi09i001h3z7gcpy9r1sx",
+    "name": "Igor Mascarenhas",
+    "company": "Founder - Pier",
+    "role": "CEO & Co"
+  },
+  {
+    "id": "cmffpi0gx00753z7g0k8aiqh3",
+    "name": "Isabelle Harnois",
+    "company": "IA Financial Group",
+    "role": "Actuary and Senior Advisor"
+  },
+  {
+    "id": "cmffpi0fu00663z7gqlxegblv",
+    "name": "Ivan O'Neill",
+    "company": "Wuuii",
+    "role": "CEO and Co-founder"
+  },
+  {
+    "id": "cmffpi0gq006u3z7gxanayumj",
+    "name": "Jaclyn Johnson",
+    "company": "Thimble",
+    "role": "Director of Underwriting"
+  },
+  {
+    "id": "cmffpi0g3006i3z7gn46wkydx",
+    "name": "Jane Tran",
+    "company": "Founder and COO - Sixfold",
+    "role": "Co"
+  },
+  {
+    "id": "cmffpi090001b3z7g9hltbtk3",
+    "name": "Jason Cass",
+    "company": "Agency Intelligence",
+    "role": "CEO"
+  },
+  {
+    "id": "cmffpi06u00003z7g8ls46f8q",
+    "name": "Javier Cabello",
+    "company": "MetLife Xcelerator",
+    "role": "SVP"
+  },
+  {
+    "id": "cmffpi0gt006z3z7gr7j9snfk",
+    "name": "Jayend Krishnamoorthy",
+    "company": "Arivonix",
+    "role": "CEO"
+  },
+  {
+    "id": "cmffpi0bz002z3z7g3q00d4d3",
+    "name": "Jay Kaduson",
+    "company": "Voya Financial",
+    "role": "CEO of Workplace Solutions"
+  },
+  {
+    "id": "cmffpi07r000j3z7gnhk3breu",
+    "name": "Jeffrey Heine",
+    "company": "Novidea",
+    "role": "Chief Revenue Officer"
+  },
+  {
+    "id": "cmffpi0bh002o3z7gi8wt1bl8",
+    "name": "Jeff Saye",
+    "company": "Genpact",
+    "role": "Insurance Growth Leader"
+  },
+  {
+    "id": "cmffpi0at00213z7g62ro06qj",
+    "name": "Jesse Cole",
+    "company": "Savannah Bananas",
+    "role": "Founder"
+  },
+  {
+    "id": "cmffpi0fq005y3z7ghj1ck7bw",
+    "name": "Jim Dwane",
+    "company": "Mission Underwriting Managers",
+    "role": "CEO"
+  },
+  {
+    "id": "cmffpi0de003z3z7g43lwhbnt",
+    "name": "John Stammen",
+    "company": "Convr",
+    "role": "CEO"
+  },
+  {
+    "id": "cmffpi07z000v3z7gkr8j4i7d",
+    "name": "Jonathan Carr",
+    "company": "ePlacement",
+    "role": "CEO and Founder"
+  },
+  {
+    "id": "cmffpi0d2003t3z7g6vn5m8pu",
+    "name": "José Prado",
+    "company": "Insurtech Brasil",
+    "role": "CEO"
+  },
+  {
+    "id": "cmffpi08400103z7gun1oqf5a",
+    "name": "Júlia Normande Lins",
+    "company": "SUSEP",
+    "role": "Director"
+  },
+  {
+    "id": "cmffpi0bd002l3z7gzop9luig",
+    "name": "Juneen Kirk",
+    "company": "Voya Financial",
+    "role": "SVP, Customer Experience, Marketing & Commercial Expansion"
+  },
+  {
+    "id": "cmffpi0fl005t3z7gdglzlb80",
+    "name": "Justin Curtis",
+    "company": "National Practice Leader - Alliant",
+    "role": "FVP"
+  },
+  {
+    "id": "cmffpi0c700383z7gj2ugp3hr",
+    "name": "Karn Saroya",
+    "company": "Founder - Re",
+    "role": "CEO & Co"
+  },
+  {
+    "id": "cmffpi0gw00733z7gqp5x2c4v",
+    "name": "Kate Dillion",
+    "company": "Prosek Partners",
+    "role": "Managing Director"
+  },
+  {
+    "id": "cmffpi09e001d3z7gi4rc8u9m",
+    "name": "Katie Gold",
+    "company": "The Zebra",
+    "role": "VP, Insurance Sales"
+  },
+  {
+    "id": "cmffpi0bd002m3z7gfnaw9r3p",
+    "name": "Keren Herzberg",
+    "company": "Symetra",
+    "role": "SVP, Technology & Operations Solutions"
+  },
+  {
+    "id": "cmffpi09c001c3z7gofsyfc86",
+    "name": "Kevin Rabinowitz",
+    "company": "Relation Insurance Services",
+    "role": "COO"
+  },
+  {
+    "id": "cmffpi0bu002w3z7gffzya0fl",
+    "name": "Kiran Mallavarapu",
+    "company": "The Hanover Insurance Group",
+    "role": "SVP Claims Strategy"
+  },
+  {
+    "id": "cmffpi0aw00233z7g7629e4p1",
+    "name": "Kobi Bendelak",
+    "company": "InsurTech Israel",
+    "role": "CEO"
+  },
+  {
+    "id": "cmffpi0cb003e3z7g6hf6zpj2",
+    "name": "Kristina Welke",
+    "company": "New York Life",
+    "role": "VP & Head of Strategy, Solutions and Marketing for New York Life Group Benefit Solutions"
+  },
+  {
+    "id": "cmffpi0ew00523z7gzplaw22d",
+    "name": "Kyle Nakatsuji",
+    "company": "founder - Clearcover",
+    "role": "CEO and Co"
+  },
+  {
+    "id": "cmffpi0ds00443z7gjf9e6lnh",
+    "name": "Larry Webster",
+    "company": "Hagerty",
+    "role": "SVP of Media and Editorial"
+  },
+  {
+    "id": "cmffpi0fw00693z7gxmvio3qb",
+    "name": "Lauren Berkemeyer",
+    "company": "YuLife",
+    "role": "CMO"
+  },
+  {
+    "id": "cmffpi07d00053z7gwjaj6hbq",
+    "name": "Leonardo Redolfi",
+    "company": "100% Seguro",
+    "role": "Director"
+  },
+  {
+    "id": "cmffpi0gv00723z7g1mwxcxq6",
+    "name": "Lisa Flanary",
+    "company": "Security Benefit",
+    "role": "CMO"
+  },
+  {
+    "id": "cmffpi0c200313z7gxfm62poi",
+    "name": "Luisa Barile",
+    "company": "ManyPets",
+    "role": "Group CEO"
+  },
+  {
+    "id": "cmffpi07r000i3z7gki4oq3lb",
+    "name": "Madison Baker",
+    "company": "Marsh McLennan Agency",
+    "role": "Vice President of Business Insurance"
+  },
+  {
+    "id": "cmffpi0fs00633z7gia6wsorh",
+    "name": "Manish Choudhary",
+    "company": "LifeBridge Inc",
+    "role": "Founder and CEO"
+  },
+  {
+    "id": "cmffpi07900043z7gtsiz3ghj",
+    "name": "Manjit Rana",
+    "company": "Clearspeed",
+    "role": "EVP"
+  },
+  {
+    "id": "cmffpi08800123z7gz9x5du71",
+    "name": "Manny Barbosa",
+    "company": "Liberty Mutual Insurance",
+    "role": "Agent for the Future Advisor"
+  },
+  {
+    "id": "cmffpi0e0004b3z7g5bm5caks",
+    "name": "Marcin Nowak",
+    "company": "Decerto",
+    "role": "Founder"
+  },
+  {
+    "id": "cmffpi0dh00403z7gocwaopoy",
+    "name": "Maren Dennis",
+    "company": "Markel",
+    "role": "Claims Transformation Product Manager"
+  },
+  {
+    "id": "cmffpi0e1004d3z7gz1usf50x",
+    "name": "María Navarro Ibáñez",
+    "company": "MAPFRE",
+    "role": "Corporate Director of Innovation"
+  },
+  {
+    "id": "cmffpi0fi005p3z7g66gpo0y2",
+    "name": "Mariano Gutierrez",
+    "company": "Insurance Industry Strategy, Digital Strategy Group Company - Adobe",
+    "role": "Director"
+  },
+  {
+    "id": "cmffpi0bp002t3z7gaecsyx0v",
+    "name": "Mark Garrett",
+    "company": "J.D. Power",
+    "role": "Director of Insurance Industry Analytics"
+  },
+  {
+    "id": "cmffpi0cw003r3z7g7dev5efv",
+    "name": "Matheus Riolfi",
+    "company": "Founder - Tint",
+    "role": "CEO & Co"
+  },
+  {
+    "id": "cmffpi07r000k3z7gya16i086",
+    "name": "Mauricio Zanatta",
+    "company": "Klimber (former  of Prudential)",
+    "role": "CEO"
+  },
+  {
+    "id": "cmffpi0b9002e3z7g7i6js4le",
+    "name": "Max Drucker",
+    "company": "Carpe Data",
+    "role": "CEO"
+  },
+  {
+    "id": "cmffpi0fh005o3z7g72o0yc34",
+    "name": "Maxwell Roberts",
+    "company": "Digital Strategy Group - Adobe",
+    "role": "Engagement Manager"
+  },
+  {
+    "id": "cmffpi0bc002j3z7gblho995h",
+    "name": "Megan Pilcher",
+    "company": "IntellectAI",
+    "role": "SVP and Insurance Go To Market Leader"
+  },
+  {
+    "id": "cmffpi0f4005d3z7giir31bio",
+    "name": "Mery Zadeh",
+    "company": "Lumenova AI",
+    "role": "SVP AI Governance and Risk Management"
+  },
+  {
+    "id": "cmffpi08800133z7gyztbw1d7",
+    "name": "Michael Cruz",
+    "company": "Foresight Insurance",
+    "role": "Founder and Principal Owner"
+  },
+  {
+    "id": "cmffpi0ee004n3z7ggwco1yiz",
+    "name": "Michelle Raue",
+    "company": "Preferred Mutual",
+    "role": "EVP, Chief Claim & Transformation Officer"
+  },
+  {
+    "id": "cmffpi0ao001y3z7gold32cqr",
+    "name": "Mike Allee",
+    "company": "Equisoft",
+    "role": "President, UCT"
+  },
+  {
+    "id": "cmffpi08k00183z7g8lqt422k",
+    "name": "Mohit Chawla",
+    "company": "eventual treasury",
+    "role": "CEO"
+  },
+  {
+    "id": "cmffpi0al001x3z7gc1td7364",
+    "name": "Murtaza Ali",
+    "company": "Founder - Symphony",
+    "role": "CEO & Co"
+  },
+  {
+    "id": "cmffpi081000y3z7geynvy6hh",
+    "name": "Mykola Hayvanovych",
+    "company": "Cognizant",
+    "role": "Global Head, Generative AI"
+  },
+  {
+    "id": "cmffpi0ga006m3z7g4cva23qi",
+    "name": "Naeill Leigh",
+    "company": "Lincoln Financial",
+    "role": "Senior Vice President, Strategy and Transformation – Workplace Solutions"
+  },
+  {
+    "id": "cmffpi07w000q3z7gjer42er4",
+    "name": "Natalia Jacome",
+    "company": "SaludSA",
+    "role": "Country Head"
+  },
+  {
+    "id": "cmffpi0fy006c3z7gnh2ypl5j",
+    "name": "Neal Silbert",
+    "company": "weav.ai",
+    "role": "Chief Product Officer"
+  },
+  {
+    "id": "cmffpi0bb002i3z7gi8cjvhvc",
+    "name": "Nga Phan",
+    "company": "bolt",
+    "role": "Head of Product"
+  },
+  {
+    "id": "cmffpi0bf002n3z7gldwbeq70",
+    "name": "Nicole Carrillo",
+    "company": "Workday",
+    "role": "Managing Director, Financial Services"
+  },
+  {
+    "id": "cmffpi0cu003q3z7gx178x6pd",
+    "name": "Nigel Walsh",
+    "company": "to-Market - ServiceNow",
+    "role": "Head of Insurance Go"
+  },
+  {
+    "id": "cmffpi0d6003v3z7ge4bau4ka",
+    "name": "Omar Issa",
+    "company": "ResiQuant",
+    "role": "CEO"
+  },
+  {
+    "id": "cmffpi07w000r3z7gyt05y66t",
+    "name": "Ori Ben Yishai",
+    "company": "Viewpoint Ventures",
+    "role": "Partner"
+  },
+  {
+    "id": "cmffpi0gf006q3z7g2y0zicdz",
+    "name": "Pat Blandford",
+    "company": "Property Guardian",
+    "role": "CEO & Founder"
+  },
+  {
+    "id": "cmffpi0aq001z3z7gdlb0uf2x",
+    "name": "Patrick Baglien",
+    "company": "Vue Robotics",
+    "role": "CEO & Founder"
+  },
+  {
+    "id": "cmffpi08j00173z7gklg66g8j",
+    "name": "Pedro Pereira",
+    "company": "Akur8",
+    "role": "Regional Sales Director"
+  },
+  {
+    "id": "cmffpi0br002u3z7gmf8r59k7",
+    "name": "Peter Settel",
+    "company": "Bold Penguin",
+    "role": "CEO & President"
+  },
+  {
+    "id": "cmffpi0ba002h3z7grrioed20",
+    "name": "Philip Charles Pierre",
+    "company": "Semsee",
+    "role": "CEO"
+  },
+  {
+    "id": "cmffpi0c200323z7ga246sgrc",
+    "name": "Pierre Du Toit",
+    "company": "ManyPets",
+    "role": "Chief Data Officer"
+  },
+  {
+    "id": "cmffpi0e6004j3z7g3iauqy3t",
+    "name": "Prashant Hinge",
+    "company": "MSIG USA",
+    "role": "Chief Information & Transformation Officer"
+  },
+  {
+    "id": "cmffpi0ea004l3z7gtonlofb0",
+    "name": "Rajat Sharma",
+    "company": "InsureMO",
+    "role": "Chief Revenue Officer"
+  },
+  {
+    "id": "cmffpi0g2006h3z7gw2v4hu37",
+    "name": "Rajeev Gupta",
+    "company": "Cowbell",
+    "role": "Co"
+  },
+  {
+    "id": "cmffpi0b400283z7ggnjbmr29",
+    "name": "Reghan Brandt",
+    "company": "K2 Insurance Services",
+    "role": "Chief Digital Operations Officer"
+  },
+  {
+    "id": "cmffpi0gr006v3z7gm5256qjc",
+    "name": "Reid Stanway",
+    "company": "Ki Insurance",
+    "role": "Head of Digital Partnerships"
+  },
+  {
+    "id": "cmffpi0gs006w3z7gm561l9j2",
+    "name": "Renu Joseph",
+    "company": "Luminant Analytics",
+    "role": "CEO & Founder"
+  },
+  {
+    "id": "cmffpi0ew00513z7gqn7uyfpb",
+    "name": "Richard McCathron",
+    "company": "Hippo",
+    "role": "CEO & President"
+  },
+  {
+    "id": "cmffpi0g4006j3z7gu5xr9226",
+    "name": "Rima Safari",
+    "company": "PwC",
+    "role": "US Data, Analytics and AI Practice Leader"
+  },
+  {
+    "id": "cmffpi0ff005l3z7g37g076e8",
+    "name": "R.K. Jobay Cooney",
+    "company": "Aon",
+    "role": "Senior Managing Director"
+  },
+  {
+    "id": "cmffpi07x000s3z7g5duzz4pu",
+    "name": "Robert Poliseno",
+    "company": "Chubb",
+    "role": "Division President, N.A. Small & Lower Midmarket"
+  },
+  {
+    "id": "cmffpi0e1004e3z7gv3p8n49k",
+    "name": "Robin Spaulding",
+    "company": "Roots",
+    "role": "Head of Insurance"
+  },
+  {
+    "id": "cmffpi0el004t3z7g98rgurz4",
+    "name": "Rohan Vaidyanathan",
+    "company": "Hyland",
+    "role": "VP, Product"
+  },
+  {
+    "id": "cmffpi0by002y3z7gd7jlc5yu",
+    "name": "Ron Gura",
+    "company": "Founder - Empathy",
+    "role": "CEO & Co"
+  },
+  {
+    "id": "cmffpi0bc002k3z7giuq1th1p",
+    "name": "Rose Hancock",
+    "company": "Zywave",
+    "role": "VP Product Management"
+  },
+  {
+    "id": "cmffpi0d5003u3z7ggm5bctmf",
+    "name": "Rudy Hervé",
+    "company": "Palomar",
+    "role": "Chief Operating Officer"
+  },
+  {
+    "id": "cmffpi0dn00433z7go52yr5p0",
+    "name": "Russell Page",
+    "company": "Hagerty",
+    "role": "Chief Data & Information Officer"
+  },
+  {
+    "id": "cmffpi07k00073z7gw5zt24mh",
+    "name": "Ryan Hanley",
+    "company": "Finding Peak",
+    "role": "Serial Founder, Speaker, Entrepreneur, Influencer, and Founder"
+  },
+  {
+    "id": "cmffpi0ch003h3z7gux9hu05g",
+    "name": "Samuel Falmagne",
+    "company": "Akur8",
+    "role": "CEO"
+  },
+  {
+    "id": "cmffpi07v000p3z7gp3me3suu",
+    "name": "Sandeep Haridas",
+    "company": "IntellectAI",
+    "role": "EVP and Insurance Business Head"
+  },
+  {
+    "id": "cmffpi07500033z7gwropzmkk",
+    "name": "Scott Moore",
+    "company": "Clearspeed",
+    "role": "CRO"
+  },
+  {
+    "id": "cmffpi0fr00603z7gf549smnc",
+    "name": "Sean Harper",
+    "company": "Kin Insurance",
+    "role": "CEO & Founder"
+  },
+  {
+    "id": "cmffpi07u000n3z7g0tko7brr",
+    "name": "Sergio Zuniga",
+    "company": "Blitz",
+    "role": "CEO"
+  },
+  {
+    "id": "cmffpi0fz006e3z7gnsixjtii",
+    "name": "Sherry Rais",
+    "company": "Founder - Enthea",
+    "role": "CEO & Co"
+  },
+  {
+    "id": "cmffpi09w001l3z7g6nx5vflo",
+    "name": "Sofia Belmar",
+    "company": "Prudential Mexico",
+    "role": "CEO"
+  },
+  {
+    "id": "cmffpi0a6001p3z7gw2tebgd9",
+    "name": "Stella Dong",
+    "company": "Reinsurance Analytics",
+    "role": "Founder & CTO"
+  },
+  {
+    "id": "cmffpi08600113z7g4pfoejal",
+    "name": "Stephanie Wan",
+    "company": "Cognizant",
+    "role": "Head of Experience Strategy"
+  },
+  {
+    "id": "cmffpi0g9006l3z7gm8wh9bs7",
+    "name": "Stephan Teerling",
+    "company": "Allianz SE",
+    "role": "Head of CEO Office"
+  },
+  {
+    "id": "cmffpi07q000h3z7g0uuumm0a",
+    "name": "Stephen Sills",
+    "company": "Bowhead Specialty",
+    "role": "CEO"
+  },
+  {
+    "id": "cmffpi0fd005k3z7gwkn4rhj3",
+    "name": "Steven Schwartz",
+    "company": "SAFE Security",
+    "role": "Chief Insurance Officer"
+  },
+  {
+    "id": "cmffpi09e001e3z7gf53j1fz5",
+    "name": "Sudipta Chaki",
+    "company": "Cognizant",
+    "role": "Global Head of Insurance Industry Solutions"
+  },
+  {
+    "id": "cmffpi0fg005m3z7ghin4n1ne",
+    "name": "Susan Silfen",
+    "company": "Crum & Forster",
+    "role": "EVP"
+  },
+  {
+    "id": "cmffpi0dy00483z7gcjrd29z2",
+    "name": "Sylvester Mathis",
+    "company": "Insurity",
+    "role": "Chief Insurance & Chief Revenue Officer"
+  },
+  {
+    "id": "cmffpi0av00223z7gtiaob10t",
+    "name": "Tanguy Catlin",
+    "company": "McKinsey & Company",
+    "role": "Senior Partner"
+  },
+  {
+    "id": "cmffpi0ck003i3z7gs1n706bm",
+    "name": "Thomas Holmes",
+    "company": "Akur8",
+    "role": "Chief Actuary US"
+  },
+  {
+    "id": "cmffpi08f00153z7g6lpwhc7p",
+    "name": "Tim Queen",
+    "company": "Cognizant",
+    "role": "Global Head, Insurance Consulting"
+  },
+  {
+    "id": "cmffpi0c400353z7g4enu7k0s",
+    "name": "Tony Skipper",
+    "company": "Allianz Technology",
+    "role": "CEO"
+  },
+  {
+    "id": "cmffpi0eu004z3z7gms9z3m7u",
+    "name": "Tracie Larson",
+    "company": "Microsoft Corporation",
+    "role": "VP, US Insurance"
+  },
+  {
+    "id": "cmffpi0cp003m3z7g77dkov4i",
+    "name": "Travis Roe",
+    "company": "EOX Vantage",
+    "role": "Sr. Director of Product"
+  },
+  {
+    "id": "cmffpi0b7002c3z7g0xwmn9zg",
+    "name": "Vibhor Gupta",
+    "company": "Enterprise Data & AI - Shelter Insurance",
+    "role": "VP"
+  },
+  {
+    "id": "cmffpi0ei004q3z7gk4oq9us6",
+    "name": "Virginia Mathurin",
+    "company": "Property Underwriting - Markel",
+    "role": "MD"
+  },
+  {
+    "id": "cmffpi0bi002p3z7g1chwyrf7",
+    "name": "Will Ross",
+    "company": "Founder & CEO - Federato",
+    "role": "Co"
+  },
+  {
+    "id": "cmffpi0er004x3z7gbar0r01q",
+    "name": "Zac Townsend",
+    "company": "Founder - Meanwhile",
+    "role": "CEO & Co"
+  },
+  {
+    "id": "cmffpi0f9005g3z7gnvtfe1aw",
+    "name": "Zvika Goldstein",
+    "company": "Founder - Mellie",
+    "role": "CEO and Co"
+  }
+]
