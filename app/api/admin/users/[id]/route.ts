@@ -5,9 +5,10 @@ import prisma from '@/lib/db';
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await context.params;
     const session = await getServerSession(authOptions);
     
     // Check if user is authenticated and is admin
@@ -44,9 +45,10 @@ export async function PATCH(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await context.params;
     const session = await getServerSession(authOptions);
     
     // Check if user is authenticated and is admin
