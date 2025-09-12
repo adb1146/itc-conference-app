@@ -67,6 +67,7 @@ export function getAuthOptions(): NextAuthOptions {
     pages: {
       signIn: '/auth/signin',
       error: '/auth/error',
+      newUser: '/'
     },
     callbacks: {
       async jwt({ token, user }) {
