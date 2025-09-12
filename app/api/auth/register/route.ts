@@ -9,9 +9,22 @@ export async function POST(request: NextRequest) {
     console.log('Prisma client:', !!prisma);
     
     const body = await request.json();
-    const { email, password, name, role, company, interests, goals } = body;
+    const { 
+      email, 
+      password, 
+      name, 
+      role, 
+      company, 
+      organizationType,
+      interests, 
+      goals,
+      usingSalesforce,
+      interestedInSalesforce 
+    } = body;
     
     console.log('Registration for email:', email);
+    console.log('Organization type:', organizationType);
+    console.log('Salesforce interest:', { usingSalesforce, interestedInSalesforce });
 
     // Validate required fields
     if (!email || !password) {
@@ -52,8 +65,11 @@ export async function POST(request: NextRequest) {
         name: name || null,
         role: role || null,
         company: company || null,
+        organizationType: organizationType || null,
         interests: interests || [],
-        goals: goals || []
+        goals: goals || [],
+        usingSalesforce: usingSalesforce || false,
+        interestedInSalesforce: interestedInSalesforce || false
       }
     });
 

@@ -4,13 +4,23 @@ declare global {
   var prismaGlobal: PrismaClient | undefined;
 }
 
+const prismaClientSingleton = () => {
+  return new PrismaClient({
+    datasources: {
+      db: {
+        url: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5442/itc_dev'
+      }
+    }
+  });
+}
+
 let prisma: PrismaClient;
 
 if (process.env.NODE_ENV === 'production') {
-  prisma = new PrismaClient();
+  prisma = prismaClientSingleton();
 } else {
   if (!global.prismaGlobal) {
-    global.prismaGlobal = new PrismaClient();
+    global.prismaGlobal = prismaClientSingleton();
   }
   prisma = global.prismaGlobal;
 }

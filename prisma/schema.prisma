@@ -56,16 +56,20 @@ model SessionSpeaker {
 
 // User Authentication Models
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  password      String
-  name          String?
-  role          String?   // Executive, Developer, Product Manager, etc.
-  company       String?
-  interests     String[]  // AI, Claims, Cyber, etc.
-  goals         String[]  // Learning, Networking, etc.
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                      String    @id @default(cuid())
+  email                   String    @unique
+  password                String
+  name                    String?
+  role                    String?   // Executive, Developer, Product Manager, etc.
+  company                 String?
+  organizationType        String?   // Carrier, Broker, MGA/MGU, Reinsurer, etc.
+  interests               String[]  // AI, Claims, Cyber, etc.
+  goals                   String[]  // Learning, Networking, etc.
+  usingSalesforce         Boolean   @default(false)
+  interestedInSalesforce  Boolean   @default(false)
+  isAdmin                 Boolean   @default(false)
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
   
   // Relations
   favorites     Favorite[]

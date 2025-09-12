@@ -51,7 +51,8 @@ export function getAuthOptions(): NextAuthOptions {
                 email: user.email,
                 name: user.name || undefined,
                 role: user.role || undefined,
-                company: user.company || undefined
+                company: user.company || undefined,
+                isAdmin: user.isAdmin || false
               };
           } catch (error) {
             console.error('Auth error:', error);
@@ -82,6 +83,9 @@ export function getAuthOptions(): NextAuthOptions {
           if ('company' in user) {
             token.company = (user as any).company || undefined;
           }
+          if ('isAdmin' in user) {
+            token.isAdmin = (user as any).isAdmin || false;
+          }
         }
         return token;
       },
@@ -92,6 +96,7 @@ export function getAuthOptions(): NextAuthOptions {
           session.user.name = token.name as string;
           session.user.role = token.role as string;
           session.user.company = token.company as string;
+          session.user.isAdmin = token.isAdmin as boolean;
         }
         return session;
       }

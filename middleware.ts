@@ -10,6 +10,11 @@ const protectedRoutes = [
   '/agenda/intelligent' // Intelligent agenda requires auth
 ];
 
+// Routes that require admin access
+const adminRoutes = [
+  '/admin'
+];
+
 // Routes that should redirect to home if authenticated
 const authRoutes = [
   '/auth/signin',
@@ -24,6 +29,11 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
+  // Check if the route requires admin access
+  const isAdminRoute = adminRoutes.some(route => 
+    pathname.startsWith(route)
+  );
+
   // Check if the route requires authentication
   const isProtectedRoute = protectedRoutes.some(route => 
     pathname.startsWith(route)
@@ -33,6 +43,21 @@ export async function middleware(request: NextRequest) {
   const isAuthRoute = authRoutes.some(route => 
     pathname.startsWith(route)
   );
+
+  // Redirect to home if accessing admin route without admin privileges
+  if (isAdminRoute) {
+    if (!token) {
+      const signInUrl = new URL('/auth/signin', request.url);
+      signInUrl.searchParams.set('callbackUrl', pathname);
+      return NextResponse.redirect(signInUrl);
+    }
+    
+    // Check if user is admin (either by isAdmin flag or test@example.com)
+    const isAdmin = (token as any).email === 'test@example.com' || (token as any).isAdmin;
+    if (!isAdmin) {
+      return NextResponse.redirect(new URL('/', request.url));
+    }
+  }
 
   // Redirect to signin if accessing protected route without auth
   if (isProtectedRoute && !token) {

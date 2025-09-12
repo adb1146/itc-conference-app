@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import { 
   Send, Bot, User, Loader2, Calendar, Users, MapPin, 
   Brain, Sparkles, Target, Clock, AlertCircle, Plus,
-  ChevronRight, Settings, TrendingUp, Info
+  ChevronRight, Settings, TrendingUp, Info, Building2, ExternalLink
 } from 'lucide-react';
 
 interface Message {
@@ -26,12 +26,12 @@ interface UserProfile {
 }
 
 const SAMPLE_QUESTIONS = [
-  "Create my personalized conference schedule",
+  "Show me Salesforce solutions for insurance",
   "What AI sessions match my interests?",
-  "Find networking opportunities for startup founders",
-  "Show me the learning path for claims automation",
-  "Which sessions have speakers from major carriers?",
-  "What's the best day 2 schedule for a CTO?"
+  "Find sessions on claims automation",
+  "Which sessions cover digital distribution?",
+  "Sessions for insurance brokers and carriers",
+  "What's the best schedule for learning about insurtech?"
 ];
 
 const INTERESTS = [
@@ -76,11 +76,11 @@ export default function IntelligentChatPage() {
   // Initialize messages on client side only
   useEffect(() => {
     if (!isInitialized && status !== 'loading') {
-      let welcomeMessage = "🎯 Welcome to your AI Conference Concierge! I'm here to help you maximize your ITC Vegas 2025 experience with personalized recommendations and intelligent scheduling.";
+      let welcomeMessage = "🎯 Welcome to PS Advisory's AI Conference Demo! This demonstration showcases how AI and Salesforce can transform conference experiences. I'll help you explore ITC Vegas 2025 sessions with personalized recommendations.";
       
       if (status === 'authenticated' && session?.user) {
         const userName = session.user.name || session.user.email?.split('@')[0] || 'there';
-        welcomeMessage = `🎯 Welcome back, ${userName}! I'm your AI Conference Concierge for ITC Vegas 2025. I'll help you discover relevant sessions, connect with the right people, and make the most of your conference experience.`;
+        welcomeMessage = `🎯 Welcome back, ${userName}! This is PS Advisory's demo of AI-powered conference intelligence. See how Salesforce + AI can personalize your ITC Vegas 2025 experience with smart recommendations and insights.`;
       }
       
       setMessages([{
@@ -396,8 +396,8 @@ export default function IntelligentChatPage() {
                 <Brain className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">AI Conference Concierge</h1>
-                <p className="text-sm text-gray-600 mt-1">Powered by Advanced AI • ITC Vegas 2025</p>
+                <h1 className="text-2xl font-bold text-gray-900">AI Conference Concierge <span className="text-sm font-normal text-orange-600">(Demo)</span></h1>
+                <p className="text-sm text-gray-600 mt-1">Powered by Claude 3.5 + Salesforce • PS Advisory Demo</p>
               </div>
             </div>
             <button
@@ -428,6 +428,30 @@ export default function IntelligentChatPage() {
               )}
             </div>
           )}
+        </div>
+
+        {/* PS Advisory Demo Banner */}
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-x border-b border-gray-200 px-6 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Building2 className="w-5 h-5 text-blue-600" />
+              <div className="text-sm">
+                <span className="font-medium text-gray-900">PS Advisory Demo:</span>
+                <span className="text-gray-600 ml-2">
+                  Salesforce Partner specializing in insurance technology solutions
+                </span>
+              </div>
+            </div>
+            <a 
+              href="https://www.psadvisory.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center space-x-1 text-sm text-blue-600 hover:text-blue-700 font-medium"
+            >
+              <span>Learn More</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
         </div>
 
         {/* Profile Panel */}

@@ -9,6 +9,7 @@ declare module "next-auth" {
       image?: string | null
       role?: string
       company?: string
+      isAdmin?: boolean
     }
   }
 
@@ -18,6 +19,7 @@ declare module "next-auth" {
     name?: string | null
     role?: string | null
     company?: string | null
+    isAdmin?: boolean
   }
 }
 
@@ -28,5 +30,6 @@ declare module "next-auth/jwt" {
     name?: string
     role?: string
     company?: string
+    isAdmin?: boolean
   }
 }

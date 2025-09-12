@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import Navigation from '@/components/Navigation'
-import Footer from '@/components/Footer'
 import { 
   Calendar, Users, Brain, Map, Star, TrendingUp, 
   ChevronRight, Play, Sparkles, Clock, Target,
@@ -77,10 +75,8 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <Navigation />
-      
       {/* Hero Section */}
-      <section className="relative pt-16 overflow-hidden">
+      <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50"></div>
         <div 
           className="absolute inset-0 opacity-5"
@@ -100,19 +96,52 @@ export default function HomePage() {
               </span>
             </div>
             
+            {/* PS Advisory Badge */}
+            <div className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-100 rounded-full mb-6">
+              <span className="text-sm font-medium text-blue-700">Powered by PS Advisory</span>
+              <span className="text-xs text-blue-600">• Salesforce Partner for Insurance</span>
+            </div>
+            
             {/* Main Heading */}
             <h1 className="text-5xl md:text-7xl font-bold mb-6">
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
-                Your AI-Powered
+                Experience AI-Enhanced
               </span>
               <br />
-              <span className="text-gray-900">Conference Companion</span>
+              <span className="text-gray-900">Conference Intelligence</span>
             </h1>
             
-            <p className="text-xl md:text-2xl text-gray-600 mb-10 max-w-3xl mx-auto">
-              Navigate ITC Vegas 2025 with intelligent recommendations, personalized scheduling, 
-              and real-time insights powered by advanced AI
+            <p className="text-xl md:text-2xl text-gray-600 mb-6 max-w-3xl mx-auto">
+              See how PS Advisory transforms insurance technology with AI-powered solutions. 
+              This demo showcases intelligent conference capabilities for ITC Vegas 2025.
             </p>
+            
+            <div className="flex flex-col items-center space-y-3 mb-10">
+              <div className="inline-flex items-center space-x-2 px-3 py-1.5 bg-orange-100 rounded-full">
+                <span className="text-sm text-orange-700">📍 Demo Site - Not affiliated with ITC</span>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-4 text-sm">
+                <a 
+                  href="https://www.psadvisory.com" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center space-x-1 text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  <span>Visit PS Advisory</span>
+                  <ArrowRight className="w-3 h-3" />
+                </a>
+                <span className="text-gray-400">•</span>
+                <a 
+                  href="https://vegas.insuretechconnect.com" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center space-x-1 text-orange-600 hover:text-orange-700 font-medium"
+                >
+                  <span>Official ITC Vegas Site</span>
+                  <ArrowRight className="w-3 h-3" />
+                </a>
+              </div>
+            </div>
             
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -207,14 +236,18 @@ export default function HomePage() {
             <div>
               <div className="inline-flex items-center space-x-2 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium mb-4">
                 <Zap className="w-4 h-4" />
-                <span>Powered by Claude 3.5</span>
+                <span>Powered by Claude 3.5 + Salesforce</span>
               </div>
               <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-                Your Intelligent Conference Assistant
+                See AI + Salesforce in Action
               </h2>
+              <p className="text-lg text-gray-600 mb-4">
+                PS Advisory specializes in helping insurance organizations leverage Salesforce 
+                and AI to improve profitability and reduce friction.
+              </p>
               <p className="text-lg text-gray-600 mb-8">
-                Our AI Concierge understands your interests, role, and goals to provide 
-                truly personalized recommendations that help you make the most of ITC Vegas.
+                This demo showcases how intelligent technology can transform conference experiences 
+                with personalized recommendations and smart scheduling.
               </p>
               
               <ul className="space-y-4 mb-8">
@@ -250,17 +283,17 @@ export default function HomePage() {
                 
                 <div className="space-y-4">
                   <div className="bg-gray-50 rounded-xl p-4">
-                    <p className="text-sm text-gray-600 mb-2">You:</p>
-                    <p className="text-sm font-medium">"I'm a CTO interested in AI and cybersecurity. What should I attend on Day 2?"</p>
+                    <p className="text-sm text-gray-600 mb-2">Insurance Executive:</p>
+                    <p className="text-sm font-medium">"I'm looking for Salesforce solutions for claims automation. What sessions should I prioritize?"</p>
                   </div>
                   <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-4">
-                    <p className="text-sm text-gray-600 mb-2">AI Concierge:</p>
-                    <p className="text-sm">Based on your interests, I recommend:</p>
+                    <p className="text-sm text-gray-600 mb-2">PS Advisory AI:</p>
+                    <p className="text-sm">Perfect match for your needs:</p>
                     <ul className="text-sm mt-2 space-y-1">
                       <li>⭐ 10:30 AM - Claims Automation and AI</li>
-                      <li>⭐ 10:30 AM - Cybersecurity Risk Management</li>
-                      <li>📍 Conflict detected: Both at 10:30 AM</li>
-                      <li>💡 Suggestion: Attend AI session, watch Cyber recording</li>
+                      <li>⭐ 2:00 PM - Salesforce Insurance Cloud Deep Dive</li>
+                      <li>📍 Recommended networking: Connect with PS Advisory team</li>
+                      <li>💡 We specialize in Salesforce claims solutions</li>
                     </ul>
                   </div>
                 </div>
@@ -333,8 +366,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
-      <Footer />
     </div>
   )
 }

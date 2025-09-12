@@ -7,7 +7,8 @@ import { useSession, signOut } from 'next-auth/react';
 import { 
   Menu, X, Calendar, MessageCircle, Users, Map, 
   Home, Brain, ChevronDown, Bell, User, Search,
-  Sparkles, Clock, Star, LogOut, Settings, UserPlus
+  Sparkles, Clock, Star, LogOut, Settings, UserPlus, Shield,
+  ExternalLink, AlertTriangle
 } from 'lucide-react';
 
 export default function Navigation() {
@@ -55,16 +56,15 @@ export default function Navigation() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-3">
-            <div className="relative">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
-                <span className="text-white font-bold text-xl">ITC</span>
-              </div>
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+          <Link href="/" className="flex items-center space-x-2">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
+              <span className="text-white font-bold text-xl">ITC</span>
             </div>
-            <div className="hidden sm:block">
-              <h1 className="text-xl font-bold text-gray-900">Vegas 2025</h1>
-              <p className="text-xs text-gray-600 -mt-1">Oct 15-17</p>
+            <div>
+              <h1 className="text-lg font-bold text-gray-900">
+                Vegas 2025
+              </h1>
+              <p className="text-xs text-gray-500 -mt-0.5 hidden sm:block">Oct 15-17</p>
             </div>
           </Link>
 
@@ -82,14 +82,13 @@ export default function Navigation() {
                     active 
                       ? 'bg-blue-50 text-blue-700 font-medium'
                       : 'text-gray-700 hover:bg-gray-50'
-                  } ${item.highlight ? 'relative' : ''}`}
+                  }`}
                 >
                   <Icon className="w-4 h-4" />
                   <span className="text-sm">{item.label}</span>
                   {item.highlight && (
-                    <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-purple-500"></span>
+                    <span className="ml-1 px-1.5 py-0.5 bg-purple-100 text-purple-700 text-xs rounded font-medium">
+                      AI
                     </span>
                   )}
                 </Link>
@@ -98,7 +97,7 @@ export default function Navigation() {
           </div>
 
           {/* Right Side Actions */}
-          <div className="hidden md:flex items-center space-x-3">
+          <div className="hidden lg:flex items-center gap-3">
             <button className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
               <Search className="w-5 h-5" />
             </button>
@@ -162,6 +161,20 @@ export default function Navigation() {
                       <Settings className="w-4 h-4" />
                       <span>Settings</span>
                     </Link>
+                    
+                    {(session.user?.email === 'test@example.com' || (session.user as any)?.isAdmin) && (
+                      <>
+                        <div className="border-t border-gray-100 mt-1 pt-1"></div>
+                        <Link
+                          href="/admin"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex items-center space-x-2 px-4 py-2 text-sm text-yellow-700 hover:bg-yellow-50"
+                        >
+                          <Shield className="w-4 h-4" />
+                          <span>Admin Dashboard</span>
+                        </Link>
+                      </>
+                    )}
                     
                     <div className="border-t border-gray-100 mt-1 pt-1">
                       <button
@@ -235,6 +248,7 @@ export default function Navigation() {
                 </Link>
               );
             })}
+            
             
             <div className="border-t border-gray-200 pt-3 mt-3">
               {session ? (
