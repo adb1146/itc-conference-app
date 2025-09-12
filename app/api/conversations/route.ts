@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { getAuthOptions } from '@/lib/auth-config';
 import prisma from '@/lib/prisma';
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(getAuthOptions());
     
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -21,12 +21,6 @@ export async function GET(req: NextRequest) {
 
     const conversations = await prisma.conversation.findMany({
       where: { userId: user.id },
-      include: {
-        messages: {
-          orderBy: { createdAt: 'desc' },
-          take: 1 // Get last message for preview
-        }
-      },
       orderBy: { updatedAt: 'desc' }
     });
 
@@ -39,7 +33,7 @@ export async function GET(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(getAuthOptions());
     
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -72,11 +66,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
     }
 
-    // Delete messages first, then conversation
-    await prisma.message.deleteMany({
-      where: { conversationId: conversationId }
-    });
-
+    // Delete conversation (messages are stored as JSON in conversation)
     await prisma.conversation.delete({
       where: { id: conversationId }
     });

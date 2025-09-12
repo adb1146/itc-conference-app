@@ -12,6 +12,7 @@ import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 
 interface Speaker {
+  id?: string;
   name: string;
   title?: string;
   role?: string;
@@ -724,14 +725,16 @@ export default function IntelligentAgendaPage() {
                     <button 
                       onClick={() => {
                         // Highlight the recommended sessions
-                        const firstSessionId = insight.sessionIds[0];
-                        const sessionElement = document.getElementById(`session-${firstSessionId}`);
-                        if (sessionElement) {
-                          sessionElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                          sessionElement.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2');
-                          setTimeout(() => {
-                            sessionElement.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2');
-                          }, 3000);
+                        if (insight.sessionIds && insight.sessionIds.length > 0) {
+                          const firstSessionId = insight.sessionIds[0];
+                          const sessionElement = document.getElementById(`session-${firstSessionId}`);
+                          if (sessionElement) {
+                            sessionElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            sessionElement.classList.add('ring-2', 'ring-blue-500', 'ring-offset-2');
+                            setTimeout(() => {
+                              sessionElement.classList.remove('ring-2', 'ring-blue-500', 'ring-offset-2');
+                            }, 3000);
+                          }
                         }
                       }}
                       className="mt-2 text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
@@ -908,12 +911,13 @@ export default function IntelligentAgendaPage() {
                       <div className="mt-3 pt-3 border-t border-gray-100">
                         <p className="text-xs font-semibold text-gray-700 mb-2">Speakers</p>
                         <div className="flex flex-wrap gap-2">
-                          {session.speakers.map((s, idx) => (
-                            <Link
-                              key={idx}
-                              href={`/speakers/${s.speaker.id}`}
-                              className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 hover:bg-gray-100 transition-colors"
-                            >
+                          {session.speakers.map((s, idx) => 
+                            s.speaker.id ? (
+                              <Link
+                                key={idx}
+                                href={`/speakers/${s.speaker.id}`}
+                                className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2 hover:bg-gray-100 transition-colors"
+                              >
                               <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
                                 {s.speaker.name?.split(' ').map(n => n[0]).join('')}
                               </div>
@@ -928,6 +932,25 @@ export default function IntelligentAgendaPage() {
                                 )}
                               </div>
                             </Link>
+                          ) : (
+                            <div
+                              key={idx}
+                              className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2"
+                            >
+                              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                                {s.speaker.name?.split(' ').map(n => n[0]).join('')}
+                              </div>
+                              <div>
+                                <div className="text-sm font-medium text-gray-900">
+                                  {s.speaker.name}
+                                </div>
+                                {s.speaker.company && (
+                                  <div className="text-xs text-gray-600">
+                                    {s.speaker.role} @ {s.speaker.company}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           ))}
                         </div>
                       </div>

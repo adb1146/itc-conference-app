@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       if (crawlResult.data && crawlResult.data.length > 0) {
         for (const page of crawlResult.data) {
           // Extract sessions from markdown content
-          const content = page.markdown || page.content || '';
+          const content = page.markdown || (page as any).content || '';
           
           // Parse sessions using regex patterns
           const sessionPattern = /### (.+?)\n([\s\S]+?)(?=\n###|\n##|$)/g;
@@ -70,8 +70,9 @@ export async function POST(request: NextRequest) {
             
             // Determine day from URL
             let day = 1;
-            if (page.url?.includes('day=2')) day = 2;
-            if (page.url?.includes('day=3')) day = 3;
+            const pageUrl = (page as any).url || (page as any).sourceUrl || '';
+            if (pageUrl.includes('day=2')) day = 2;
+            if (pageUrl.includes('day=3')) day = 3;
             
             const session = {
               title,
@@ -92,8 +93,9 @@ export async function POST(request: NextRequest) {
       // Fallback to simple scrape
       const scrapeResult = await app.scrape(url);
       
-      if (scrapeResult.data) {
-        const content = scrapeResult.data.markdown || scrapeResult.data.content || '';
+      if ((scrapeResult as any).data) {
+        const data = (scrapeResult as any).data;
+        const content = data.markdown || data.content || '';
         
         // Basic extraction from content
         const lines = content.split('\n');
@@ -160,9 +162,9 @@ export async function POST(request: NextRequest) {
       try {
         // Parse times if they're strings
         const startTime = session.startTime ? 
-          new Date(`2025-10-${13 + session.day} ${session.startTime}`) : null;
+          new Date(`2025-10-${13 + session.day} ${session.startTime}`) : new Date(`2025-10-${13 + session.day} 09:00`);
         const endTime = session.endTime ? 
-          new Date(`2025-10-${13 + session.day} ${session.endTime}`) : null;
+          new Date(`2025-10-${13 + session.day} ${session.endTime}`) : new Date(`2025-10-${13 + session.day} 10:00`);
         
         const savedSession = await prisma.session.upsert({
           where: { 
@@ -170,16 +172,18 @@ export async function POST(request: NextRequest) {
           },
           update: {
             description: session.description,
-            day: session.day,
             startTime,
-            endTime
+            endTime,
+            location: session.location || 'TBD',
+            tags: [`day${session.day}`]
           },
           create: {
             title: session.title,
             description: session.description,
-            day: session.day,
             startTime,
-            endTime
+            endTime,
+            location: session.location || 'TBD',
+            tags: [`day${session.day}`]
           }
         });
         

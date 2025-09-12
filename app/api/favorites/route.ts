@@ -64,12 +64,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if already favorited
-    const existing = await prisma.favorite.findUnique({
+    const existing = await prisma.favorite.findFirst({
       where: {
-        userId_sessionId: {
-          userId: user.id,
-          sessionId: sessionId
-        }
+        userId: user.id,
+        sessionId: sessionId
       }
     });
 
@@ -125,12 +123,20 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    const favorite = await prisma.favorite.findFirst({
+      where: {
+        userId: user.id,
+        sessionId: sessionId
+      }
+    });
+
+    if (!favorite) {
+      return NextResponse.json({ error: 'Favorite not found' }, { status: 404 });
+    }
+
     await prisma.favorite.delete({
       where: {
-        userId_sessionId: {
-          userId: user.id,
-          sessionId: sessionId
-        }
+        id: favorite.id
       }
     });
 

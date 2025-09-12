@@ -113,7 +113,6 @@ export async function POST(request: NextRequest) {
       id: session.id,
       title: session.title,
       description: session.description,
-      day: session.day,
       startTime: session.startTime?.toISOString(),
       endTime: session.endTime?.toISOString(),
       track: session.track,

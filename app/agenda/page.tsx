@@ -109,8 +109,8 @@ export default function AgendaPage() {
     });
   };
 
-  const getTracks = () => {
-    const tracks = new Set(sessions.map(s => s.track).filter(Boolean));
+  const getTracks = (): string[] => {
+    const tracks = new Set(sessions.map(s => s.track).filter((track): track is string => track !== undefined && track !== null));
     return Array.from(tracks).sort();
   };
 

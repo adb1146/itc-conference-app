@@ -404,9 +404,9 @@ export async function POST(request: NextRequest) {
         // Parse times
         const baseDate = `2025-10-${13 + session.day}`;
         const startTime = session.startTime ? 
-          new Date(`${baseDate} ${session.startTime}`) : null;
+          new Date(`${baseDate} ${session.startTime}`) : new Date(`${baseDate} 09:00`);
         const endTime = session.endTime ? 
-          new Date(`${baseDate} ${session.endTime}`) : null;
+          new Date(`${baseDate} ${session.endTime}`) : new Date(`${baseDate} 10:00`);
         
         const savedSession = await prisma.session.upsert({
           where: { 
@@ -414,24 +414,20 @@ export async function POST(request: NextRequest) {
           },
           update: {
             description: session.description,
-            day: session.day,
             startTime,
             endTime,
             track: session.track,
             location: session.location,
-            sessionType: session.sessionType,
             level: session.level,
             tags: session.tags || []
           },
           create: {
             title: session.title,
             description: session.description,
-            day: session.day,
             startTime,
             endTime,
             track: session.track,
             location: session.location,
-            sessionType: session.sessionType,
             level: session.level,
             tags: session.tags || []
           }
