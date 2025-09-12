@@ -3,16 +3,31 @@ import prisma from '@/lib/db';
 import fs from 'fs/promises';
 import path from 'path';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    // Check for force parameter
+    const { searchParams } = new URL(request.url);
+    const force = searchParams.get('force') === 'true';
+    
     // Check if database already has data
     const userCount = await prisma.user.count();
     
-    if (userCount > 0) {
+    if (userCount > 0 && !force) {
       return NextResponse.json({ 
         message: 'Database already initialized',
-        users: userCount 
+        users: userCount,
+        hint: 'Add ?force=true to reimport data'
       });
+    }
+    
+    if (force) {
+      console.log('🔥 Force flag detected - clearing existing data...');
+      await prisma.favorite.deleteMany({});
+      await prisma.sessionSpeaker.deleteMany({});
+      await prisma.session.deleteMany({});
+      await prisma.speaker.deleteMany({});
+      await prisma.user.deleteMany({});
+      console.log('✅ Existing data cleared');
     }
 
     console.log('🚀 Starting one-time database setup...');
