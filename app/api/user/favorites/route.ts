@@ -35,9 +35,9 @@ export async function GET(request: NextRequest) {
             title: true,
             startTime: true,
             endTime: true,
-            room: true,
+            location: true,
             track: true,
-            day: true
+            tags: true
           }
         }
       },

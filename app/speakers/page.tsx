@@ -96,7 +96,7 @@ export default function SpeakersPage() {
   };
 
   const getCompanies = () => {
-    const companies = new Set(speakers.map(s => s.company).filter(Boolean));
+    const companies = new Set(speakers.map(s => s.company).filter((c): c is string => Boolean(c)));
     return Array.from(companies).sort();
   };
 

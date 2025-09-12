@@ -79,7 +79,7 @@ export default function SpeakerDetailPage() {
       const response = await fetch('/api/favorites');
       if (response.ok) {
         const data = await response.json();
-        const ids = new Set(data.favorites?.map((f: any) => f.sessionId) || []);
+        const ids = new Set<string>(data.favorites?.map((f: any) => f.sessionId as string) || []);
         setFavoriteIds(ids);
       }
     } catch (error) {
@@ -307,7 +307,7 @@ export default function SpeakerDetailPage() {
                         Areas of Expertise
                       </h3>
                       <div className="flex flex-wrap gap-2">
-                        {speaker.expertise.map((skill, index) => (
+                        {speaker.expertise?.map((skill, index) => (
                           <span
                             key={index}
                             className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm font-medium"
@@ -327,7 +327,7 @@ export default function SpeakerDetailPage() {
                         Key Achievements
                       </h3>
                       <ul className="space-y-2">
-                        {speaker.achievements.map((achievement, index) => (
+                        {speaker.achievements?.map((achievement, index) => (
                           <li key={index} className="text-gray-700 flex items-start gap-2">
                             <span className="text-purple-600 mt-1">•</span>
                             <span>{achievement}</span>

@@ -70,18 +70,20 @@ export async function PUT(req: NextRequest) {
         where: { userId: user.id },
         update: {
           bio: data.profileData.bio,
-          experience: data.profileData.experience,
-          contactPreferences: data.profileData.contactPreferences,
-          networkingGoals: data.profileData.networkingGoals,
-          conferenceGoals: data.profileData.conferenceGoals
+          linkedinUrl: data.profileData.linkedinUrl,
+          position: data.profileData.position,
+          yearsExperience: data.profileData.yearsExperience,
+          timezone: data.profileData.timezone,
+          notifications: data.profileData.notifications
         },
         create: {
           userId: user.id,
           bio: data.profileData.bio,
-          experience: data.profileData.experience,
-          contactPreferences: data.profileData.contactPreferences,
-          networkingGoals: data.profileData.networkingGoals,
-          conferenceGoals: data.profileData.conferenceGoals
+          linkedinUrl: data.profileData.linkedinUrl,
+          position: data.profileData.position,
+          yearsExperience: data.profileData.yearsExperience,
+          timezone: data.profileData.timezone,
+          notifications: data.profileData.notifications ?? true
         }
       });
     }

@@ -79,9 +79,14 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.email = user.email;
-        token.name = user.name;
-        token.role = user.role;
-        token.company = user.company;
+        token.name = user.name || undefined;
+        // Type guard to check if it's our custom User type with role and company
+        if ('role' in user) {
+          token.role = (user as any).role || undefined;
+        }
+        if ('company' in user) {
+          token.company = (user as any).company || undefined;
+        }
       }
       return token;
     },

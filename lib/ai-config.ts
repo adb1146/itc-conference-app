@@ -5,10 +5,10 @@
 
 export const AI_CONFIG = {
   // Primary model for all AI features
-  PRIMARY_MODEL: 'claude-opus-4-1-20250805',
+  PRIMARY_MODEL: 'claude-opus-4-1-20250805' as const,
   
   // Fallback models (if needed)
-  FALLBACK_MODEL: 'claude-3-5-sonnet-20241022',
+  FALLBACK_MODEL: 'claude-3-5-sonnet-20241022' as const,
   
   // Model display names for UI
   MODEL_DISPLAY_NAMES: {
