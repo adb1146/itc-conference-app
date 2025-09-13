@@ -175,8 +175,8 @@ export async function POST(request: NextRequest) {
       }
       
       // Include speakers if available
-      if ('speakers' in session && session.speakers.length > 0) {
-        sessionInfo.speakers = session.speakers.map((ss: any) => ({
+      if ('speakers' in session && (session as any).speakers.length > 0) {
+        sessionInfo.speakers = (session as any).speakers.map((ss: any) => ({
           name: ss.speaker.name,
           company: ss.speaker.company
         }));
