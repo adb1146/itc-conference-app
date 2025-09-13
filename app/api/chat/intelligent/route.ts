@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
       location: session.location,
       level: isSimpleQuery ? undefined : session.level,
       tags: session.tags,
-      speakers: session.speakers.map(ss => ({
+      speakers: session.speakers.map((ss: any) => ({
         name: ss.speaker.name,
         role: ss.speaker.role,
         company: ss.speaker.company,
