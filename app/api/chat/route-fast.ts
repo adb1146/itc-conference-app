@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
       }
       
       if ('speakers' in session) {
-        sessionInfo.speakers = session.speakers.map((ss: any) => ss.speaker.name).join(', ');
+        sessionInfo.speakers = (session as any).speakers.map((ss: any) => ss.speaker.name).join(', ');
       }
       
       return sessionInfo;
