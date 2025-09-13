@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
     const sessionMap = new Map(sessions.map(s => [s.id, s]));
     const sortedSessions = vectorResults
       .map(r => sessionMap.get(r.id))
-      .filter(Boolean);
+      .filter((s): s is NonNullable<typeof s> => Boolean(s));
     
     // Format sessions for AI context with IDs for hyperlinks
     const sessionsContext = sortedSessions.map((session, index) => ({
