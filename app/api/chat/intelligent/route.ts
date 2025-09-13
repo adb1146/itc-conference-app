@@ -585,7 +585,7 @@ function calculateRelevance(session: any, intent: any, userProfile: UserProfile)
         score += 0.2;
       }
       // Weak match in track or tags
-      else if (track.includes(interestLower) || tags.some(tag => tag.includes(interestLower))) {
+      else if (track.includes(interestLower) || tags.some((tag: string) => tag.includes(interestLower))) {
         score += 0.1;
       }
     });
