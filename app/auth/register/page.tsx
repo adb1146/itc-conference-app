@@ -70,6 +70,14 @@ export default function RegisterPage() {
         setError('Please fill in all required fields');
         return;
       }
+      
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        setError('Please enter a valid email address');
+        return;
+      }
+      
       if (formData.password !== formData.confirmPassword) {
         setError('Passwords do not match');
         return;
@@ -124,7 +132,7 @@ export default function RegisterPage() {
       });
 
       if (signInResult?.ok) {
-        router.push('/onboarding');
+        router.push('/chat');
         router.refresh();
       } else {
         router.push('/auth/signin');
@@ -139,20 +147,20 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center px-4 py-8">
       <div className="max-w-md w-full">
-        <div className="bg-white rounded-2xl shadow-xl p-8">
+        <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8">
           {/* Header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mb-4">
-              <UserPlus className="w-8 h-8 text-white" />
+          <div className="text-center mb-6 sm:mb-8">
+            <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mb-4">
+              <UserPlus className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Join the Demo</h1>
-            <p className="text-gray-600 mt-2">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Join the Demo</h1>
+            <p className="text-sm sm:text-base text-gray-600 mt-2">
               {step === 1 ? 'Register to explore AI-powered conference features' : 'Help us personalize your experience'}
             </p>
           </div>
 
           {/* Progress Indicator */}
-          <div className="flex items-center justify-center gap-2 mb-8">
+          <div className="flex items-center justify-center gap-2 mb-6 sm:mb-8">
             <div className={`w-24 h-1 rounded-full ${step >= 1 ? 'bg-blue-600' : 'bg-gray-200'}`} />
             <div className={`w-24 h-1 rounded-full ${step >= 2 ? 'bg-blue-600' : 'bg-gray-200'}`} />
           </div>
@@ -168,7 +176,7 @@ export default function RegisterPage() {
           <form onSubmit={handleSubmit}>
             {step === 1 ? (
               /* Step 1: Account Details */
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Email Address *
@@ -180,7 +188,7 @@ export default function RegisterPage() {
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       required
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none min-h-[44px]"
                       placeholder="you@company.com"
                     />
                   </div>
@@ -197,7 +205,7 @@ export default function RegisterPage() {
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       required
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none min-h-[44px]"
                       placeholder="Minimum 8 characters"
                     />
                   </div>
@@ -214,7 +222,7 @@ export default function RegisterPage() {
                       value={formData.confirmPassword}
                       onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                       required
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none min-h-[44px]"
                       placeholder="Re-enter password"
                     />
                   </div>
@@ -230,7 +238,7 @@ export default function RegisterPage() {
               </div>
             ) : (
               /* Step 2: Profile Information */
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Full Name
@@ -241,7 +249,7 @@ export default function RegisterPage() {
                       type="text"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none min-h-[44px]"
                       placeholder="John Doe"
                     />
                   </div>
@@ -257,7 +265,7 @@ export default function RegisterPage() {
                       type="text"
                       value={formData.company}
                       onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none min-h-[44px]"
                       placeholder="Acme Insurance"
                     />
                   </div>
@@ -270,7 +278,7 @@ export default function RegisterPage() {
                   <select
                     value={formData.organizationType}
                     onChange={(e) => setFormData({ ...formData, organizationType: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none min-h-[44px]"
                   >
                     <option value="">Select organization type...</option>
                     {ORG_TYPES.map(type => (
@@ -286,7 +294,7 @@ export default function RegisterPage() {
                   <select
                     value={formData.role}
                     onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none min-h-[44px]"
                   >
                     <option value="">Select your role...</option>
                     {ROLES.map(role => (
@@ -296,7 +304,7 @@ export default function RegisterPage() {
                 </div>
 
                 {/* Salesforce Questions */}
-                <div className="bg-blue-50 rounded-lg p-4 space-y-3">
+                <div className="bg-blue-50 rounded-lg p-3 sm:p-4 space-y-2 sm:space-y-3">
                   <div className="flex items-start space-x-2">
                     <Info className="w-5 h-5 text-blue-600 mt-0.5" />
                     <p className="text-sm text-blue-900 font-medium">PS Advisory specializes in Salesforce for Insurance</p>
@@ -327,7 +335,7 @@ export default function RegisterPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Interests (select all that apply)
                   </label>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1 sm:gap-2">
                     {INTERESTS.map(interest => (
                       <button
                         key={interest}
@@ -345,7 +353,7 @@ export default function RegisterPage() {
                   </div>
                 </div>
 
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <button
                     type="button"
                     onClick={handleBack}
@@ -376,7 +384,7 @@ export default function RegisterPage() {
           </form>
 
           {/* Sign In Link */}
-          <div className="mt-6 text-center">
+          <div className="mt-4 sm:mt-6 text-center">
             <p className="text-sm text-gray-600">
               Already have an account?{' '}
               <Link href="/auth/signin" className="text-blue-600 hover:underline font-medium">
@@ -386,10 +394,10 @@ export default function RegisterPage() {
           </div>
           
           {/* Disclaimer */}
-          <div className="mt-6 p-4 bg-orange-50 rounded-lg border border-orange-200">
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-orange-50 rounded-lg border border-orange-200">
             <div className="flex items-start space-x-2">
               <AlertCircle className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
-              <div className="text-xs text-orange-800">
+              <div className="text-xs sm:text-sm text-orange-800">
                 <p className="font-medium mb-1">Demo Registration</p>
                 <p>
                   This is a demonstration site by PS Advisory. We are not affiliated with InsureTech Connect. 

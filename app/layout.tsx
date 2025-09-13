@@ -5,6 +5,7 @@ import AuthProvider from '@/components/AuthProvider'
 import Navigation from '@/components/Navigation'
 import DisclaimerBanner from '@/components/DisclaimerBanner'
 import Footer from '@/components/Footer'
+import ChatWidget from '@/components/ChatWidget'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -33,6 +34,7 @@ export default function RootLayout({
               {children}
             </main>
             <Footer />
+            <ChatWidget />
           </div>
         </AuthProvider>
       </body>

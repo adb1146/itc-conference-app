@@ -786,14 +786,28 @@ export default function IntelligentAgendaPage() {
 
         {/* Sessions List */}
         <div className="flex-1 px-4 py-4">
-          {/* AI Toggle Button if Panel is Hidden */}
-          {aiMode !== 'off' && !showAIPanel && (
+          {/* AI Toggle Button - Vertical tab attached to left side */}
+          {!showAIPanel && (
             <button
-              onClick={() => setShowAIPanel(true)}
-              className="fixed left-4 top-32 z-20 px-3 py-2 bg-purple-600 text-white rounded-lg shadow-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
+              onClick={() => {
+                setShowAIPanel(true);
+                // Also enable AI mode if it's off
+                if (aiMode === 'off') {
+                  setAiMode('smart');
+                }
+              }}
+              className="fixed left-0 top-1/2 -translate-y-1/2 z-40 bg-purple-600 text-white rounded-r-lg shadow-lg hover:bg-purple-700 transition-all hover:translate-x-1 writing-mode-vertical-lr"
+              style={{
+                writingMode: 'vertical-rl',
+                textOrientation: 'mixed',
+                padding: '12px 8px'
+              }}
+              title="Show AI Insights"
             >
-              <Brain className="w-4 h-4" />
-              <span className="text-sm">Show AI</span>
+              <div className="flex items-center gap-2" style={{ writingMode: 'vertical-rl' }}>
+                <Brain className="w-5 h-5 rotate-90" />
+                <span className="text-sm font-medium">AI Insights</span>
+              </div>
             </button>
           )}
           
@@ -983,18 +997,6 @@ export default function IntelligentAgendaPage() {
         </div>
       </div>
 
-      {/* Floating AI Assistant Button */}
-      {aiMode !== 'off' && (
-        <Link 
-          href="/chat/intelligent"
-          className="fixed bottom-6 right-6 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-full p-4 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all z-40 flex items-center justify-center group"
-        >
-          <Brain className="h-6 w-6" />
-          <span className="absolute right-full mr-2 bg-gray-900 text-white text-sm rounded-lg px-3 py-1 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
-            Ask AI Assistant
-          </span>
-        </Link>
-      )}
 
       <Footer />
     </div>

@@ -2,18 +2,37 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
+import Link from 'next/link';
+import SessionCard from '@/components/SessionCard';
 import { 
   Send, Bot, User, Loader2, Calendar, Users, MapPin, 
   Brain, Sparkles, Target, Clock, AlertCircle, Plus,
-  ChevronRight, Settings, TrendingUp, Info, Building2, ExternalLink
+  ChevronRight, Settings, TrendingUp, Info, Building2, ExternalLink,
+  CalendarPlus, Share2
 } from 'lucide-react';
+
+interface SessionData {
+  id: string;
+  title: string;
+  startTime?: Date | string;
+  endTime?: Date | string;
+  location?: string;
+  track?: string;
+  speakers?: Array<{
+    name: string;
+    role?: string;
+    company?: string;
+  }>;
+}
 
 interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
-  content: string;
+  content: string | React.ReactNode;
   timestamp: Date;
   metadata?: any;
+  sessions?: SessionData[];
+  showActions?: boolean;
 }
 
 interface UserProfile {
@@ -26,12 +45,12 @@ interface UserProfile {
 }
 
 const SAMPLE_QUESTIONS = [
-  "Show me Salesforce solutions for insurance",
-  "What AI sessions match my interests?",
-  "Find sessions on claims automation",
-  "Which sessions cover digital distribution?",
-  "Sessions for insurance brokers and carriers",
-  "What's the best schedule for learning about insurtech?"
+  "🧬 How can I improve customer experience?",
+  "🎯 What sessions match my strategic goals?",
+  "🔍 Find sessions about the future of insurance",
+  "💡 What should a claims manager attend?",
+  "🚀 Show me innovative AI use cases",
+  "🤝 Which sessions offer best networking?"
 ];
 
 const INTERESTS = [
@@ -73,6 +92,20 @@ export default function IntelligentChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // Prevent body scroll when chat is open (since we're using fixed positioning)
+  useEffect(() => {
+    // Save original body overflow
+    const originalOverflow = document.body.style.overflow;
+    
+    // Prevent body scroll
+    document.body.style.overflow = 'hidden';
+    
+    return () => {
+      // Restore original overflow when component unmounts
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
+
   // Initialize messages on client side only
   useEffect(() => {
     if (!isInitialized && status !== 'loading') {
@@ -87,6 +120,11 @@ export default function IntelligentChatPage() {
         id: '1',
         role: 'system',
         content: welcomeMessage,
+        timestamp: new Date()
+      }, {
+        id: '2',
+        role: 'assistant',
+        content: `✨ **New AI Capabilities:** I now use semantic search to understand the meaning behind your questions, not just keywords. Try asking conceptual questions like "How can I transform my business?" or "What's the future of claims processing?" and I'll find the most relevant sessions based on context and meaning.`,
         timestamp: new Date()
       }]);
       setIsInitialized(true);
@@ -200,7 +238,7 @@ export default function IntelligentChatPage() {
     setFollowUpQuestions([]);
 
     try {
-      const response = await fetch('/api/chat/intelligent', {
+      const response = await fetch('/api/chat/vector', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -222,7 +260,8 @@ export default function IntelligentChatPage() {
           role: 'assistant',
           content: data.response,
           timestamp: new Date(),
-          metadata: data.metadata
+          metadata: data.metadata,
+          sessions: data.sessions
         };
         setMessages(prev => [...prev, assistantMessage]);
         
@@ -285,7 +324,7 @@ export default function IntelligentChatPage() {
     setFollowUpQuestions([]);
 
     try {
-      const response = await fetch('/api/chat/intelligent', {
+      const response = await fetch('/api/chat/vector', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -307,7 +346,8 @@ export default function IntelligentChatPage() {
           role: 'assistant',
           content: data.response,
           timestamp: new Date(),
-          metadata: data.metadata
+          metadata: data.metadata,
+          sessions: data.sessions
         };
         setMessages(prev => [...prev, assistantMessage]);
         
@@ -346,7 +386,299 @@ export default function IntelligentChatPage() {
     }));
   };
 
-  const formatContent = (content: string) => {
+  // Helper function for fuzzy matching with improved algorithm
+  const fuzzyMatch = (str1: string, str2: string): boolean => {
+    // Normalize strings for comparison
+    const normalize = (s: string) => s
+      .toLowerCase()
+      .replace(/[^\w\s]/g, '') // Remove punctuation
+      .replace(/\s+/g, ' ')     // Normalize whitespace
+      .trim();
+    
+    const n1 = normalize(str1);
+    const n2 = normalize(str2);
+    
+    // If either string is very short, require exact match
+    if (n1.length < 10 || n2.length < 10) {
+      return n1 === n2;
+    }
+    
+    // Check if one contains a significant portion of the other
+    // Split into words and check for common words
+    const words1 = n1.split(' ');
+    const words2 = n2.split(' ');
+    
+    // For shorter titles, check if most words match
+    if (words2.length <= 5) {
+      const matchingWords = words2.filter(w => n1.includes(w) && w.length > 3);
+      return matchingWords.length >= words2.length * 0.6;
+    }
+    
+    // For longer titles, check if significant substring matches
+    // Try to find the longest common substring
+    const minLength = Math.min(n1.length, n2.length);
+    if (minLength > 20) {
+      // Check if at least 60% of the shorter string is contained in the longer one
+      const shorter = n1.length < n2.length ? n1 : n2;
+      const longer = n1.length >= n2.length ? n1 : n2;
+      
+      // Check for substring match
+      for (let i = 0; i <= longer.length - shorter.length * 0.6; i++) {
+        const substring = longer.substring(i, i + Math.floor(shorter.length * 0.6));
+        if (shorter.includes(substring)) {
+          return true;
+        }
+      }
+    }
+    
+    // Default check - one contains the other
+    return n1.includes(n2) || n2.includes(n1);
+  };
+
+  // Function to detect if content contains a session list
+  const detectSessionList = (content: string): boolean => {
+    const lines = content.split('\n');
+    let sessionCount = 0;
+    
+    for (const line of lines) {
+      // Look for numbered lists or bullet points that might be sessions
+      if (/^\d+\.\s|^[-*•]\s|^##/.test(line)) {
+        // Check if line contains common session indicators or looks like a title
+        if (line.match(/session|summit|kickoff|workshop|panel|keynote|presentation|AI|insurance|technology|data|digital|cyber|claims|underwriting/i) ||
+            (line.length > 20 && line.includes(':')) || 
+            /^[A-Z]/.test(line.replace(/^[\d\-*•#.\s]+/, ''))) {
+          sessionCount++;
+        }
+      }
+    }
+    
+    return sessionCount >= 2; // Consider it a list if 2+ sessions detected
+  };
+
+  // Function to match sessions from the response with better matching
+  const matchSessionsInContent = (content: string, sessions?: SessionData[]): SessionData[] => {
+    if (!sessions || sessions.length === 0) return [];
+    
+    const matchedSessions: SessionData[] = [];
+    const contentLower = content.toLowerCase();
+    
+    // Try to match each session
+    for (const session of sessions) {
+      const titleLower = session.title.toLowerCase();
+      
+      // Direct substring match (most reliable)
+      if (contentLower.includes(titleLower) || 
+          contentLower.includes(titleLower.substring(0, Math.min(50, titleLower.length)))) {
+        if (!matchedSessions.find(s => s.id === session.id)) {
+          matchedSessions.push(session);
+          continue;
+        }
+      }
+      
+      // Check each line for fuzzy match
+      const lines = content.split('\n');
+      for (const line of lines) {
+        if (line.length > 15 && fuzzyMatch(line, session.title)) {
+          if (!matchedSessions.find(s => s.id === session.id)) {
+            matchedSessions.push(session);
+            break;
+          }
+        }
+      }
+    }
+    
+    return matchedSessions;
+  };
+
+  const formatContent = (content: string, sessions?: SessionData[]) => {
+    // Debug logging
+    console.log('formatContent called with:', {
+      contentLength: content?.length,
+      sessionsCount: sessions?.length,
+      firstSession: sessions?.[0]?.title
+    });
+    
+    // If sessions were provided directly from the API, use them
+    if (sessions && sessions.length > 0) {
+      console.log('Using sessions from API response:', sessions.length);
+      
+      // Extract any intro text before the session list
+      const lines = content.split('\n');
+      let introText = '';
+      for (const line of lines) {
+        if (!line.match(/^\d+\.\s|^[-*•]\s|^##/) && line.trim().length > 0) {
+          introText = line;
+          break;
+        }
+      }
+      
+      return (
+        <div>
+          {introText && (
+            <p className="text-sm text-gray-700 mb-3">{introText}</p>
+          )}
+          <div className="space-y-3 mb-4">
+            {sessions.map((session) => (
+              <SessionCard 
+                key={session.id}
+                {...session}
+                compact
+                onAddToSchedule={(id) => {
+                  console.log('Add to schedule clicked for:', id);
+                }}
+              />
+            ))}
+          </div>
+          
+          {/* Quick Actions Bar */}
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-3 border border-blue-200">
+            <p className="text-xs font-medium text-gray-700 mb-2">Quick Actions:</p>
+            <div className="flex flex-wrap gap-2">
+              <button 
+                onClick={() => handleFollowUp('Build me a personalized schedule including these sessions')}
+                className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-xs rounded-full hover:bg-blue-700 transition-colors"
+              >
+                <CalendarPlus className="w-3 h-3" />
+                Build My Schedule
+              </button>
+              <button 
+                onClick={() => handleFollowUp('Find similar sessions to these')}
+                className="flex items-center gap-1 px-3 py-1.5 bg-purple-600 text-white text-xs rounded-full hover:bg-purple-700 transition-colors"
+              >
+                <Sparkles className="w-3 h-3" />
+                Find Similar
+              </button>
+              <button 
+                onClick={() => handleFollowUp('Who are the speakers for these sessions?')}
+                className="flex items-center gap-1 px-3 py-1.5 bg-gray-600 text-white text-xs rounded-full hover:bg-gray-700 transition-colors"
+              >
+                <Users className="w-3 h-3" />
+                View Speakers
+              </button>
+            </div>
+          </div>
+          
+          {/* Smart Follow-up Suggestions */}
+          <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+            <p className="text-xs font-medium text-gray-600 mb-2">You might also want to:</p>
+            <div className="space-y-1">
+              <button 
+                onClick={() => handleFollowUp('Are there any scheduling conflicts with these sessions?')}
+                className="text-xs text-blue-600 hover:text-blue-700 hover:underline text-left"
+              >
+                → Check for scheduling conflicts
+              </button>
+              <button 
+                onClick={() => handleFollowUp('What are the key takeaways from these sessions?')}
+                className="text-xs text-blue-600 hover:text-blue-700 hover:underline text-left"
+              >
+                → Learn about key takeaways
+              </button>
+              <button 
+                onClick={() => handleFollowUp('Which sessions are best for networking?')}
+                className="text-xs text-blue-600 hover:text-blue-700 hover:underline text-left"
+              >
+                → Identify networking opportunities
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    // Fall back to trying to match sessions in content (original logic)
+    const isSessionList = detectSessionList(content);
+    const matchedSessions = matchSessionsInContent(content, sessions);
+    
+    console.log('Matched sessions from content:', matchedSessions.length);
+    
+    // If we have matched sessions, render them as cards
+    if (matchedSessions.length > 0) {
+      // Extract any intro text before the session list
+      const lines = content.split('\n');
+      let introText = '';
+      for (const line of lines) {
+        if (!line.match(/^\d+\.\s|^[-*•]\s|^##/) && line.trim().length > 0) {
+          introText = line;
+          break;
+        }
+      }
+      
+      return (
+        <div>
+          {introText && (
+            <p className="text-sm text-gray-700 mb-3">{introText}</p>
+          )}
+          <div className="space-y-3 mb-4">
+            {matchedSessions.map((session) => (
+              <SessionCard 
+                key={session.id}
+                {...session}
+                compact
+                onAddToSchedule={(id) => {
+                  // TODO: Implement add to schedule functionality
+                }}
+              />
+            ))}
+          </div>
+          
+          {/* Quick Actions Bar */}
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-3 border border-blue-200">
+            <p className="text-xs font-medium text-gray-700 mb-2">Quick Actions:</p>
+            <div className="flex flex-wrap gap-2">
+              <button 
+                onClick={() => handleFollowUp('Build me a personalized schedule including these sessions')}
+                className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-xs rounded-full hover:bg-blue-700 transition-colors"
+              >
+                <CalendarPlus className="w-3 h-3" />
+                Build My Schedule
+              </button>
+              <button 
+                onClick={() => handleFollowUp('Find similar sessions to these')}
+                className="flex items-center gap-1 px-3 py-1.5 bg-purple-600 text-white text-xs rounded-full hover:bg-purple-700 transition-colors"
+              >
+                <Sparkles className="w-3 h-3" />
+                Find Similar
+              </button>
+              <button 
+                onClick={() => handleFollowUp('Who are the speakers for these sessions?')}
+                className="flex items-center gap-1 px-3 py-1.5 bg-gray-600 text-white text-xs rounded-full hover:bg-gray-700 transition-colors"
+              >
+                <Users className="w-3 h-3" />
+                View Speakers
+              </button>
+            </div>
+          </div>
+          
+          {/* Smart Follow-up Suggestions */}
+          <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+            <p className="text-xs font-medium text-gray-600 mb-2">You might also want to:</p>
+            <div className="space-y-1">
+              <button 
+                onClick={() => handleFollowUp('Are there any scheduling conflicts with these sessions?')}
+                className="text-xs text-blue-600 hover:text-blue-700 hover:underline text-left"
+              >
+                → Check for scheduling conflicts
+              </button>
+              <button 
+                onClick={() => handleFollowUp('What are the key takeaways from these sessions?')}
+                className="text-xs text-blue-600 hover:text-blue-700 hover:underline text-left"
+              >
+                → Learn about key takeaways
+              </button>
+              <button 
+                onClick={() => handleFollowUp('Which sessions are best for networking?')}
+                className="text-xs text-blue-600 hover:text-blue-700 hover:underline text-left"
+              >
+                → Identify networking opportunities
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    // Otherwise, use the original formatting
     return content
       .split('\n')
       .map((line, i) => {
@@ -386,42 +718,46 @@ export default function IntelligentChatPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 pt-20 pb-20">
-      <div className="max-w-5xl mx-auto px-4">
+    <div className="fixed inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50 overflow-hidden">
+      <div className="absolute inset-0 flex items-center justify-center p-2 sm:p-4">
+        <div className="w-full max-w-5xl h-[90vh] sm:h-[85vh] flex flex-col">
         {/* Enhanced Header */}
-        <div className="bg-white rounded-t-3xl shadow-lg border border-gray-200 p-6">
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-t-xl sm:rounded-t-3xl shadow-lg p-3 sm:p-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl">
-                <Brain className="w-6 h-6 text-white" />
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="p-1.5 sm:p-2 bg-white/20 backdrop-blur rounded-lg sm:rounded-xl">
+                <Brain className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">AI Conference Concierge <span className="text-sm font-normal text-orange-600">(Demo)</span></h1>
-                <p className="text-sm text-gray-600 mt-1">Powered by Claude 3.5 + Salesforce • PS Advisory Demo</p>
+              <div className="flex-1">
+                <h1 className="text-lg sm:text-2xl font-bold text-white">
+                  AI Concierge 
+                  <span className="text-xs sm:text-sm font-normal text-yellow-300 ml-1">(Demo)</span>
+                </h1>
+                <p className="text-xs sm:text-sm text-blue-100 mt-0.5 sm:mt-1 hidden sm:block">Powered by Claude 3.5 + Salesforce • PS Advisory Demo</p>
               </div>
             </div>
             <button
               onClick={() => setShowProfile(!showProfile)}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-white/20 backdrop-blur text-white rounded-lg hover:bg-white/30 transition-colors"
             >
               <Settings className="w-4 h-4" />
-              <span className="text-sm">Profile</span>
+              <span className="text-xs sm:text-sm font-medium hidden sm:inline">Profile</span>
             </button>
           </div>
           
           {/* Metadata Bar */}
           {sessionMetadata && (
-            <div className="mt-4 flex items-center gap-4 text-xs text-gray-600">
+            <div className="mt-4 flex items-center gap-4 text-xs text-blue-100">
               <div className="flex items-center gap-1">
-                <Target className="w-3 h-3" />
+                <Target className="w-3 h-3 text-white" />
                 <span>Intent: {sessionMetadata.intent?.primary}</span>
               </div>
               <div className="flex items-center gap-1">
-                <TrendingUp className="w-3 h-3" />
+                <TrendingUp className="w-3 h-3 text-white" />
                 <span>{sessionMetadata.relevantSessions} relevant sessions</span>
               </div>
               {sessionMetadata.conflicts > 0 && (
-                <div className="flex items-center gap-1 text-orange-600">
+                <div className="flex items-center gap-1 text-yellow-300">
                   <AlertCircle className="w-3 h-3" />
                   <span>{sessionMetadata.conflicts} conflicts detected</span>
                 </div>
@@ -456,10 +792,10 @@ export default function IntelligentChatPage() {
 
         {/* Profile Panel */}
         {showProfile && (
-          <div className="bg-white border-x border-gray-200 px-6 py-4">
-            <h3 className="font-semibold text-gray-900 mb-3">Your Profile</h3>
+          <div className="bg-white border-x border-gray-200 px-3 sm:px-6 py-3 sm:py-4 max-h-[40vh] overflow-y-auto">
+            <h3 className="font-semibold text-gray-900 mb-2 sm:mb-3 text-sm sm:text-base">Your Profile</h3>
             
-            <div className="grid md:grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-3 sm:mb-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Your Role</label>
                 <select
@@ -529,10 +865,10 @@ export default function IntelligentChatPage() {
                 <button
                   key={index}
                   onClick={() => handleSampleQuestion(question)}
-                  className={`text-left text-xs px-3 py-2 rounded-lg transition-colors ${
+                  className={`text-left text-xs px-3 py-2 rounded-lg transition-all ${
                     status === 'authenticated' && personalizedSuggestions.length > 0
-                      ? 'bg-gradient-to-r from-purple-50 to-blue-50 text-purple-700 hover:from-purple-100 hover:to-blue-100'
-                      : 'bg-gradient-to-r from-blue-50 to-purple-50 text-gray-700 hover:from-blue-100 hover:to-purple-100'
+                      ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 shadow-sm'
+                      : 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 shadow-sm'
                   }`}
                 >
                   <ChevronRight className="w-3 h-3 inline mr-1" />
@@ -544,7 +880,7 @@ export default function IntelligentChatPage() {
         )}
 
         {/* Messages Container */}
-        <div className="bg-white border-x border-gray-200 min-h-[400px] max-h-[600px] overflow-y-auto">
+        <div className="bg-white border-x border-gray-200 flex-1 overflow-y-auto">
           <div className="px-6 py-4 space-y-4">
             {messages.map((message) => (
               <div
@@ -569,15 +905,16 @@ export default function IntelligentChatPage() {
                 <div
                   className={`max-w-[80%] rounded-2xl px-4 py-3 ${
                     message.role === 'user'
-                      ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white'
+                      ? 'bg-gradient-to-r from-blue-600 to-blue-700'
                       : message.role === 'system'
                       ? 'bg-purple-50 text-purple-900 border border-purple-200'
                       : 'bg-gray-100 text-gray-800'
                   }`}
+                  style={message.role === 'user' ? { color: 'white' } : {}}
                 >
-                  <div className="text-sm">
+                  <div className="text-sm" style={message.role === 'user' ? { color: 'white', fontWeight: 500 } : {}}>
                     {typeof message.content === 'string' 
-                      ? formatContent(message.content)
+                      ? message.role === 'user' ? message.content : formatContent(message.content, message.sessions)
                       : message.content}
                   </div>
                   {message.metadata && message.metadata.recommendations && (
@@ -631,7 +968,7 @@ export default function IntelligentChatPage() {
                 <button
                   key={index}
                   onClick={() => handleFollowUp(question)}
-                  className="text-xs px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full hover:bg-blue-100 transition-colors"
+                  className="text-xs px-3 py-1.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-full hover:from-blue-700 hover:to-blue-800 transition-all shadow-sm"
                 >
                   {question}
                 </button>
@@ -662,12 +999,13 @@ export default function IntelligentChatPage() {
           </form>
           <div className="flex items-center justify-between mt-3">
             <p className="text-xs text-gray-500">
-              Powered by Claude Opus 4.1 • Context-aware recommendations
+              Powered by Claude Opus 4.1 + Vector Search • Semantic understanding • Context-aware recommendations
             </p>
             <div className="flex items-center gap-4 text-xs text-gray-500">
               <span>💡 Pro tip: Set your profile for better recommendations</span>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>

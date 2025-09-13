@@ -5,9 +5,8 @@ import { getToken } from 'next-auth/jwt';
 // Routes that require authentication
 const protectedRoutes = [
   '/schedule',
-  '/profile',
-  '/chat/intelligent', // Intelligent chat requires auth
-  '/agenda/intelligent' // Intelligent agenda requires auth
+  '/profile'
+  // Removed /chat/intelligent and /agenda/intelligent to allow guest access
 ];
 
 // Routes that require admin access

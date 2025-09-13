@@ -17,15 +17,29 @@ export const AI_CONFIG = {
     'claude-3-haiku-20240307': 'Claude 3 Haiku'
   },
   
-  // Token limits per model
+  // Enhanced token limits for better reasoning
   TOKEN_LIMITS: {
-    'claude-opus-4-1-20250805': 2000,
-    'claude-3-5-sonnet-20241022': 1500,
-    'claude-3-haiku-20240307': 1000
+    'claude-opus-4-1-20250805': 4000,      // Increased from 2000
+    'claude-3-5-sonnet-20241022': 3000,    // Increased from 1500
+    'claude-3-haiku-20240307': 1500        // Increased from 1000
+  },
+  
+  // Dynamic token limits based on query complexity
+  DYNAMIC_TOKEN_LIMITS: {
+    simple: { min: 500, max: 1000 },
+    moderate: { min: 1000, max: 2500 },
+    complex: { min: 2000, max: 4000 }
   },
   
   // Temperature settings
   DEFAULT_TEMPERATURE: 0.7,
+  
+  // Temperature by complexity
+  TEMPERATURE_BY_COMPLEXITY: {
+    simple: 0.5,    // More focused for simple queries
+    moderate: 0.7,  // Balanced
+    complex: 0.8    // More creative for complex problems
+  },
   
   // API configuration
   API_TIMEOUT: 30000, // 30 seconds
