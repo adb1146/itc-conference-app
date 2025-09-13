@@ -163,9 +163,9 @@ export async function DELETE(request: NextRequest) {
 
     await prisma.favorite.delete({
       where: {
-        userId_sessionId: {
-          userId: user.id,
-          sessionId: sessionId
+        sessionId_userId: {
+          sessionId: sessionId,
+          userId: user.id
         }
       }
     });

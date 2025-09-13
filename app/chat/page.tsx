@@ -231,7 +231,7 @@ export default function ChatPage() {
         welcomeContent += `How can I help you today?`;
       }
       
-      setMessages([{
+      setMessages(() => [{
         id: '1',
         role: 'assistant',
         content: welcomeContent,
@@ -240,7 +240,7 @@ export default function ChatPage() {
         setHasGreeted(true);
       } else if (status === 'unauthenticated') {
         // Welcome for non-authenticated users - let them explore freely
-        setMessages([{
+        setMessages(() => [{
           id: '1',
           role: 'assistant',
           content: "👋 Welcome to ITC Vegas 2025 AI Conference Concierge!\n\nI'm here to help you explore the conference. You can ask me about:\n\n• Sessions and speakers\n• Conference schedule\n• Topics and tracks\n• Venue information\n\nTry asking: **\"What are the AI sessions?\"** or **\"Who's speaking about cybersecurity?\"**\n\n💡 *Sign up anytime to save favorites and get personalized recommendations!*",
@@ -566,7 +566,7 @@ export default function ChatPage() {
   const formatInlineText = (text: string) => {
     // First, handle markdown links [text](url)
     const linkRegex = /\[([^\]]+)\]\(([^\)]+)\)/g;
-    const elements: (string | JSX.Element)[] = [];
+    const elements: (string | React.ReactElement)[] = [];
     let lastIndex = 0;
     let match;
     
