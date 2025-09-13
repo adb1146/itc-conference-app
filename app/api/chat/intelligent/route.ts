@@ -553,7 +553,7 @@ function calculateRelevance(session: any, intent: any, userProfile: UserProfile)
   if (intent.topics.includes('ai')) {
     const aiMatches = aiKeywords.filter(keyword => 
       title.includes(keyword) || description.includes(keyword) || 
-      track.includes(keyword) || tags.some(tag => tag.includes(keyword))
+      track.includes(keyword) || tags.some((tag: string) => tag.includes(keyword))
     );
     
     // Give higher scores for more specific AI matches
