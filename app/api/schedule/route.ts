@@ -101,9 +101,9 @@ export async function POST(request: NextRequest) {
     // Check if already in schedule
     const existingFavorite = await prisma.favorite.findUnique({
       where: {
-        userId_sessionId: {
-          userId: user.id,
-          sessionId: sessionId
+        sessionId_userId: {
+          sessionId: sessionId,
+          userId: user.id
         }
       }
     });
