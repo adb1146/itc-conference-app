@@ -19,21 +19,23 @@ function generateICS(agenda: SmartAgenda): string {
   agenda.days.forEach(day => {
     day.schedule.forEach(item => {
       if (item.type === 'session' || item.type === 'meal') {
-        const startDate = item.startTime instanceof Date ? item.startTime : new Date(item.startTime);
-        const endDate = item.endTime instanceof Date ? item.endTime : new Date(item.endTime);
+        // Parse time strings with current date
+        const currentDate = new Date(day.date);
+        const startDate = new Date(`${day.date} ${item.time}`);
+        const endDate = new Date(`${day.date} ${item.endTime}`);
 
         lines.push('BEGIN:VEVENT');
         lines.push(`UID:${item.id}@itcvegas2025.com`);
         lines.push(`DTSTART:${formatICSDate(startDate)}`);
         lines.push(`DTEND:${formatICSDate(endDate)}`);
-        lines.push(`SUMMARY:${escapeICS(item.title)}`);
+        lines.push(`SUMMARY:${escapeICS(item.item.title)}`);
 
-        if (item.description) {
-          lines.push(`DESCRIPTION:${escapeICS(item.description)}`);
+        if (item.item.description) {
+          lines.push(`DESCRIPTION:${escapeICS(item.item.description)}`);
         }
 
-        if (item.location) {
-          lines.push(`LOCATION:${escapeICS(item.location)}`);
+        if (item.item.location) {
+          lines.push(`LOCATION:${escapeICS(item.item.location)}`);
         }
 
         // Add category based on source
@@ -110,13 +112,13 @@ function generateHTML(agenda: SmartAgenda): string {
           '#E5E7EB'
         }; border-radius: 8px;">
           <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
-            <h3 style="margin: 0; color: #111827; font-size: 16px;">${item.title}</h3>
+            <h3 style="margin: 0; color: #111827; font-size: 16px;">${item.item.title}</h3>
             ${sourceBadge}
           </div>
-          ${item.description ? `<p style="color: #6B7280; font-size: 14px; margin: 10px 0;">${item.description}</p>` : ''}
+          ${item.item.description ? `<p style="color: #6B7280; font-size: 14px; margin: 10px 0;">${item.item.description}</p>` : ''}
           <div style="display: flex; gap: 20px; font-size: 14px; color: #6B7280;">
-            <span>⏰ ${new Date(item.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} - ${new Date(item.endTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
-            ${item.location ? `<span>📍 ${item.location}</span>` : ''}
+            <span>⏰ ${item.time} - ${item.endTime}</span>
+            ${item.item.location ? `<span>📍 ${item.item.location}</span>` : ''}
           </div>
           ${item.aiMetadata ? `
             <div style="margin-top: 10px; padding: 10px; background: white; border: 1px solid #DBEAFE; border-radius: 6px;">

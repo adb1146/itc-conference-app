@@ -156,8 +156,8 @@ export function calculateVenueDistance(from: string, to: string): VenueDistance 
   }
 
   // Get venue information
-  const fromVenue = VENUE_MAP[from] || VENUE_MAP['TBD'];
-  const toVenue = VENUE_MAP[to] || VENUE_MAP['TBD'];
+  const fromVenue = VENUE_MAP[from as keyof typeof VENUE_MAP] || VENUE_MAP['TBD'];
+  const toVenue = VENUE_MAP[to as keyof typeof VENUE_MAP] || VENUE_MAP['TBD'];
 
   // Virtual sessions require no travel
   if (fromVenue.building === 'virtual' || toVenue.building === 'virtual') {

@@ -13,23 +13,28 @@ export interface AgendaOptions {
 
 export interface ScheduleItem {
   id: string;
-  title: string;
-  description: string;
-  startTime: Date;
-  endTime: Date;
-  location: string;
+  time: string; // Formatted time like "9:00 AM"
+  endTime: string; // Formatted time like "10:00 AM"
   type: 'session' | 'meal' | 'break' | 'travel';
   source: 'user-favorite' | 'ai-suggested' | 'system';
-  confidence: number;
-  track?: string;
-  speakers?: Array<{
+  item: {
     id: string;
-    name: string;
-    title?: string;
-  }>;
-
-  // The actual content - optional for backward compatibility
-  item?: any;
+    title: string;
+    description?: string;
+    location?: string;
+    track?: string;
+    speakers?: Array<{
+      id: string;
+      name: string;
+      title?: string;
+    }>;
+  };
+  actions?: {
+    canRemove: boolean;
+    canReplace: boolean;
+    canMoveTime: boolean;
+    alternatives: AlternativeSession[];
+  };
 
   // AI metadata for suggested items
   aiMetadata?: {
@@ -47,6 +52,19 @@ export interface AlternativeSession {
   title: string;
   confidence: number;
   reasoning: string;
+}
+
+export interface Session {
+  id: string;
+  title: string;
+  description: string | null;
+  startTime: string | Date;
+  endTime: string | Date;
+  location: string | null;
+  track: string | null;
+  level?: string | null;
+  speakers?: any[];
+  tags?: string[];
 }
 
 export interface DaySchedule {

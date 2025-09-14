@@ -125,7 +125,7 @@ async function testAIAgenda() {
           organizationType: testUser.organizationType || '',
           interests: testUser.interests || [],
           goals: testUser.goals || [],
-          yearsExperience: testUser.yearsExperience || 0,
+          yearsExperience: 0, // testUser.yearsExperience || 0,
           usingSalesforce: testUser.usingSalesforce || false,
           interestedInSalesforce: testUser.interestedInSalesforce || false
         },

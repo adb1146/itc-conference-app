@@ -137,7 +137,13 @@ export async function generateIntelligentAgenda(
     });
 
     // Parse the AI response
-    const result = parseAIResponse(response.content[0].text);
+    const contentBlock = response.content[0];
+    let result;
+    if (contentBlock.type === 'text') {
+      result = parseAIResponse(contentBlock.text);
+    } else {
+      throw new Error('Unexpected response type from AI');
+    }
 
     // Add profile coaching to the result
     result.profileCompleteness = profileCompleteness;
@@ -260,13 +266,16 @@ CONSTRAINTS:
 
 AVAILABLE SESSIONS:
 ${allSessions.filter(s => {
-    const sessionDate = typeof s.startTime === 'string' ? s.startTime : s.startTime.toISOString();
+    const startTime = typeof s.startTime === 'string' ? new Date(s.startTime) : s.startTime;
+    const sessionDate = startTime instanceof Date ? startTime.toISOString() : String(s.startTime);
     return sessionDate.split('T')[0] === date;
   })
   .slice(0, 50) // Limit to avoid token overflow
   .map(s => {
-    const start = typeof s.startTime === 'string' ? s.startTime : s.startTime.toISOString();
-    const end = typeof s.endTime === 'string' ? s.endTime : s.endTime.toISOString();
+    const startTime = typeof s.startTime === 'string' ? new Date(s.startTime) : s.startTime;
+    const endTime = typeof s.endTime === 'string' ? new Date(s.endTime) : s.endTime;
+    const start = startTime instanceof Date ? startTime.toISOString() : String(s.startTime);
+    const end = endTime instanceof Date ? endTime.toISOString() : String(s.endTime);
     return `- ${s.title} (${start.split('T')[1]} - ${end.split('T')[1]}, ${s.location}, Track: ${s.track})`;
   })
   .join('\n')}

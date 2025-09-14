@@ -80,21 +80,30 @@ export async function generateFastAgenda(
           if (!usedTimeSlots.has(timeSlot)) {
             schedule.push({
               id: `session-${session.id}`,
+              time: new Date(session.startTime).toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+              }),
+              endTime: new Date(session.endTime).toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+              }),
               type: 'session',
-              title: session.title,
-              description: session.description || '',
-              startTime: session.startTime,
-              endTime: session.endTime,
-              location: session.location || '',
-              speakers: session.speakers.map((s: any) => ({
-                id: s.speaker.id,
-                name: s.speaker.name,
-                title: s.speaker.title
-              })),
-              track: session.track || '',
               source: 'user-favorite',
-              confidence: 100,
-              item: session
+              item: {
+                id: session.id,
+                title: session.title,
+                description: session.description || '',
+                location: session.location || '',
+                speakers: session.speakers.map((s: any) => ({
+                  id: s.speaker.id,
+                  name: s.speaker.name,
+                  title: s.speaker.title
+                })),
+                track: session.track || ''
+              }
             });
             usedTimeSlots.add(timeSlot);
           }
@@ -125,25 +134,35 @@ export async function generateFastAgenda(
           if (matchScore > 0) {
             schedule.push({
               id: `session-${session.id}`,
+              time: new Date(session.startTime).toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+              }),
+              endTime: new Date(session.endTime).toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+              }),
               type: 'session',
-              title: session.title,
-              description: session.description || '',
-              startTime: session.startTime,
-              endTime: session.endTime,
-              location: session.location || '',
-              speakers: session.speakers.map((s: any) => ({
-                id: s.speaker.id,
-                name: s.speaker.name,
-                title: s.speaker.title
-              })),
-              track: session.track || '',
               source: 'ai-suggested',
-              confidence: Math.min(matchScore * 30, 90),
+              item: {
+                id: session.id,
+                title: session.title,
+                description: session.description || '',
+                location: session.location || '',
+                speakers: session.speakers.map((s: any) => ({
+                  id: s.speaker.id,
+                  name: s.speaker.name,
+                  title: s.speaker.title
+                })),
+                track: session.track || ''
+              },
               aiMetadata: {
                 score: matchScore,
-                reasoning: `Matches your interests: ${interestKeywords.filter(k => sessionText.includes(k)).join(', ')}`
-              },
-              item: session
+                reasoning: `Matches your interests: ${interestKeywords.filter(k => sessionText.includes(k)).join(', ')}`,
+                confidence: Math.min(matchScore * 30, 90)
+              }
             });
             usedTimeSlots.add(timeSlot);
           }
@@ -158,18 +177,32 @@ export async function generateFastAgenda(
 
       schedule.push({
         id: `meal-lunch-${dayNumber}`,
+        time: lunchTime.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        }),
+        endTime: lunchEndTime.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        }),
         type: 'meal',
-        title: 'Lunch Break',
-        description: 'Network and refuel',
-        startTime: lunchTime,
-        endTime: lunchEndTime,
-        location: 'Expo Hall',
         source: 'system',
-        confidence: 100
+        item: {
+          id: `meal-lunch-${dayNumber}`,
+          title: 'Lunch Break',
+          description: 'Network and refuel',
+          location: 'Expo Hall'
+        }
       });
 
-      // Sort schedule by time
-      schedule.sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
+      // Sort schedule by time - convert time strings back to Date for sorting
+      schedule.sort((a, b) => {
+        const timeA = new Date(`${dateString} ${a.time}`).getTime();
+        const timeB = new Date(`${dateString} ${b.time}`).getTime();
+        return timeA - timeB;
+      });
 
       days.push({
         date: dateString,
@@ -177,9 +210,11 @@ export async function generateFastAgenda(
         schedule,
         stats: {
           totalSessions: schedule.filter(i => i.type === 'session').length,
-          favoritesIncluded: schedule.filter(i => i.source === 'user-favorite').length,
+          favoritesCovered: schedule.filter(i => i.source === 'user-favorite').length,
           aiSuggestions: schedule.filter(i => i.source === 'ai-suggested').length,
-          breaks: schedule.filter(i => i.type === 'meal' || i.type === 'break').length
+          walkingMinutes: 0,
+          breakMinutes: 0,
+          mealsCovered: schedule.some(i => i.type === 'meal')
         }
       });
 

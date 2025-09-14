@@ -140,7 +140,7 @@ export async function generateSmartAgenda(
       organizationType: user.organizationType || '',
       interests: user.interests || [],
       goals: user.goals || [],
-      yearsExperience: user.profile?.yearsExperience || 0,
+      yearsExperience: 0, // user.yearsExperience || 0 - not in user model
       usingSalesforce: user.usingSalesforce || false,
       interestedInSalesforce: user.interestedInSalesforce || false
     };
@@ -184,14 +184,17 @@ export async function generateSmartAgenda(
             const resolutionContext: ConflictResolutionContext = {
               conflict,
               currentSchedule: daySchedule.schedule,
-              availableSessions: daySessions,
+              availableSessions: allSessions.filter(session => {
+                const sessionDate = new Date(session.startTime).toISOString().split('T')[0];
+                return sessionDate === date;
+              }),
               userProfile: {
                 interests: user.interests || [],
                 goals: user.goals || [],
                 role: user.role || ''
               },
               userInterests: user.interests || [],
-              date: conferenceDate
+              date: date
             };
 
             const resolution = await resolveConflictWithAI(resolutionContext);
@@ -318,7 +321,7 @@ async function buildDaySchedule(
       organizationType: user.organizationType || '',
       interests: user.interests || [],
       goals: user.goals || [],
-      yearsExperience: user.profile?.yearsExperience || 0,
+      yearsExperience: 0, // user.yearsExperience || 0 - not in user model
       usingSalesforce: user.usingSalesforce || false,
       interestedInSalesforce: user.interestedInSalesforce || false
     };
@@ -841,10 +844,10 @@ async function findBestSessionForGap(
     // Bonus for favorited speakers
     if (user.favorites?.length > 0) {
       const favoritedSpeakerIds = user.favorites
-        .filter(f => f.type === 'speaker')
-        .map(f => f.speakerId);
+        .filter((f: any) => f.type === 'speaker')
+        .map((f: any) => f.speakerId);
 
-      if (candidate.speakers?.some(s => favoritedSpeakerIds.includes(s.speakerId))) {
+      if (candidate.speakers?.some((s: any) => favoritedSpeakerIds.includes(s.speakerId))) {
         score += 5;
         matchedKeywords.push('favorite speaker');
       }
@@ -901,7 +904,9 @@ async function findBestSessionForGap(
       reasoning: 'Alternative option'
     }));
 
-  item.actions.alternatives = alternatives;
+  if (item.actions) {
+    item.actions.alternatives = alternatives;
+  }
 
   return item;
 }
@@ -969,7 +974,7 @@ function calculateOverallConfidence(days: DaySchedule[]): number {
 
   for (const day of days) {
     for (const item of day.schedule) {
-      if (item.aiMetadata) {
+      if (item.aiMetadata && item.aiMetadata.confidence) {
         totalConfidence += item.aiMetadata.confidence;
         aiCount++;
       }

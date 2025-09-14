@@ -56,9 +56,9 @@ export default function SmartAgendaView({
 
   const getItemIcon = (item: ScheduleItem) => {
     if (item.type === 'meal') {
-      if (item.title.toLowerCase().includes('breakfast')) return Coffee;
-      if (item.title.toLowerCase().includes('lunch')) return Utensils;
-      if (item.title.toLowerCase().includes('dinner')) return Utensils;
+      if (item.item.title.toLowerCase().includes('breakfast')) return Coffee;
+      if (item.item.title.toLowerCase().includes('lunch')) return Utensils;
+      if (item.item.title.toLowerCase().includes('dinner')) return Utensils;
       return Coffee;
     }
     if (item.type === 'travel') return Navigation;
@@ -356,19 +356,19 @@ export default function SmartAgendaView({
                                 href={`/agenda/session/${item.id}`}
                                 className="font-semibold text-gray-900 hover:text-blue-600 transition-colors"
                               >
-                                {item.title}
+                                {item.item.title}
                               </Link>
                             ) : (
                               <div className="font-semibold text-gray-900">
-                                {item.title}
+                                {item.item.title}
                               </div>
                             )}
                             {getSourceBadge(item)}
                           </div>
 
-                          {item.description && (
+                          {item.item.description && (
                             <p className="text-sm text-gray-600 mb-2">
-                              {item.description}
+                              {item.item.description}
                             </p>
                           )}
 
@@ -403,17 +403,17 @@ export default function SmartAgendaView({
                           <div className="flex flex-wrap gap-3 mt-2 text-sm text-gray-600">
                             <div className="flex items-center gap-1">
                               <Clock className="w-3 h-3" />
-                              {new Date(item.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} - {new Date(item.endTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                              {item.time} - {item.endTime}
                             </div>
-                            {item.location && (
+                            {item.item.location && (
                               <div className="flex items-center gap-1">
                                 <MapPin className="w-3 h-3" />
-                                {item.location}
+                                {item.item.location}
                               </div>
                             )}
-                            {item.track && (
+                            {item.item.track && (
                               <span className="px-2 py-0.5 bg-gray-200 text-gray-700 rounded-full text-xs">
-                                {item.track}
+                                {item.item.track}
                               </span>
                             )}
                           </div>

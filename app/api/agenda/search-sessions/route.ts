@@ -111,29 +111,33 @@ Return JSON: {
       const score = sessionMap.get(session.id) || 0;
 
       // Create temporary schedule item to check conflicts
+      const startDate = new Date(session.startTime);
+      const endDate = new Date(session.endTime);
       const tempItem: ScheduleItem = {
         id: `temp-${session.id}`,
-        title: session.title,
-        description: session.description || '',
-        startTime: new Date(session.startTime),
-        endTime: new Date(session.endTime),
-        location: session.location || '',
+        time: startDate.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        }),
+        endTime: endDate.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        }),
         type: 'session',
         source: 'ai-suggested',
-        confidence: score * 100,
-        track: session.track || undefined,
-        speakers: session.speakers.map(s => ({
-          id: s.speaker.id,
-          name: s.speaker.name,
-          title: s.speaker.role || ''
-        })),
         item: {
           id: session.id,
           title: session.title,
-          description: session.description || undefined,
-          location: session.location || undefined,
-          speakers: session.speakers.map(s => s.speaker),
-          track: session.track || undefined
+          description: session.description || '',
+          location: session.location || '',
+          track: session.track || undefined,
+          speakers: session.speakers.map(s => ({
+            id: s.speaker.id,
+            name: s.speaker.name,
+            title: s.speaker.role || ''
+          }))
         }
       };
 

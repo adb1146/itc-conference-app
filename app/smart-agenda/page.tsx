@@ -108,8 +108,8 @@ export default function SmartAgendaPage() {
     const agendaText = smartAgenda.days.map(day => {
       const dayHeader = `Day ${day.dayNumber} - ${new Date(day.date).toLocaleDateString()}\\n`;
       const items = day.schedule.map(item => {
-        const time = `${new Date(item.startTime).toLocaleTimeString()} - ${new Date(item.endTime).toLocaleTimeString()}`;
-        return `${time}: ${item.title}`;
+        const time = `${item.time} - ${item.endTime}`;
+        return `${time}: ${item.item.title}`;
       }).join('\\n');
       return dayHeader + items;
     }).join('\\n\\n');

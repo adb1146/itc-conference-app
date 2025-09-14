@@ -154,7 +154,12 @@ export async function resolveConflictWithAI(
       }]
     });
 
-    return parseResolutionResponse(response.content[0].text, alternatives);
+    const contentBlock = response.content[0];
+    if (contentBlock.type === 'text') {
+      return parseResolutionResponse(contentBlock.text, alternatives);
+    } else {
+      throw new Error('Unexpected response type from AI');
+    }
   } catch (error) {
     console.error('AI conflict resolution error:', error);
     return generateFallbackResolution(context);

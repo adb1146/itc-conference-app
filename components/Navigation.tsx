@@ -76,7 +76,13 @@ export default function Navigation() {
     return () => clearTimeout(debounceTimer);
   }, [searchQuery]);
 
-  const navItems = [
+  const navItems: Array<{
+    href: string;
+    label: string;
+    icon: typeof Home;
+    requireAuth?: boolean;
+    highlight?: boolean;
+  }> = [
     { href: '/', label: 'Home', icon: Home },
     { href: '/agenda', label: 'Conference Agenda', icon: Calendar },
     { href: '/chat', label: 'AI Concierge', icon: Brain },
