@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Star, Calendar, Users, Clock, MapPin, Building,
-  ArrowLeft, Trash2, StickyNote, Filter, Search,
+  Trash2, StickyNote, Filter, Search,
   LogIn, UserPlus, Sparkles, Loader2, X, AlertCircle
 } from 'lucide-react';
 import Navigation from '@/components/Navigation';
@@ -393,14 +393,6 @@ export default function FavoritesPage() {
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-6xl mx-auto px-4 py-6">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-4"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Home
-          </Link>
-
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">

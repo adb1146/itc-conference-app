@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { SmartAgenda, ScheduleItem, DaySchedule } from '@/lib/tools/schedule/types';
 import {
-  Calendar, Clock, MapPin, Star, Robot, Coffee,
-  Utensils, Walking, AlertCircle, RefreshCw, X,
+  Calendar, Clock, MapPin, Star, Bot, Coffee,
+  Utensils, Navigation, AlertCircle, RefreshCw, X,
   Download, Mail, ChevronDown, ChevronUp, Sparkles,
   Edit2, Trash2, Plus, CheckCircle, Brain, Search
 } from 'lucide-react';
@@ -61,7 +61,7 @@ export default function SmartAgendaView({
       if (item.item.title.toLowerCase().includes('dinner')) return Utensils;
       return Coffee;
     }
-    if (item.type === 'travel') return Walking;
+    if (item.type === 'travel') return Navigation;
     if (item.type === 'break') return Coffee;
     return Calendar;
   };
@@ -78,7 +78,7 @@ export default function SmartAgendaView({
     if (item.source === 'ai-suggested') {
       return (
         <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
-          <Robot className="w-3 h-3 mr-1" />
+          <Bot className="w-3 h-3 mr-1" />
           AI Suggested • {item.aiMetadata?.confidence}% match
         </span>
       );

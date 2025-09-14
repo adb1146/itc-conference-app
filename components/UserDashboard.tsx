@@ -15,7 +15,7 @@ export default function UserDashboard({ activeTab }: UserDashboardProps) {
   // Determine active tab from pathname if not provided
   const currentTab = activeTab || (
     pathname.includes('/favorites') ? 'favorites' :
-    pathname.includes('/agenda') ? 'agenda' :
+    pathname.includes('/smart-agenda') ? 'agenda' :
     pathname.includes('/profile') ? 'profile' :
     pathname.includes('/chat') ? 'chat' :
     'favorites'
@@ -32,7 +32,7 @@ export default function UserDashboard({ activeTab }: UserDashboardProps) {
     {
       id: 'agenda',
       label: 'Smart Agenda',
-      href: '/favorites#agenda',
+      href: '/smart-agenda',
       icon: Calendar,
       description: 'Your personalized schedule'
     },
