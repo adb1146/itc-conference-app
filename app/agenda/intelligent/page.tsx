@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Calendar, Clock, MapPin, Search, Filter, Star, User, Tag,
@@ -46,7 +46,7 @@ interface AIInsight {
   sessionIds?: string[];
 }
 
-export default function IntelligentAgendaPage() {
+function IntelligentAgendaContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -1123,5 +1123,20 @@ export default function IntelligentAgendaPage() {
 
 
     </div>
+  );
+}
+
+export default function IntelligentAgendaPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading agenda...</p>
+        </div>
+      </div>
+    }>
+      <IntelligentAgendaContent />
+    </Suspense>
   );
 }
