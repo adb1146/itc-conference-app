@@ -25,6 +25,13 @@ export function useChatPersistence(initialMessages: Message[] = []) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [isLoaded, setIsLoaded] = useState(false);
   const { data: session } = useSession();
+
+  // Counter for generating unique IDs
+  let idCounter = 0;
+  const generateUniqueId = () => {
+    idCounter++;
+    return `msg_${Date.now()}_${idCounter}_${Math.random().toString(36).substr(2, 9)}`;
+  };
   
   // Generate a unique storage key based on user session
   const getStorageKey = () => {
@@ -65,9 +72,10 @@ export function useChatPersistence(initialMessages: Message[] = []) {
         // Check if chat is expired
         const hoursOld = (Date.now() - data.timestamp) / (1000 * 60 * 60);
         if (hoursOld < EXPIRY_HOURS) {
-          // Restore messages with proper Date objects
+          // Restore messages with proper Date objects and regenerate IDs to avoid conflicts
           const restoredMessages = data.messages.map(msg => ({
             ...msg,
+            id: generateUniqueId(), // Generate new unique ID to avoid conflicts
             timestamp: new Date(msg.timestamp)
           }));
           

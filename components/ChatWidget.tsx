@@ -17,7 +17,7 @@ export default function ChatWidget() {
     document.body.scrollTop = 0;
     document.documentElement.scrollTop = 0;
     // Navigate to chat
-    window.location.href = '/chat/intelligent';
+    window.location.href = '/chat';
   };
 
   return (

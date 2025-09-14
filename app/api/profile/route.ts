@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { getAuthOptions } from '@/lib/auth-config';
-import prisma from '@/lib/prisma';
+import prisma from '@/lib/db';
 
 export async function GET(req: NextRequest) {
   try {
@@ -22,16 +22,30 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ 
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        company: user.company,
-        interests: user.interests,
-        goals: user.goals,
-        profile: user.profile
+    return NextResponse.json({
+      name: user.name || '',
+      email: user.email,
+      role: user.role || '',
+      company: user.company || '',
+      organizationType: user.organizationType || '',
+      interests: user.interests || [],
+      goals: user.goals || [],
+      usingSalesforce: user.usingSalesforce || false,
+      interestedInSalesforce: user.interestedInSalesforce || false,
+      profile: user.profile ? {
+        bio: user.profile.bio || '',
+        linkedinUrl: user.profile.linkedinUrl || '',
+        position: user.profile.position || '',
+        yearsExperience: user.profile.yearsExperience || 0,
+        timezone: user.profile.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+        notifications: user.profile.notifications ?? true
+      } : {
+        bio: '',
+        linkedinUrl: '',
+        position: '',
+        yearsExperience: 0,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        notifications: true
       }
     });
   } catch (error) {
@@ -48,64 +62,61 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const data = await req.json();
-    
+    const body = await req.json();
+    const {
+      name,
+      role,
+      company,
+      organizationType,
+      interests,
+      goals,
+      usingSalesforce,
+      interestedInSalesforce,
+      profile
+    } = body;
+
+    // Update user information
     const user = await prisma.user.update({
       where: { email: session.user.email },
       data: {
-        name: data.name,
-        role: data.role,
-        company: data.company,
-        interests: data.interests,
-        goals: data.goals
-      },
-      include: {
-        profile: true
+        name,
+        role,
+        company,
+        organizationType,
+        interests,
+        goals,
+        usingSalesforce,
+        interestedInSalesforce
       }
     });
 
     // Update or create user profile
-    if (data.profileData) {
+    if (profile) {
       await prisma.userProfile.upsert({
         where: { userId: user.id },
         update: {
-          bio: data.profileData.bio,
-          linkedinUrl: data.profileData.linkedinUrl,
-          position: data.profileData.position,
-          yearsExperience: data.profileData.yearsExperience,
-          timezone: data.profileData.timezone,
-          notifications: data.profileData.notifications
+          bio: profile.bio,
+          linkedinUrl: profile.linkedinUrl,
+          position: profile.position,
+          yearsExperience: profile.yearsExperience,
+          timezone: profile.timezone,
+          notifications: profile.notifications
         },
         create: {
           userId: user.id,
-          bio: data.profileData.bio,
-          linkedinUrl: data.profileData.linkedinUrl,
-          position: data.profileData.position,
-          yearsExperience: data.profileData.yearsExperience,
-          timezone: data.profileData.timezone,
-          notifications: data.profileData.notifications ?? true
+          bio: profile.bio,
+          linkedinUrl: profile.linkedinUrl,
+          position: profile.position,
+          yearsExperience: profile.yearsExperience,
+          timezone: profile.timezone,
+          notifications: profile.notifications ?? true
         }
       });
     }
 
-    const updatedUser = await prisma.user.findUnique({
-      where: { id: user.id },
-      include: {
-        profile: true
-      }
-    });
-
-    return NextResponse.json({ 
-      user: {
-        id: updatedUser!.id,
-        email: updatedUser!.email,
-        name: updatedUser!.name,
-        role: updatedUser!.role,
-        company: updatedUser!.company,
-        interests: updatedUser!.interests,
-        goals: updatedUser!.goals,
-        profile: updatedUser!.profile
-      }
+    return NextResponse.json({
+      success: true,
+      message: 'Profile updated successfully'
     });
   } catch (error) {
     console.error('Error updating profile:', error);

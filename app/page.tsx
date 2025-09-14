@@ -56,41 +56,46 @@ export default function HomePage() {
     {
       icon: Brain,
       title: 'AI Concierge Chat',
-      description: 'Get instant answers and personalized scheduling assistance from our AI-powered assistant',
+      description: 'Chat naturally with our AI that understands conference context, tracks Vegas time, and gives personalized recommendations',
       href: '/chat',
       color: 'from-purple-500 to-blue-500',
-      badge: 'AI-POWERED'
+      badge: 'CLAUDE 3.5',
+      highlights: ['Time-aware suggestions', 'Semantic search', 'Personalized paths']
     },
     {
       icon: Calendar,
-      title: 'Intelligent Agenda',
-      description: 'Browse sessions with AI-enhanced recommendations and conflict detection',
+      title: 'Smart Agenda',
+      description: 'AI-enhanced agenda with vector search, conflict detection, and intelligent filtering by your interests',
       href: '/agenda/intelligent',
-      color: 'from-blue-500 to-purple-500'
+      color: 'from-blue-500 to-purple-500',
+      badge: 'AI-ENHANCED',
+      highlights: ['Vector search', 'Smart filters', 'Conflict alerts']
     },
     {
-      icon: Star,
-      title: 'Build Your Schedule',
-      description: 'Save your favorite sessions and create your personalized itinerary',
-      href: '/schedule',
-      color: 'from-yellow-500 to-orange-500'
+      icon: Sparkles,
+      title: 'My Favorites',
+      description: 'Build your personalized schedule with AI recommendations and automatic conflict detection',
+      href: '/favorites',
+      color: 'from-yellow-500 to-orange-500',
+      highlights: ['Save sessions', 'Track speakers', 'Export schedule']
     },
     {
       icon: Users,
-      title: 'Speaker Directory',
-      description: 'Learn about industry leaders and keynote speakers',
+      title: 'Speaker Insights',
+      description: 'Explore 200+ speakers with AI-powered search and personalized speaker recommendations',
       href: '/speakers',
-      color: 'from-green-500 to-emerald-500'
+      color: 'from-green-500 to-emerald-500',
+      highlights: ['Expert profiles', 'Session links', 'Network suggestions']
     }
   ]
 
   const benefits = [
-    'Personalized AI recommendations based on your interests',
-    'Real-time schedule conflict detection',
-    'Networking opportunity suggestions',
-    'Learning path creation for skill development',
-    'Mobile-optimized for on-the-go access',
-    'Intelligent session discovery'
+    'Time-aware AI that knows Vegas conference schedule',
+    'Vector-powered semantic search finds hidden gems',
+    'Real-time conflict detection prevents double-booking',
+    'Personalized learning paths based on your role',
+    'Smart networking suggestions for valuable connections',
+    'Mobile-first design for on-the-go conference navigation'
   ]
 
   return (
@@ -126,15 +131,15 @@ export default function HomePage() {
             {/* Main Heading */}
             <h1 className="text-3xl sm:text-5xl md:text-7xl font-bold mb-4 sm:mb-6">
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-600">
-                AI-First Conference
+                Your AI Conference
               </span>
               <br />
-              <span className="text-gray-900">Experience</span>
+              <span className="text-gray-900">Concierge is Ready</span>
             </h1>
-            
+
             <p className="text-lg sm:text-xl md:text-2xl text-gray-600 mb-4 sm:mb-6 max-w-3xl mx-auto">
-              Meet your AI Conference Concierge - an intelligent assistant that learns your preferences 
-              and creates the perfect conference experience just for you.
+              Experience ITC Vegas 2025 with an AI assistant that understands context,
+              tracks time, and creates your perfect 3-day journey through 100+ sessions.
             </p>
             
             <div className="flex flex-col items-center space-y-3 mb-8 sm:mb-10">
@@ -240,22 +245,32 @@ export default function HomePage() {
                 <Link
                   key={index}
                   href={feature.href}
-                  className="group relative bg-white rounded-2xl p-4 sm:p-6 shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all"
+                  className="group relative bg-white rounded-2xl p-4 sm:p-6 shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all overflow-hidden"
                 >
                   {feature.badge && (
-                    <span className="absolute -top-2 -right-2 px-3 py-1 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 text-xs font-semibold rounded-full">
+                    <span className="absolute -top-2 -right-2 px-3 py-1 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 text-xs font-semibold rounded-full z-10">
                       {feature.badge}
                     </span>
                   )}
+                  <div className="absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-5 transition-opacity"></div>
                   <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br ${feature.color} p-2 sm:p-3 mb-4`}>
                     <Icon className="w-full h-full text-white" />
                   </div>
                   <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
                     {feature.title}
                   </h3>
-                  <p className="text-sm text-gray-600 mb-4">
+                  <p className="text-sm text-gray-600 mb-3">
                     {feature.description}
                   </p>
+                  {feature.highlights && (
+                    <div className="flex flex-wrap gap-1 mb-3">
+                      {feature.highlights.map((highlight, idx) => (
+                        <span key={idx} className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full">
+                          {highlight}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   <div className="flex items-center text-sm font-medium text-purple-600 group-hover:text-purple-700">
                     Explore
                     <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
@@ -267,6 +282,84 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* New Feature Showcase */}
+      <section className="py-12 sm:py-20 bg-gradient-to-br from-purple-900 to-blue-900 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-8 sm:mb-12">
+            <div className="inline-flex items-center space-x-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full mb-6">
+              <Sparkles className="w-5 h-5 text-yellow-400" />
+              <span className="text-sm font-medium">Exclusive AI Features</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
+              What Makes Us Different
+            </h2>
+            <p className="text-base sm:text-lg text-white/80 max-w-2xl mx-auto">
+              We've built the most advanced AI conference companion using cutting-edge technology
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+              <Clock className="w-10 h-10 text-yellow-400 mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Time-Aware Intelligence</h3>
+              <p className="text-sm text-white/80 mb-4">
+                Our AI tracks Las Vegas time and only suggests sessions you can still attend.
+                No more recommendations for sessions that already started!
+              </p>
+              <div className="text-xs text-yellow-400 font-medium">
+                ✓ Real-time filtering • ✓ Smart scheduling
+              </div>
+            </div>
+
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+              <Brain className="w-10 h-10 text-green-400 mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Semantic Understanding</h3>
+              <p className="text-sm text-white/80 mb-4">
+                Vector-powered search understands meaning, not just keywords.
+                Ask about "AI for risk assessment" and find sessions about machine learning in underwriting.
+              </p>
+              <div className="text-xs text-green-400 font-medium">
+                ✓ OpenAI embeddings • ✓ Pinecone vectors
+              </div>
+            </div>
+
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+              <Target className="w-10 h-10 text-blue-400 mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Hyper-Personalization</h3>
+              <p className="text-sm text-white/80 mb-4">
+                Tell us your role and interests once. Our AI remembers and personalizes
+                every recommendation, search result, and schedule suggestion.
+              </p>
+              <div className="text-xs text-blue-400 font-medium">
+                ✓ Role-based paths • ✓ Interest matching
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-12 text-center">
+            <p className="text-sm text-white/60 mb-4">
+              Built with Claude 3.5 Sonnet • OpenAI Embeddings • Pinecone Vector DB • Next.js 14
+            </p>
+            <div className="flex flex-wrap justify-center gap-4">
+              <Link
+                href="/chat"
+                className="inline-flex items-center px-6 py-3 bg-white text-purple-900 font-semibold rounded-xl hover:bg-white/90 transition-all"
+              >
+                Try AI Chat Now
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Link>
+              <Link
+                href="/agenda/intelligent"
+                className="inline-flex items-center px-6 py-3 bg-white/10 backdrop-blur-sm text-white font-semibold rounded-xl hover:bg-white/20 transition-all border border-white/20"
+              >
+                Explore Smart Agenda
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* AI Features Highlight */}
       <section className="py-12 sm:py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -274,10 +367,10 @@ export default function HomePage() {
             <div>
               <div className="inline-flex items-center space-x-2 px-3 py-1 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 rounded-full text-sm font-medium mb-4">
                 <Zap className="w-4 h-4" />
-                <span>Powered by Claude 3.5 + Salesforce</span>
+                <span>Powered by Claude 3.5 Sonnet</span>
               </div>
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-4 sm:mb-6">
-                Your Personal AI Conference Concierge
+                Why This Changes Everything
               </h2>
               <p className="text-base sm:text-lg text-gray-600 mb-4">
                 Experience the future of conference attendance with an AI assistant that 
@@ -327,15 +420,15 @@ export default function HomePage() {
                   </div>
                   <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl p-4">
                     <p className="text-sm text-gray-600 mb-2">AI Concierge:</p>
-                    <p className="text-sm font-medium mb-2">Welcome! I've found 23 perfect sessions for you:</p>
+                    <p className="text-sm font-medium mb-2">Perfect timing! Based on your interests and the current Vegas time, here's what I found:</p>
                     <ul className="text-sm space-y-1">
-                      <li>🌟 <strong>Day 1:</strong> AI in Claims Automation Keynote</li>
-                      <li>📊 <strong>Day 2:</strong> Machine Learning Workshop</li>
-                      <li>🤝 <strong>Networking:</strong> AI Leaders Roundtable</li>
-                      <li>💡 <strong>Must-see:</strong> Future of Automated Claims</li>
+                      <li>⏰ <strong>Next up (2:30 PM):</strong> AI Claims Innovation Panel</li>
+                      <li>🔥 <strong>85% match:</strong> Automated Underwriting with ML</li>
+                      <li>🤝 <strong>Network opp:</strong> Meet 12 others interested in claims AI</li>
+                      <li>💡 <strong>Hidden gem:</strong> Small session on Claims API Standards</li>
                     </ul>
                     <p className="text-sm mt-3 text-purple-700 font-medium">
-                      Want me to build your personalized schedule?
+                      I'll track conflicts and remind you 15 min before each session!
                     </p>
                   </div>
                 </div>

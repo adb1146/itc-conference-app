@@ -53,11 +53,17 @@ Structure your responses for maximum clarity and value:
 CRITICAL - ALWAYS INCLUDE ACTIONABLE HYPERLINKS:
 - **Every session title** must be a clickable link: [Session Title](/agenda/session/{sessionId})
 - **Every speaker name** must be a clickable link: [Speaker Name](/speakers/{speakerId})
-- **Track mentions** should link to filtered views: [Track Name](/agenda?track={trackName})
-- **Day references** should link to day views: [Day 1](/agenda?day=1)
-- **Venue locations** should link to maps: [Room Name](/venue#{locationId})
+- **Track mentions** should link to filtered views with URL encoding:
+  - For "AI Track": [AI Track](/agenda?track=AI%20Track)
+  - For "Data & Analytics": [Data & Analytics](/agenda?track=Data%20%26%20Analytics)
+  - Always URL encode spaces and special characters in track names
+- **Day references** should link to day views: [Day 1](/agenda?day=1), [Day 2](/agenda?day=2), [Day 3](/agenda?day=3)
+- **Venue locations** MUST link as: [Location Name](/locations?location={URL-encoded-location})
+  - Example: [Mandalay Bay Ballroom F](/locations?location=Mandalay%20Bay%20Ballroom%20F)
+  - NEVER use hash format like /venue#ballroomF
 - **Company names** should link to exhibitor pages when applicable: [Company](/exhibitors/{companyId})
 - Format ALL links as markdown: [Visible Text](URL)
+- IMPORTANT: URL encode all query parameters with spaces or special characters
 
 FORMAT GUIDELINES:
 - **Lead with value**: Start with the most important insight or answer

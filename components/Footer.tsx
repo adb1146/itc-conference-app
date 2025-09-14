@@ -84,13 +84,13 @@ export default function Footer() {
               </p>
               <ul className="space-y-2">
                 <li>
-                  <Link href="/chat/intelligent" className="flex items-center space-x-2 text-sm text-gray-300 hover:text-white transition-colors">
+                  <Link href="/chat" className="flex items-center space-x-2 text-sm text-gray-300 hover:text-white transition-colors">
                     <ChevronRight className="w-4 h-4" />
                     <span>AI Concierge Chat</span>
                   </Link>
                 </li>
                 <li>
-                  <Link href="/agenda/intelligent" className="flex items-center space-x-2 text-sm text-gray-300 hover:text-white transition-colors">
+                  <Link href="/favorites" className="flex items-center space-x-2 text-sm text-gray-300 hover:text-white transition-colors">
                     <ChevronRight className="w-4 h-4" />
                     <span>Smart Agenda Builder</span>
                   </Link>

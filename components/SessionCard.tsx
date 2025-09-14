@@ -108,8 +108,8 @@ export default function SessionCard({
     // Compact view for chat responses
     return (
       <div className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow">
-        <Link href={`/agenda/session/${id}`} className="block">
-          <h4 className="text-sm font-semibold text-gray-900 hover:text-blue-600 transition-colors line-clamp-2">
+        <Link href={`/agenda/session/${id}`} className="block group">
+          <h4 className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2 cursor-pointer">
             {title}
           </h4>
         </Link>
@@ -168,8 +168,8 @@ export default function SessionCard({
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-lg transition-shadow">
       <div className="flex justify-between items-start mb-3">
-        <Link href={`/agenda/session/${id}`} className="flex-1">
-          <h3 className="text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors">
+        <Link href={`/agenda/session/${id}`} className="flex-1 group">
+          <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors cursor-pointer">
             {title}
           </h3>
         </Link>

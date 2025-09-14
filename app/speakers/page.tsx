@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { User, Briefcase, Search, Building, Award, Users, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
@@ -30,6 +30,9 @@ export default function SpeakersPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCompany, setSelectedCompany] = useState('all');
+  const [searching, setSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchSpeakers();
@@ -50,7 +53,40 @@ export default function SpeakersPage() {
     if (speakers.length > 0 || !loading) {
       filterSpeakers();
     }
-  }, [speakers, searchQuery, selectedCompany]);
+  }, [speakers, searchQuery, selectedCompany, searchResults]);
+
+  // Perform intelligent search when search query changes
+  useEffect(() => {
+    const performIntelligentSearch = async () => {
+      if (searchQuery.length > 1) {
+        setSearching(true);
+        try {
+          const response = await fetch('/api/speakers/search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: searchQuery })
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            // Set the search results directly from the API
+            setSearchResults(data.speakers || []);
+          }
+        } catch (error) {
+          console.error('Search error:', error);
+          setSearchResults([]);
+        } finally {
+          setSearching(false);
+        }
+      } else {
+        setSearchResults([]);
+        setSearching(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(performIntelligentSearch, 300);
+    return () => clearTimeout(debounceTimer);
+  }, [searchQuery]);
 
   const fetchSpeakers = async () => {
     try {
@@ -74,8 +110,12 @@ export default function SpeakersPage() {
   const filterSpeakers = () => {
     let filtered = speakers;
 
-    // Filter by search query
-    if (searchQuery) {
+    // If we have search results from the API, use those
+    if (searchResults.length > 0 && searchQuery.length > 1) {
+      // The search results are already sorted by relevance
+      filtered = searchResults as Speaker[];
+    } else if (searchQuery) {
+      // Fallback to client-side text search for single character
       filtered = filtered.filter(speaker =>
         speaker.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         speaker.role?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -89,10 +129,36 @@ export default function SpeakersPage() {
       filtered = filtered.filter(speaker => speaker.company === selectedCompany);
     }
 
-    // Sort alphabetically by name
-    filtered.sort((a, b) => a.name.localeCompare(b.name));
+    // Sort alphabetically by name (unless we have search results, which are already sorted by relevance)
+    if (searchResults.length === 0 || searchQuery.length <= 1) {
+      filtered.sort((a, b) => a.name.localeCompare(b.name));
+    }
 
     setFilteredSpeakers(filtered);
+  };
+
+  const extractSpeakerNames = (aiResponse: string): string[] => {
+    if (!aiResponse) return [];
+
+    // Extract speaker names from the AI response
+    // Look for patterns like "Name (Company)" or just names
+    const namePattern = /([A-Z][a-z]+ [A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/g;
+    const matches = aiResponse.match(namePattern) || [];
+
+    // Also look for bulleted lists or numbered lists
+    const listPattern = /(?:^|\n)[\•\-\*\d\.]\s*([^(\n]+)/gm;
+    const listMatches = [...aiResponse.matchAll(listPattern)].map(m => m[1].trim());
+
+    // Combine and deduplicate
+    const allNames = [...new Set([...matches, ...listMatches])];
+
+    // Filter out common words that aren't names
+    const commonWords = ['The', 'This', 'These', 'Session', 'Speaker', 'Insurance', 'Technology'];
+    return allNames.filter(name =>
+      !commonWords.some(word => name.startsWith(word)) &&
+      name.length > 3 &&
+      name.split(' ').length >= 2
+    );
   };
 
   const getCompanies = () => {
@@ -147,15 +213,69 @@ export default function SpeakersPage() {
         {/* Search Bar */}
         <div className="px-4 py-3 border-t border-gray-100">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+            <button
+              onClick={() => {
+                searchInputRef.current?.focus();
+                // If there's a search query, trigger the search
+                if (searchQuery.length > 0) {
+                  // Force a re-search by clearing and resetting
+                  const currentQuery = searchQuery;
+                  setSearchQuery('');
+                  setTimeout(() => setSearchQuery(currentQuery), 10);
+                }
+              }}
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+              aria-label="Search"
+            >
+              <Search className="h-5 w-5" />
+            </button>
             <input
+              ref={searchInputRef}
               type="text"
               placeholder="Search speakers, companies, roles..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && searchQuery.length > 0) {
+                  // Force search on Enter key
+                  const currentQuery = searchQuery;
+                  setSearchQuery('');
+                  setTimeout(() => setSearchQuery(currentQuery), 10);
+                }
+              }}
+              className="w-full pl-10 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
+            {searching && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600"></div>
+              </div>
+            )}
+            {searchQuery.length > 0 && !searching && (
+              <button
+                onClick={() => {
+                  setSearchQuery('');
+                  setSearchResults([]);
+                  searchInputRef.current?.focus();
+                }}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                aria-label="Clear search"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
           </div>
+          {searchQuery.length > 1 && searchResults.length > 0 && !searching && (
+            <div className="mt-2 text-xs text-purple-600">
+              Found {searchResults.length} relevant speaker{searchResults.length !== 1 ? 's' : ''} using intelligent search
+            </div>
+          )}
+          {searchQuery.length > 1 && searchResults.length === 0 && !searching && (
+            <div className="mt-2 text-xs text-gray-500">
+              No speakers found matching "{searchQuery}"
+            </div>
+          )}
         </div>
 
         {/* Company Filter */}

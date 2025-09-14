@@ -1,15 +1,18 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function AgendaPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
-    // Redirect to the intelligent agenda page
-    router.replace('/agenda/intelligent');
-  }, [router]);
+    // Preserve query parameters when redirecting to the intelligent agenda page
+    const params = searchParams.toString();
+    const redirectUrl = params ? `/agenda/intelligent?${params}` : '/agenda/intelligent';
+    router.replace(redirectUrl);
+  }, [router, searchParams]);
 
   // Show loading state while redirecting
   return (

@@ -26,7 +26,7 @@ export async function POST(
       company: `${speaker.company} insurance technology insurtech company services products`
     };
     
-    // Construct the full URL for internal API calls
+    // Construct the full URL for internal API calls (matching the running port)
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3011';
     
     // Fetch speaker profile from web with LinkedIn prioritization
@@ -58,21 +58,158 @@ export async function POST(
     const linkedinPattern = /linkedin\.com\/in\/([a-zA-Z0-9-]+)/;
     const linkedinMatch = speakerProfile.content?.match(linkedinPattern);
     const linkedinUrl = linkedinMatch ? `https://www.linkedin.com/in/${linkedinMatch[1]}` : null;
-    
+
+    // Extract profile image URL from web search results
+    // Look for common LinkedIn CDN patterns or image URLs
+    let profileImageUrl: string | null = null;
+
+    console.log('Attempting to extract LinkedIn profile image...');
+    console.log('LinkedIn URL found:', linkedinUrl);
+
+    // Try to extract LinkedIn profile image URL patterns
+    const imagePatterns = [
+      /https:\/\/media[.-]licdn[.-]com\/dms\/image\/[A-Za-z0-9\/\-_]+/gi,
+      /https:\/\/media\.licdn\.com\/[^"\s<>]+/gi,
+      /https:\/\/[^\/]*\.licdn\.com\/[^\s"'<>]+\.(?:jpg|jpeg|png|webp)/gi,
+      /"profilePicture[^}]*"displayImage":"([^"]+)"/gi,
+      /"image":\s*"([^"]+)"/gi,
+      /"photo":\s*"([^"]+)"/gi
+    ];
+
+    // Debug: log part of the content to see what we're working with
+    if (speakerProfile.content) {
+      const contentSnippet = speakerProfile.content.substring(0, 500);
+      console.log('Content snippet:', contentSnippet);
+    }
+
+    for (const pattern of imagePatterns) {
+      const matches = speakerProfile.content?.match(pattern);
+      if (matches) {
+        console.log(`Pattern matched: ${pattern}`, matches[0]);
+
+        // Clean up the URL
+        profileImageUrl = matches[0]
+          .replace(/["'<>\\]/g, '')
+          .replace(/\\u[\dA-F]{4}/gi, '') // Remove Unicode escapes
+          .replace(/&amp;/g, '&')
+          .trim();
+
+        // Validate it's a valid image URL
+        if (profileImageUrl.includes('licdn.com') ||
+            profileImageUrl.match(/\.(jpg|jpeg|png|webp)/i)) {
+          console.log('Valid LinkedIn image found:', profileImageUrl);
+          break;
+        }
+      }
+    }
+
+    if (!profileImageUrl) {
+      console.log('No LinkedIn profile image found in web search results');
+    }
+
+    // If we have a LinkedIn URL but no image, we could fetch the LinkedIn page directly
+    // However, for now we'll rely on the web search results
+
     // Extract expertise and achievements
     const expertise = extractKeywords(speakerProfile.content, [
       'AI', 'Machine Learning', 'Insurtech', 'Digital Transformation',
       'Claims', 'Underwriting', 'Risk Management', 'Data Analytics',
-      'Customer Experience', 'Innovation', 'Blockchain', 'IoT'
+      'Customer Experience', 'Innovation', 'Blockchain', 'IoT',
+      'Cloud Computing', 'Cybersecurity', 'API', 'Platform',
+      'Leadership', 'Strategy', 'Product Management', 'Sales',
+      'Business Development', 'Partnerships', 'Automation'
     ]);
-    
+
+    // Process and format the profile summaries for better readability
+    const formatProfileContent = (content: string | null): string | null => {
+      if (!content) return null;
+
+      // First, clean up the content
+      let formatted = content
+        .replace(/\[.*?\]/g, '') // Remove citation markers
+        .replace(/\s{2,}/g, ' ') // Normalize spaces
+        .trim();
+
+      // Split into sentences for better processing
+      const sentences = formatted.match(/[^.!?]+[.!?]+/g) || [formatted];
+
+      // Process each sentence
+      const processedSentences = sentences.map(sentence => {
+        let s = sentence.trim();
+
+        // Check if this looks like a list item
+        if (s.match(/^\d+\./)) {
+          // Convert numbered lists to bullets
+          s = '• ' + s.replace(/^\d+\.\s*/, '');
+        } else if (s.match(/^[-•]/)) {
+          // Ensure consistent bullet formatting
+          s = '• ' + s.replace(/^[-•]\s*/, '');
+        }
+
+        return s;
+      });
+
+      // Group sentences into sections based on content patterns
+      const sections: string[] = [];
+      let currentSection: string[] = [];
+
+      processedSentences.forEach((sentence, index) => {
+        // Check for section indicators
+        const isNewSection =
+          sentence.toLowerCase().includes('experience') ||
+          sentence.toLowerCase().includes('expertise') ||
+          sentence.toLowerCase().includes('background') ||
+          sentence.toLowerCase().includes('currently') ||
+          sentence.toLowerCase().includes('previously') ||
+          sentence.toLowerCase().includes('specializes') ||
+          sentence.toLowerCase().includes('focus') ||
+          sentence.toLowerCase().includes('leads') ||
+          sentence.toLowerCase().includes('responsible') ||
+          sentence.toLowerCase().includes('company') ||
+          sentence.toLowerCase().includes('founded') ||
+          sentence.toLowerCase().includes('services') ||
+          sentence.toLowerCase().includes('products') ||
+          sentence.toLowerCase().includes('platform') ||
+          sentence.toLowerCase().includes('solution');
+
+        // Start a new section if we detect a topic change
+        if (isNewSection && currentSection.length > 0 && !sentence.startsWith('•')) {
+          sections.push(currentSection.join(' '));
+          currentSection = [sentence];
+        } else if (sentence.startsWith('•')) {
+          // Keep bullets in their own lines
+          if (currentSection.length > 0 && !currentSection[currentSection.length - 1].startsWith('•')) {
+            sections.push(currentSection.join(' '));
+            currentSection = [];
+          }
+          sections.push(sentence);
+        } else {
+          currentSection.push(sentence);
+        }
+      });
+
+      // Add any remaining content
+      if (currentSection.length > 0) {
+        sections.push(currentSection.join(' '));
+      }
+
+      // Join sections with proper spacing
+      return sections
+        .filter(section => section.length > 0)
+        .join('\n\n');
+    };
+
+    const cleanedSpeakerProfile = formatProfileContent(speakerProfile.content);
+    const cleanedCompanyProfile = formatProfileContent(companyProfile.content);
+
     // Update speaker profile in database
     const updatedSpeaker = await prisma.speaker.update({
       where: { id: speakerId },
       data: {
-        profileSummary: speakerProfile.content || null,
-        companyProfile: companyProfile.content || null,
+        profileSummary: cleanedSpeakerProfile,
+        companyProfile: cleanedCompanyProfile,
         linkedinUrl: linkedinUrl || speaker.linkedinUrl,
+        imageUrl: profileImageUrl || speaker.imageUrl, // Store the profile image URL
         expertise: expertise,
         lastProfileSync: new Date()
       }

@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
-  Calendar, Clock, MapPin, Search, Filter, Heart, User, Tag, 
+import { useRouter } from 'next/navigation';
+import {
+  Calendar, Clock, MapPin, Search, Filter, Heart, User, Tag,
   MessageCircle, Brain, Sparkles, TrendingUp, AlertCircle,
-  ChevronRight, X, Zap, Target, Users, BarChart3, 
+  ChevronRight, X, Zap, Target, Users, BarChart3,
   ThumbsUp, ThumbsDown, RefreshCw, Wand2, Info
 } from 'lucide-react';
 import Link from 'next/link';
@@ -47,6 +48,7 @@ interface AIInsight {
 }
 
 export default function IntelligentAgendaPage() {
+  const router = useRouter();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [filteredSessions, setFilteredSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,8 +57,8 @@ export default function IntelligentAgendaPage() {
   const [selectedTrack, setSelectedTrack] = useState('all');
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   
-  // AI Features
-  const [aiMode, setAiMode] = useState('smart'); // 'off', 'smart', 'full'
+  // AI Features - Always use Full AI mode
+  const aiMode = 'full'; // Always enabled
   const [userProfile, setUserProfile] = useState({
     role: '',
     interests: [] as string[],
@@ -76,16 +78,12 @@ export default function IntelligentAgendaPage() {
 
   useEffect(() => {
     filterSessions();
-  }, [sessions, selectedDay, searchQuery, selectedTrack, aiMode]);
+  }, [sessions, selectedDay, searchQuery, selectedTrack]);
 
   useEffect(() => {
-    if (aiMode !== 'off') {
-      generateAIInsights();
-      detectConflicts();
-    } else {
-      setAiInsights([]);
-    }
-  }, [filteredSessions, aiMode, favorites, userProfile, selectedDay]);
+    generateAIInsights();
+    detectConflicts();
+  }, [filteredSessions, favorites, userProfile, selectedDay]);
 
   const fetchSessions = async () => {
     try {
@@ -117,9 +115,7 @@ export default function IntelligentAgendaPage() {
       localStorage.setItem('userProfile', JSON.stringify(profile));
       setUserProfile(profile);
       // Regenerate insights when profile changes
-      if (aiMode !== 'off') {
-        generateAIInsights();
-      }
+      generateAIInsights();
     } catch (error) {
       console.error('Failed to save profile');
     }
@@ -272,35 +268,33 @@ export default function IntelligentAgendaPage() {
       });
     }
     
-    // Smart Mode and Full AI Mode insights
-    if (aiMode === 'smart' || aiMode === 'full') {
-      // Keynote recommendations
-      const keynotes = filteredSessions.filter(s => 
-        s.title.toLowerCase().includes('keynote') || 
-        s.title.toLowerCase().includes('opening') ||
-        s.title.toLowerCase().includes('closing') ||
-        s.track === 'Main Stage'
-      );
-      if (keynotes.length > 0) {
-        insights.push({
-          type: 'recommendation',
-          message: `⭐ Must-see: ${keynotes[0].title}`,
-          sessionIds: [keynotes[0].id]
-        });
-      }
-      
-      // Panel discussions
-      const panels = filteredSessions.filter(s => 
-        s.speakers && s.speakers.length >= 2
-      );
-      if (panels.length > 0) {
-        const bestPanel = panels.sort((a, b) => b.speakers.length - a.speakers.length)[0];
-        insights.push({
-          type: 'recommendation',
-          message: `👥 Panel (${bestPanel.speakers.length} speakers): ${bestPanel.title}`,
-          sessionIds: [bestPanel.id]
-        });
-      }
+    // AI insights are always enabled
+    // Keynote recommendations
+    const keynotes = filteredSessions.filter(s =>
+      s.title.toLowerCase().includes('keynote') ||
+      s.title.toLowerCase().includes('opening') ||
+      s.title.toLowerCase().includes('closing') ||
+      s.track === 'Main Stage'
+    );
+    if (keynotes.length > 0) {
+      insights.push({
+        type: 'recommendation',
+        message: `⭐ Must-see: ${keynotes[0].title}`,
+        sessionIds: [keynotes[0].id]
+      });
+    }
+
+    // Panel discussions
+    const panels = filteredSessions.filter(s =>
+      s.speakers && s.speakers.length >= 2
+    );
+    if (panels.length > 0) {
+      const bestPanel = panels.sort((a, b) => b.speakers.length - a.speakers.length)[0];
+      insights.push({
+        type: 'recommendation',
+        message: `👥 Panel (${bestPanel.speakers.length} speakers): ${bestPanel.title}`,
+        sessionIds: [bestPanel.id]
+      });
     }
     
     
@@ -333,55 +327,53 @@ export default function IntelligentAgendaPage() {
       });
     }
     
-    // Full AI Mode - Advanced insights
-    if (aiMode === 'full') {
-      // Profile-based recommendations
-      if (userProfile.interests && userProfile.interests.length > 0) {
-        const relevantSessions = filteredSessions.filter(s => {
-          const content = `${s.title} ${s.description || ''} ${s.tags?.join(' ') || ''}`.toLowerCase();
-          return userProfile.interests.some(interest => 
-            content.includes(interest.toLowerCase())
-          );
-        });
-        
-        if (relevantSessions.length > 0) {
-          insights.push({
-            type: 'recommendation',
-            message: `💡 Matches your interests: ${relevantSessions.length} sessions`,
-            sessionIds: relevantSessions.slice(0, 3).map(s => s.id)
-          });
-        }
-      } else {
+    // Advanced AI insights
+    // Profile-based recommendations
+    if (userProfile.interests && userProfile.interests.length > 0) {
+      const relevantSessions = filteredSessions.filter(s => {
+        const content = `${s.title} ${s.description || ''} ${s.tags?.join(' ') || ''}`.toLowerCase();
+        return userProfile.interests.some(interest =>
+          content.includes(interest.toLowerCase())
+        );
+      });
+
+      if (relevantSessions.length > 0) {
         insights.push({
-          type: 'tip',
-          message: '💡 Set your interests above for personalized recommendations'
+          type: 'recommendation',
+          message: `💡 Matches your interests: ${relevantSessions.length} sessions`,
+          sessionIds: relevantSessions.slice(0, 3).map(s => s.id)
         });
       }
-      
-      // VIP Speaker detection
-      const vipSessions = filteredSessions.filter(s => {
-        return s.speakers?.some(sp => {
-          const role = sp.speaker.role?.toLowerCase() || '';
-          return role.includes('ceo') || 
-                 role.includes('founder') || 
-                 role.includes('president') ||
-                 role.includes('chief');
-        });
+    } else {
+      insights.push({
+        type: 'tip',
+        message: '💡 Set your interests above for personalized recommendations'
       });
-      
-      if (vipSessions.length > 0) {
-        const vipSpeaker = vipSessions[0].speakers.find(sp => {
-          const role = sp.speaker.role?.toLowerCase() || '';
-          return role.includes('ceo') || role.includes('founder');
-        })?.speaker;
-        
-        if (vipSpeaker) {
-          insights.push({
-            type: 'recommendation',
-            message: `🎯 VIP: ${vipSpeaker.name} (${vipSpeaker.company})`,
-            sessionIds: [vipSessions[0].id]
-          });
-        }
+    }
+
+    // VIP Speaker detection
+    const vipSessions = filteredSessions.filter(s => {
+      return s.speakers?.some(sp => {
+        const role = sp.speaker.role?.toLowerCase() || '';
+        return role.includes('ceo') ||
+               role.includes('founder') ||
+               role.includes('president') ||
+               role.includes('chief');
+      });
+    });
+
+    if (vipSessions.length > 0) {
+      const vipSpeaker = vipSessions[0].speakers.find(sp => {
+        const role = sp.speaker.role?.toLowerCase() || '';
+        return role.includes('ceo') || role.includes('founder');
+      })?.speaker;
+
+      if (vipSpeaker) {
+        insights.push({
+          type: 'recommendation',
+          message: `🎯 VIP: ${vipSpeaker.name} (${vipSpeaker.company})`,
+          sessionIds: [vipSessions[0].id]
+        });
       }
     }
     
@@ -395,18 +387,10 @@ export default function IntelligentAgendaPage() {
     
     // Ensure we always have insights
     if (insights.length === 1) {
-      // Add a helpful tip based on mode
-      if (aiMode === 'smart') {
-        insights.push({
-          type: 'tip',
-          message: '💡 Switch to Full AI mode for more personalized recommendations'
-        });
-      } else if (aiMode === 'full') {
-        insights.push({
-          type: 'tip',
-          message: '⭐ Add sessions to favorites to track your schedule'
-        });
-      }
+      insights.push({
+        type: 'tip',
+        message: '⭐ Add sessions to favorites to track your schedule'
+      });
     }
     
     // Limit to prevent overwhelming
@@ -416,9 +400,9 @@ export default function IntelligentAgendaPage() {
 
   const handleAISearch = async () => {
     if (!aiSearchQuery.trim()) return;
-    
+
     setIsAIThinking(true);
-    
+
     try {
       const response = await fetch('/api/chat/intelligent', {
         method: 'POST',
@@ -429,30 +413,37 @@ export default function IntelligentAgendaPage() {
           context: 'agenda_search'
         })
       });
-      
+
       const data = await response.json();
-      
+
       // Parse AI response to filter sessions
       const relevantSessions = sessions.filter(session => {
         // AI logic to match sessions based on natural language query
         return data.response.toLowerCase().includes(session.title.toLowerCase());
       });
-      
+
       setFilteredSessions(relevantSessions);
-      
+
       // Add insight about the search
       setAiInsights([{
         type: 'recommendation',
         message: `Found ${relevantSessions.length} sessions matching "${aiSearchQuery}"`,
         sessionIds: relevantSessions.map(s => s.id)
       }, ...aiInsights]);
-      
+
     } catch (error) {
       console.error('AI search error:', error);
     } finally {
       setIsAIThinking(false);
       setAiSearchQuery('');
     }
+  };
+
+  const handleAskAIAboutSession = (session: Session) => {
+    // Navigate to chat with session context
+    const sessionInfo = `I'd like to know more about the session "${session.title}" scheduled from ${new Date(session.startTime).toLocaleTimeString()} to ${new Date(session.endTime).toLocaleTimeString()} at ${session.location}. ${session.description}`;
+    const encodedMessage = encodeURIComponent(sessionInfo);
+    router.push(`/chat?message=${encodedMessage}`);
   };
 
   const filterSessions = () => {
@@ -475,10 +466,8 @@ export default function IntelligentAgendaPage() {
       filtered = filtered.filter(session => session.track === selectedTrack);
     }
 
-    // Sort by relevance if AI mode is on
-    if (aiMode !== 'off') {
-      filtered.sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0));
-    }
+    // Sort by relevance (AI always enabled)
+    filtered.sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0));
 
     setFilteredSessions(filtered);
   };
@@ -526,44 +515,19 @@ export default function IntelligentAgendaPage() {
             <div>
               <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                 Conference Agenda
-                {aiMode !== 'off' && (
-                  <span className="inline-flex items-center px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
-                    <Brain className="w-3 h-3 mr-1" />
-                    AI-Enhanced
-                  </span>
-                )}
+                <span className="inline-flex items-center px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                  <Brain className="w-3 h-3 mr-1" />
+                  AI-Enhanced
+                </span>
               </h1>
               <p className="text-sm text-gray-600 mt-1">October 15-17, 2025 • Las Vegas</p>
             </div>
             
-            {/* AI Mode Toggle */}
+            {/* AI Status - Always Full AI */}
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">AI Mode:</span>
-              <div className="flex bg-gray-100 rounded-lg p-1">
-                <button
-                  onClick={() => setAiMode('off')}
-                  className={`px-3 py-1 text-xs rounded-md transition-colors ${
-                    aiMode === 'off' ? 'bg-white shadow-sm' : ''
-                  }`}
-                >
-                  Off
-                </button>
-                <button
-                  onClick={() => setAiMode('smart')}
-                  className={`px-3 py-1 text-xs rounded-md transition-colors ${
-                    aiMode === 'smart' ? 'bg-white shadow-sm' : ''
-                  }`}
-                >
-                  Smart
-                </button>
-                <button
-                  onClick={() => setAiMode('full')}
-                  className={`px-3 py-1 text-xs rounded-md transition-colors ${
-                    aiMode === 'full' ? 'bg-white shadow-sm' : ''
-                  }`}
-                >
-                  Full AI
-                </button>
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg shadow-sm">
+                <Brain className="w-4 h-4" />
+                <span className="text-xs font-medium">AI Enhanced</span>
               </div>
             </div>
           </div>
@@ -594,43 +558,30 @@ export default function IntelligentAgendaPage() {
         {/* Smart Search Bar */}
         <div className="px-4 py-3 border-t border-gray-100">
           <div className="flex gap-2">
-            {aiMode === 'full' ? (
-              <div className="flex-1 flex gap-2">
-                <div className="flex-1 relative">
-                  <input
-                    type="text"
-                    value={aiSearchQuery}
-                    onChange={(e) => setAiSearchQuery(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleAISearch()}
-                    placeholder="Ask AI: 'Find AI sessions in the morning' or 'What should a CTO attend?'"
-                    className="w-full pl-10 pr-4 py-2 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
-                  <Wand2 className="absolute left-3 top-2.5 h-5 w-5 text-purple-500" />
-                </div>
-                <button
-                  onClick={handleAISearch}
-                  disabled={isAIThinking}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
-                >
-                  {isAIThinking ? (
-                    <RefreshCw className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <Sparkles className="w-5 h-5" />
-                  )}
-                </button>
-              </div>
-            ) : (
+            <div className="flex-1 flex gap-2">
               <div className="flex-1 relative">
                 <input
                   type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search sessions, speakers, or topics..."
-                  className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={aiSearchQuery}
+                  onChange={(e) => setAiSearchQuery(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleAISearch()}
+                  placeholder="Ask AI: 'Find AI sessions in the morning' or 'What should a CTO attend?'"
+                  className="w-full pl-10 pr-4 py-2 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
-                <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                <Wand2 className="absolute left-3 top-2.5 h-5 w-5 text-purple-500" />
               </div>
-            )}
+              <button
+                onClick={handleAISearch}
+                disabled={isAIThinking}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
+              >
+                {isAIThinking ? (
+                  <RefreshCw className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Sparkles className="w-5 h-5" />
+                )}
+              </button>
+            </div>
             
             <select
               value={selectedTrack}
@@ -648,7 +599,7 @@ export default function IntelligentAgendaPage() {
 
       <div className="flex">
         {/* AI Insights Panel */}
-        {aiMode !== 'off' && showAIPanel && (
+        {showAIPanel && (
           <div className="w-80 bg-white border-r border-gray-200 p-4 overflow-y-auto" style={{ height: 'calc(100vh - 16rem)' }}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-gray-900 flex items-center gap-2">
@@ -664,49 +615,47 @@ export default function IntelligentAgendaPage() {
             </div>
             
             {/* User Profile Quick Edit */}
-            {aiMode === 'full' && (
-              <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                <p className="text-xs font-medium text-gray-700 mb-2">Your Profile</p>
-                <div className="space-y-2">
-                  <select
-                    value={userProfile.role}
-                    onChange={(e) => {
-                      const newProfile = { ...userProfile, role: e.target.value };
-                      setUserProfile(newProfile);
-                      saveUserProfile(newProfile);
-                    }}
-                    className="w-full text-xs px-2 py-1 border border-gray-200 rounded"
-                  >
-                    <option value="">Select Role...</option>
-                    <option value="executive">Executive</option>
-                    <option value="developer">Developer</option>
-                    <option value="product">Product Manager</option>
-                    <option value="sales">Sales/BD</option>
-                  </select>
-                  <div className="flex flex-wrap gap-1">
-                    {['AI', 'Claims', 'Cyber', 'Data'].map(interest => (
-                      <button
-                        key={interest}
-                        onClick={() => {
-                          const interests = userProfile.interests.includes(interest)
-                            ? userProfile.interests.filter(i => i !== interest)
-                            : [...userProfile.interests, interest];
-                          const newProfile = { ...userProfile, interests };
-                          saveUserProfile(newProfile);
-                        }}
-                        className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
-                          userProfile.interests.includes(interest)
-                            ? 'bg-purple-600 text-white'
-                            : 'bg-gray-200 text-gray-600'
-                        }`}
-                      >
-                        {interest}
-                      </button>
-                    ))}
-                  </div>
+            <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+              <p className="text-xs font-medium text-gray-700 mb-2">Your Profile</p>
+              <div className="space-y-2">
+                <select
+                  value={userProfile.role}
+                  onChange={(e) => {
+                    const newProfile = { ...userProfile, role: e.target.value };
+                    setUserProfile(newProfile);
+                    saveUserProfile(newProfile);
+                  }}
+                  className="w-full text-xs px-2 py-1 border border-gray-200 rounded"
+                >
+                  <option value="">Select Role...</option>
+                  <option value="executive">Executive</option>
+                  <option value="developer">Developer</option>
+                  <option value="product">Product Manager</option>
+                  <option value="sales">Sales/BD</option>
+                </select>
+                <div className="flex flex-wrap gap-1">
+                  {['AI', 'Claims', 'Cyber', 'Data'].map(interest => (
+                    <button
+                      key={interest}
+                      onClick={() => {
+                        const interests = userProfile.interests.includes(interest)
+                          ? userProfile.interests.filter(i => i !== interest)
+                          : [...userProfile.interests, interest];
+                        const newProfile = { ...userProfile, interests };
+                        saveUserProfile(newProfile);
+                      }}
+                      className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
+                        userProfile.interests.includes(interest)
+                          ? 'bg-purple-600 text-white'
+                          : 'bg-gray-200 text-gray-600'
+                      }`}
+                    >
+                      {interest}
+                    </button>
+                  ))}
                 </div>
               </div>
-            )}
+            </div>
             
             {/* Insights List */}
             <div className="space-y-3">
@@ -756,31 +705,29 @@ export default function IntelligentAgendaPage() {
             </div>
             
             {/* Quick Stats */}
-            {aiMode === 'full' && (
-              <div className="mt-6 pt-4 border-t border-gray-200">
-                <h4 className="text-xs font-semibold text-gray-700 mb-3">Session Stats</h4>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="bg-gray-50 p-2 rounded">
-                    <div className="text-lg font-bold text-gray-900">{filteredSessions.length}</div>
-                    <div className="text-xs text-gray-600">Total Sessions</div>
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <h4 className="text-xs font-semibold text-gray-700 mb-3">Session Stats</h4>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-gray-50 p-2 rounded">
+                  <div className="text-lg font-bold text-gray-900">{filteredSessions.length}</div>
+                  <div className="text-xs text-gray-600">Total Sessions</div>
+                </div>
+                <div className="bg-purple-50 p-2 rounded">
+                  <div className="text-lg font-bold text-purple-600">
+                    {filteredSessions.filter(s => (s.relevanceScore || 0) > 0.7).length}
                   </div>
-                  <div className="bg-purple-50 p-2 rounded">
-                    <div className="text-lg font-bold text-purple-600">
-                      {filteredSessions.filter(s => (s.relevanceScore || 0) > 0.7).length}
-                    </div>
-                    <div className="text-xs text-gray-600">Recommended</div>
-                  </div>
-                  <div className="bg-blue-50 p-2 rounded">
-                    <div className="text-lg font-bold text-blue-600">{favorites.size}</div>
-                    <div className="text-xs text-gray-600">Favorited</div>
-                  </div>
-                  <div className="bg-red-50 p-2 rounded">
-                    <div className="text-lg font-bold text-red-600">{conflicts.size}</div>
-                    <div className="text-xs text-gray-600">Conflicts</div>
-                  </div>
+                  <div className="text-xs text-gray-600">Recommended</div>
+                </div>
+                <div className="bg-blue-50 p-2 rounded">
+                  <div className="text-lg font-bold text-blue-600">{favorites.size}</div>
+                  <div className="text-xs text-gray-600">Favorited</div>
+                </div>
+                <div className="bg-red-50 p-2 rounded">
+                  <div className="text-lg font-bold text-red-600">{conflicts.size}</div>
+                  <div className="text-xs text-gray-600">Conflicts</div>
                 </div>
               </div>
-            )}
+            </div>
           </div>
         )}
 
@@ -791,10 +738,6 @@ export default function IntelligentAgendaPage() {
             <button
               onClick={() => {
                 setShowAIPanel(true);
-                // Also enable AI mode if it's off
-                if (aiMode === 'off') {
-                  setAiMode('smart');
-                }
               }}
               className="fixed left-0 top-1/2 -translate-y-1/2 z-40 bg-purple-600 text-white rounded-r-lg shadow-lg hover:bg-purple-700 transition-all hover:translate-x-1 writing-mode-vertical-lr"
               style={{
@@ -835,11 +778,11 @@ export default function IntelligentAgendaPage() {
                     key={session.id}
                     id={`session-${session.id}`}
                     className={`bg-white rounded-lg shadow-sm border-2 p-4 transition-all hover:shadow-md ${
-                      aiMode !== 'off' ? getRelevanceColor(relevanceScore) : 'border-gray-200'
+                      getRelevanceColor(relevanceScore)
                     } ${hasConflict ? 'ring-2 ring-red-500' : ''}`}
                   >
                     {/* AI Relevance Indicator */}
-                    {aiMode !== 'off' && relevanceScore > 0.5 && (
+                    {relevanceScore > 0.5 && (
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                           {relevanceScore > 0.7 && (
@@ -861,12 +804,10 @@ export default function IntelligentAgendaPage() {
                             </span>
                           )}
                         </div>
-                        {aiMode === 'full' && (
-                          <div className="flex items-center gap-1 text-xs text-gray-500">
-                            <BarChart3 className="w-3 h-3" />
-                            {Math.round(relevanceScore * 100)}% match
-                          </div>
-                        )}
+                        <div className="flex items-center gap-1 text-xs text-gray-500">
+                          <BarChart3 className="w-3 h-3" />
+                          {Math.round(relevanceScore * 100)}% match
+                        </div>
                       </div>
                     )}
                     
@@ -971,24 +912,25 @@ export default function IntelligentAgendaPage() {
                     )}
                     
                     {/* AI Quick Actions */}
-                    {aiMode === 'full' && (
-                      <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
-                        <div className="flex gap-2">
-                          <button className="text-xs text-gray-600 hover:text-gray-800 flex items-center gap-1">
-                            <ThumbsUp className="w-3 h-3" />
-                            Relevant
-                          </button>
-                          <button className="text-xs text-gray-600 hover:text-gray-800 flex items-center gap-1">
-                            <ThumbsDown className="w-3 h-3" />
-                            Not for me
-                          </button>
-                        </div>
-                        <button className="text-xs text-purple-600 hover:text-purple-700 flex items-center gap-1">
-                          <MessageCircle className="w-3 h-3" />
-                          Ask AI about this
+                    <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+                      <div className="flex gap-2">
+                        <button className="text-xs text-gray-600 hover:text-gray-800 flex items-center gap-1">
+                          <ThumbsUp className="w-3 h-3" />
+                          Relevant
+                        </button>
+                        <button className="text-xs text-gray-600 hover:text-gray-800 flex items-center gap-1">
+                          <ThumbsDown className="w-3 h-3" />
+                          Not for me
                         </button>
                       </div>
-                    )}
+                      <button
+                        onClick={() => handleAskAIAboutSession(session)}
+                        className="text-xs text-purple-600 hover:text-purple-700 flex items-center gap-1"
+                      >
+                        <MessageCircle className="w-3 h-3" />
+                        Ask AI about this
+                      </button>
+                    </div>
                   </div>
                 );
               })}

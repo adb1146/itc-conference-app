@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Loader2, Calendar, Sparkles, Zap, Users, TrendingUp, Mail, Lock, LogIn, UserPlus, CheckCircle, MessageSquare, Brain, Award, Building, Briefcase, Heart, Target, ChevronRight, ArrowRight } from 'lucide-react';
 import { useSession, signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useChatPersistence } from '@/hooks/useChatPersistence';
 
@@ -106,6 +106,7 @@ const PERSONALIZED_QUESTIONS = {
 export default function ChatPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { messages, setMessages, addMessage, clearHistory, isLoaded } = useChatPersistence([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -114,6 +115,9 @@ export default function ChatPage() {
   const [showAuthForm, setShowAuthForm] = useState<'signin' | 'register' | 'profile' | null>(null);
   const [registrationStep, setRegistrationStep] = useState(1);
   const [profileIncomplete, setProfileIncomplete] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const messageIdCounter = useRef(0);
   const [authData, setAuthData] = useState({
     email: '',
     password: '',
@@ -130,7 +134,14 @@ export default function ChatPage() {
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState('');
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
-  
+  const [hasProcessedUrlMessage, setHasProcessedUrlMessage] = useState(false);
+
+  // Generate unique message IDs
+  const generateMessageId = () => {
+    messageIdCounter.current += 1;
+    return `msg_${Date.now()}_${messageIdCounter.current}`;
+  };
+
   // Prevent auto-scrolling and maintain viewport position
   useEffect(() => {
     // Reset scroll position to top when component mounts
@@ -168,12 +179,12 @@ export default function ChatPage() {
         if (incomplete && !hasGreeted) {
           setTimeout(() => {
             setMessages(prev => [...prev, {
-              id: Date.now().toString(),
+              id: generateMessageId(),
               role: 'assistant',
               content: "I notice your profile isn't complete yet. A complete profile helps me provide better personalized recommendations. Would you like to complete it now?",
               timestamp: new Date()
             }, {
-              id: (Date.now() + 1).toString(),
+              id: generateMessageId(),
               role: 'system',
               content: 'profile_prompt',
               actionType: 'profile',
@@ -186,6 +197,97 @@ export default function ChatPage() {
       console.error('Error checking first-time status:', error);
     }
   };
+
+  // Auto-scroll to bottom when messages change
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    // Also ensure the container is scrolled
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  // Check for incoming context from "Ask AI about this"
+  useEffect(() => {
+    const checkForContext = async () => {
+      const contextStr = sessionStorage.getItem('askAIContext');
+      if (contextStr && !hasGreeted) {
+        try {
+          const context = JSON.parse(contextStr);
+          sessionStorage.removeItem('askAIContext'); // Clear after reading
+
+          // Set a message indicating we're processing the request
+          const displayTitle = context.type === 'speaker'
+            ? `${context.data.name} from ${context.data.company}`
+            : context.data.title;
+
+          setMessages([
+            {
+              id: generateMessageId(),
+              role: 'assistant',
+              content: `🔍 Searching for comprehensive information about: **${displayTitle}**\n\nI'm searching multiple sources including:\n- 📊 Conference database (vector search)\n- 🌐 Web search for ${context.type === 'speaker' ? 'speaker background and expertise' : 'speakers and topics'}\n- 🏢 ITC Vegas website\n\nPlease wait while I gather all relevant information...`,
+              timestamp: new Date()
+            }
+          ]);
+
+          // Set the input and mark as greeted
+          setInput(context.query);
+          setHasGreeted(true);
+
+          // Scroll to bottom immediately when arriving from Ask AI
+          setTimeout(() => {
+            scrollToBottom();
+            // Force scroll after a delay to ensure content is rendered
+            setTimeout(scrollToBottom, 100);
+          }, 50);
+        } catch (error) {
+          console.error('Error processing context:', error);
+        }
+      }
+    };
+
+    if (status !== 'loading') {
+      checkForContext();
+    }
+  }, [status, hasGreeted]);
+
+  // Handle message from URL query parameter
+  useEffect(() => {
+    const messageParam = searchParams.get('message');
+    if (messageParam && !hasProcessedUrlMessage) {
+      setHasProcessedUrlMessage(true);
+      // Decode the message and set it as input
+      const decodedMessage = decodeURIComponent(messageParam);
+      setInput(decodedMessage);
+
+      // Clear the URL parameter to prevent re-triggering on back navigation
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('message');
+      router.replace(newUrl.pathname, { scroll: false });
+
+      // The message will be auto-sent by the existing auto-submit logic below
+    }
+  }, [searchParams, hasProcessedUrlMessage, router]);
+
+  // Auto-submit when input is set from context or URL parameter
+  useEffect(() => {
+    if (input && !isLoading && (
+      input.includes('Tell me everything about') ||
+      input.includes('Search the web for information') ||
+      input.includes("I'd like to know more about the session") // From agenda "Ask AI" button
+    )) {
+      // Automatically submit after a short delay
+      const timer = setTimeout(() => {
+        const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
+        handleSubmit(fakeEvent);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [input, isLoading]);
 
   // Initialize welcome message
   useEffect(() => {
@@ -249,7 +351,7 @@ export default function ChatPage() {
         setHasGreeted(true);
       }
     }
-  }, [status, session, hasGreeted, isFirstTime, isLoaded, messages.length]);
+  }, [status, session, hasGreeted, isFirstTime, isLoaded, messages?.length || 0]);
 
   // Removed auto-scroll effect to maintain viewport position
   // Users can manually scroll if they want to see new messages
@@ -275,7 +377,7 @@ export default function ChatPage() {
         setShowAuthForm(null);
         setProfileIncomplete(false);
         setMessages(prev => [...prev, {
-          id: Date.now().toString(),
+          id: generateMessageId(),
           role: 'assistant',
           content: "✅ **Profile updated successfully!** Now I can provide you with more personalized recommendations based on your interests.\n\nWhat would you like to explore first?",
           timestamp: new Date()
@@ -307,7 +409,7 @@ export default function ChatPage() {
         if (result?.ok) {
           setShowAuthForm(null);
           setMessages(prev => [...prev, {
-            id: Date.now().toString(),
+            id: generateMessageId(),
             role: 'assistant',
             content: "✅ **Welcome back!** I'm refreshing your personalized experience...",
             timestamp: new Date()
@@ -335,7 +437,7 @@ export default function ChatPage() {
           if (result?.ok) {
             setShowAuthForm(null);
             setMessages(prev => [...prev, {
-              id: Date.now().toString(),
+              id: generateMessageId(),
               role: 'assistant',
               content: "🎉 **Welcome to ITC Vegas 2025!** I'm preparing your personalized conference experience...",
               timestamp: new Date()
@@ -354,34 +456,34 @@ export default function ChatPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || isLoading) return;
-    
+  // Function to send a message programmatically
+  const sendMessage = async (messageText: string) => {
+    if (!messageText.trim() || isLoading) return;
+
     // Mark that user has interacted
     setHasUserInteracted(true);
 
     // Check if user is asking about signing in while unauthenticated
-    if (status === 'unauthenticated' && 
-        (input.toLowerCase().includes('sign in') || 
-         input.toLowerCase().includes('log in') || 
-         input.toLowerCase().includes('register') ||
-         input.toLowerCase().includes('create account'))) {
-      setMessages(prev => [...prev, 
+    if (status === 'unauthenticated' &&
+        (messageText.toLowerCase().includes('sign in') ||
+         messageText.toLowerCase().includes('log in') ||
+         messageText.toLowerCase().includes('register') ||
+         messageText.toLowerCase().includes('create account'))) {
+      setMessages(prev => [...prev,
         {
-          id: Date.now().toString(),
+          id: generateMessageId(),
           role: 'user',
-          content: input.trim(),
+          content: messageText.trim(),
           timestamp: new Date()
         },
         {
-          id: (Date.now() + 1).toString(),
+          id: generateMessageId(),
           role: 'assistant',
           content: "I'd be happy to help you get started! Would you like to sign in or create a new account?",
           timestamp: new Date()
         },
         {
-          id: (Date.now() + 2).toString(),
+          id: generateMessageId(),
           role: 'system',
           content: 'auth_prompt',
           actionType: 'auth',
@@ -393,24 +495,27 @@ export default function ChatPage() {
     }
 
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: generateMessageId(),
       role: 'user',
-      content: input.trim(),
+      content: messageText.trim(),
       timestamp: new Date()
     };
+
+    const assistantMessageId = generateMessageId();
 
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
 
+    // Use streaming API for faster responses
     try {
-      const response = await fetch('/api/chat/vector', {
+      const response = await fetch('/api/chat/stream', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message: input.trim(),
+          message: messageText.trim(),
           userPreferences: session?.user ? {
             name: (session.user as any).name,
             role: (session.user as any).role,
@@ -421,38 +526,119 @@ export default function ChatPage() {
         }),
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        let assistantContent = data.response;
-        
-        // If not authenticated, add a subtle auth prompt occasionally
-        if (status === 'unauthenticated' && Math.random() < 0.3) {
-          assistantContent += '\n\n💡 **Tip:** Sign in to get personalized recommendations based on your interests!';
-        }
-
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: assistantContent,
-          timestamp: new Date()
-        };
-        setMessages(prev => [...prev, assistantMessage]);
-      } else {
-        throw new Error(data.error || 'Failed to get response');
+      if (!response.ok) {
+        throw new Error('Failed to get response');
       }
-    } catch (error) {
-      console.error('Chat error:', error);
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      // Add placeholder message for streaming
+      let streamedContent = '';
+      const assistantMessage: Message = {
+        id: assistantMessageId,
         role: 'assistant',
-        content: 'I apologize, but I encountered an error. Please try again or rephrase your question.',
+        content: '',
         timestamp: new Date()
       };
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages(prev => [...prev, assistantMessage]);
+
+      if (reader) {
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') continue;
+
+              try {
+                const parsed = JSON.parse(data);
+
+                if (parsed.type === 'content') {
+                  streamedContent += parsed.content;
+                  // Update message with streamed content
+                  setMessages(prev => prev.map(msg =>
+                    msg.id === assistantMessageId
+                      ? { ...msg, content: streamedContent }
+                      : msg
+                  ));
+                } else if (parsed.type === 'sources' && parsed.content) {
+                  // Add sources to the end
+                  const sourcesText = '\n\n---\n**Sources:**\n' +
+                    parsed.content.map((s: any, i: number) =>
+                      `[${i+1}] ${s.title || s.url}`
+                    ).join('\n');
+                  streamedContent += sourcesText;
+                  setMessages(prev => prev.map(msg =>
+                    msg.id === assistantMessageId
+                      ? { ...msg, content: streamedContent }
+                      : msg
+                  ));
+                } else if (parsed.type === 'error') {
+                  // Don't throw here, let the outer catch handle it
+                  console.error('Server error:', parsed.content);
+                  throw new Error(parsed.content || 'An error occurred while processing your request');
+                }
+              } catch (e) {
+                // Re-throw error messages from server, but log parsing errors
+                if (e instanceof Error && parsed?.type === 'error') {
+                  throw e;
+                }
+                console.error('Error parsing stream data:', e);
+              }
+            }
+          }
+        }
+      }
+
+      // If not authenticated, add a subtle auth prompt occasionally
+      if (status === 'unauthenticated' && Math.random() < 0.3) {
+        streamedContent += '\n\n💡 **Tip:** Sign in to get personalized recommendations based on your interests!';
+        setMessages(prev => prev.map(msg =>
+          msg.id === assistantMessageId
+            ? { ...msg, content: streamedContent }
+            : msg
+        ));
+      }
+
+    } catch (error) {
+      console.error('Chat error:', error);
+      let errorContent = 'I apologize, but I encountered an error. Please try again or rephrase your question.';
+
+      // Provide more specific error messages
+      if (error instanceof Error) {
+        if (error.message.includes('Connection error') || error.message.includes('Failed to get response')) {
+          errorContent = 'I\'m having trouble connecting to the AI service. Please try again in a moment.';
+        } else if (error.message.includes('rate limit')) {
+          errorContent = 'The service is currently busy. Please wait a moment and try again.';
+        }
+      }
+
+      const errorMessage: Message = {
+        id: assistantMessageId,
+        role: 'assistant',
+        content: errorContent,
+        timestamp: new Date()
+      };
+      setMessages(prev => prev.map(msg =>
+        msg.id === assistantMessageId ? errorMessage : msg
+      ));
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await sendMessage(input);
   };
 
   const handleSampleQuestion = (question: string) => {
@@ -1040,7 +1226,7 @@ export default function ChatPage() {
           </div>
 
           {/* Messages Container */}
-          <div className="h-[700px] overflow-y-auto bg-gray-50 p-6">
+          <div ref={messagesContainerRef} className="h-[700px] overflow-y-auto bg-gray-50 p-6">
             <div className="space-y-4">
               {messages.map((message) => {
                 if (message.role === 'system') {
@@ -1092,7 +1278,7 @@ export default function ChatPage() {
                               <button
                                 onClick={() => {
                                   setMessages(prev => [...prev, {
-                                    id: Date.now().toString(),
+                                    id: generateMessageId(),
                                     role: 'assistant',
                                     content: "No problem! You can complete your profile anytime. Just let me know when you're ready.\n\nWhat would you like to explore about the conference?",
                                     timestamp: new Date()
@@ -1133,10 +1319,16 @@ export default function ChatPage() {
                           : 'bg-white border border-gray-200'
                       }`}
                     >
-                      <div className={`text-sm ${message.role === 'assistant' ? 'text-gray-800 space-y-2' : ''}`}>
-                        {typeof message.content === 'string' 
-                          ? formatContent(message.content)
-                          : message.content}
+                      <div className={`text-sm ${message.role === 'assistant' ? 'text-gray-800 space-y-2' : 'text-white'}`}>
+                        {message.role === 'user' ? (
+                          // Simple rendering for user messages to preserve white text
+                          <p className="text-white">{message.content}</p>
+                        ) : (
+                          // Rich formatting for assistant messages
+                          typeof message.content === 'string'
+                            ? formatContent(message.content)
+                            : message.content
+                        )}
                       </div>
                       <p className={`text-xs mt-2 ${
                         message.role === 'user' ? 'text-blue-100' : 'text-gray-400'
@@ -1169,6 +1361,7 @@ export default function ChatPage() {
                   </div>
                 </div>
               )}
+              <div ref={messagesEndRef} />
             </div>
           </div>
 
@@ -1211,6 +1404,7 @@ export default function ChatPage() {
               />
               <button
                 type="submit"
+                data-testid="send-button"
                 disabled={!input.trim() || isLoading || showAuthForm !== null}
                 className="px-5 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
               >

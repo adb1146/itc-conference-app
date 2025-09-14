@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { 
-  Calendar, Clock, MapPin, Users, Tag, ArrowLeft, Heart, 
-  User, Building, ExternalLink, Mail, Share2, AlertCircle
+import {
+  Calendar, Clock, MapPin, Users, Tag, ArrowLeft, Heart,
+  User, Building, ExternalLink, Mail, Share2, AlertCircle, MessageCircle, Sparkles
 } from 'lucide-react';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
+import FavoriteButton from '@/components/FavoriteButton';
 
 interface Speaker {
   id: string;
@@ -34,22 +35,26 @@ interface Session {
   speakers: { speaker: Speaker }[];
   date?: string;
   day?: number;
+  enrichedSummary?: string;
+  keyTakeaways?: string[];
+  industryContext?: string;
+  relatedTopics?: string[];
+  lastEnrichmentSync?: string;
 }
 
 export default function SessionDetailPage() {
   const params = useParams();
   const router = useRouter();
   const sessionId = params.id as string;
-  
+
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isFavorite, setIsFavorite] = useState(false);
-
-  useEffect(() => {
-    fetchSession();
-    checkFavoriteStatus();
-  }, [sessionId]);
+  const [enriching, setEnriching] = useState(false);
+  const [hasAutoEnriched, setHasAutoEnriched] = useState(false);
+  const [personalizedReasons, setPersonalizedReasons] = useState<string[]>([]);
+  const [loadingReasons, setLoadingReasons] = useState(false);
 
   const fetchSession = async () => {
     try {
@@ -66,6 +71,77 @@ export default function SessionDetailPage() {
       setLoading(false);
     }
   };
+
+  const enrichSession = async () => {
+    try {
+      setEnriching(true);
+      const response = await fetch(`/api/sessions/${sessionId}/enrich`, {
+        method: 'POST'
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSession(data.session);
+      }
+    } catch (error) {
+      console.error('Error enriching session:', error);
+    } finally {
+      setEnriching(false);
+    }
+  };
+
+  const fetchPersonalizedReasons = async () => {
+    try {
+      setLoadingReasons(true);
+
+      // Get user profile from localStorage if available
+      const userProfileStr = localStorage.getItem('userProfile');
+      const userProfile = userProfileStr ? JSON.parse(userProfileStr) : null;
+
+      const response = await fetch(`/api/sessions/${sessionId}/personalize`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userProfile })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setPersonalizedReasons(data.reasons || []);
+      }
+    } catch (error) {
+      console.error('Error fetching personalized reasons:', error);
+    } finally {
+      setLoadingReasons(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSession();
+    checkFavoriteStatus();
+  }, [sessionId]);
+
+  // Fetch personalized reasons when session is loaded
+  useEffect(() => {
+    if (session && !loading) {
+      fetchPersonalizedReasons();
+    }
+  }, [session?.id]);
+
+  // Auto-enrich session data if not already enriched
+  useEffect(() => {
+    if (session && !loading && !hasAutoEnriched && !enriching) {
+      const hasEnrichment = session.enrichedSummary && session.enrichedSummary.trim() !== '';
+      const isRecent = session.lastEnrichmentSync &&
+        (new Date().getTime() - new Date(session.lastEnrichmentSync).getTime()) < 24 * 60 * 60 * 1000; // 24 hours
+
+      if (!hasEnrichment || !isRecent) {
+        setHasAutoEnriched(true);
+        enrichSession();
+      }
+    }
+  }, [session, loading, hasAutoEnriched, enriching]);
 
   const checkFavoriteStatus = async () => {
     try {
@@ -129,6 +205,37 @@ export default function SessionDetailPage() {
     }
   };
 
+  const askAIAboutSession = () => {
+    if (!session) return;
+
+    // Prepare session data for AI context
+    const sessionData = {
+      id: session.id,
+      title: session.title,
+      description: session.description,
+      track: session.track,
+      speakers: session.speakers.map(s => ({
+        name: s.speaker.name,
+        role: s.speaker.role,
+        company: s.speaker.company
+      })),
+      tags: session.tags,
+      location: session.location,
+      startTime: session.startTime,
+      endTime: session.endTime
+    };
+
+    // Store session context in sessionStorage
+    sessionStorage.setItem('askAIContext', JSON.stringify({
+      type: 'session',
+      data: sessionData,
+      query: `Tell me everything about the session "${session.title}". Search the web for information about the speakers, the topics covered, and any relevant industry context. Include information from the ITC Vegas website if available.`
+    }));
+
+    // Navigate to chat
+    router.push('/chat');
+  };
+
   if (loading) {
     return (
       <>
@@ -182,7 +289,15 @@ export default function SessionDetailPage() {
           <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
             <div className="flex justify-between items-start mb-6">
               <div className="flex-1">
-                <h1 className="text-3xl font-bold text-gray-900 mb-4">{session.title}</h1>
+                <div className="flex items-start justify-between mb-4">
+                  <h1 className="text-3xl font-bold text-gray-900">{session.title}</h1>
+                  <FavoriteButton
+                    itemId={session.id}
+                    type="session"
+                    showLabel={true}
+                    className="ml-4"
+                  />
+                </div>
                 
                 {/* Tags */}
                 {session.tags && session.tags.length > 0 && (
@@ -201,6 +316,13 @@ export default function SessionDetailPage() {
               
               {/* Action Buttons */}
               <div className="flex gap-2 ml-4">
+                <button
+                  onClick={askAIAboutSession}
+                  className="p-3 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                  title="Ask AI about this session"
+                >
+                  <MessageCircle className="h-6 w-6" />
+                </button>
                 <button
                   onClick={toggleFavorite}
                   className={`p-3 rounded-lg transition-colors ${
@@ -251,12 +373,174 @@ export default function SessionDetailPage() {
               </div>
             </div>
 
-            {/* Description */}
+            {/* Enhanced Description */}
             <div className="prose max-w-none">
               <h2 className="text-xl font-semibold text-gray-900 mb-3">About This Session</h2>
-              <p className="text-gray-700 leading-relaxed">
-                {session.description || 'No description available for this session.'}
-              </p>
+              {enriching && !session.enrichedSummary ? (
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 mb-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                    <p className="text-blue-800 font-medium">AI agents are researching this session for you</p>
+                  </div>
+                  <p className="text-gray-700 mb-3">
+                    We're analyzing industry trends, speaker expertise, and related content to provide you with
+                    enriched insights and personalized recommendations.
+                  </p>
+                  <div className="bg-white/70 rounded p-3 border border-blue-200">
+                    <p className="text-sm text-gray-700">
+                      <strong className="text-blue-700">Transform Your Business with AI:</strong> This intelligent research
+                      capability demonstrates how agentic AI can automate time-consuming tasks.
+                      PS Advisory specializes in helping insurance companies implement similar AI solutions
+                      to streamline operations and enhance decision-making.
+                    </p>
+                    <a href="https://psadvisory.com" target="_blank" rel="noopener noreferrer"
+                       className="text-blue-600 hover:text-blue-700 text-sm font-medium mt-2 inline-block">
+                      Discover how PS Advisory can accelerate your digital transformation →
+                    </a>
+                  </div>
+                </div>
+              ) : null}
+
+              {session.enrichedSummary ? (
+                <div className="space-y-4">
+                  {session.enrichedSummary.split('\n\n').map((paragraph, idx) => {
+                    if (paragraph.startsWith('**') && paragraph.includes(':**')) {
+                      const [title, ...content] = paragraph.split(':**');
+                      return (
+                        <div key={idx}>
+                          <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                            {title.replace(/\*\*/g, '')}
+                          </h3>
+                          <p className="text-gray-700 leading-relaxed">
+                            {content.join(':**').replace(/\*\*/g, '')}
+                          </p>
+                        </div>
+                      );
+                    }
+                    return (
+                      <p key={idx} className="text-gray-700 leading-relaxed">
+                        {paragraph}
+                      </p>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-gray-700 leading-relaxed">
+                  {session.description || 'No description available for this session.'}
+                </p>
+              )}
+            </div>
+
+            {/* Key Takeaways */}
+            {session.keyTakeaways && session.keyTakeaways.length > 0 && (
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <Tag className="w-5 h-5 text-purple-600" />
+                  Key Takeaways
+                </h3>
+                <ul className="space-y-2">
+                  {session.keyTakeaways.map((takeaway, idx) => (
+                    <li key={idx} className="flex items-start gap-2">
+                      <span className="text-purple-600 mt-1">•</span>
+                      <span className="text-gray-700">{takeaway}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Why You Should Attend */}
+            <div className="mt-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-purple-600" />
+                Why You Should Attend
+              </h3>
+              {loadingReasons ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600"></div>
+                    <p className="text-purple-700 font-medium">AI is personalizing recommendations for you...</p>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Our AI is analyzing your profile and interests to generate personalized reasons why this session
+                    would be valuable for your professional development.
+                  </p>
+                </div>
+              ) : personalizedReasons.length > 0 ? (
+                <ul className="space-y-3">
+                  {personalizedReasons.map((reason, idx) => (
+                    <li key={idx} className="flex items-start gap-3">
+                      <span className="text-purple-600 mt-0.5 flex-shrink-0">✓</span>
+                      <span className="text-gray-700 leading-relaxed">{reason}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <ul className="space-y-3">
+                  <li className="flex items-start gap-3">
+                    <span className="text-purple-600 mt-0.5 flex-shrink-0">✓</span>
+                    <span className="text-gray-700 leading-relaxed">
+                      Gain cutting-edge insights from industry leaders shaping the future of insurance technology
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="text-purple-600 mt-0.5 flex-shrink-0">✓</span>
+                    <span className="text-gray-700 leading-relaxed">
+                      Learn practical strategies you can implement immediately in your organization
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="text-purple-600 mt-0.5 flex-shrink-0">✓</span>
+                    <span className="text-gray-700 leading-relaxed">
+                      Network with peers and experts who share your challenges and goals
+                    </span>
+                  </li>
+                </ul>
+              )}
+              {!loadingReasons && (
+                <button
+                  onClick={fetchPersonalizedReasons}
+                  className="mt-4 text-sm text-purple-600 hover:text-purple-700 font-medium transition-colors"
+                >
+                  Refresh recommendations
+                </button>
+              )}
+            </div>
+
+            {/* Industry Context */}
+            {session.industryContext && (
+              <div className="mt-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Industry Context</h3>
+                <p className="text-gray-700">{session.industryContext}</p>
+              </div>
+            )}
+
+            {/* Related Topics */}
+            {session.relatedTopics && session.relatedTopics.length > 0 && (
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Related Topics</h3>
+                <div className="flex flex-wrap gap-2">
+                  {session.relatedTopics.map((topic, idx) => (
+                    <span
+                      key={idx}
+                      className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
+                    >
+                      {topic}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Ask AI Link */}
+            <div className="mt-6">
+              <button
+                onClick={askAIAboutSession}
+                className="inline-flex items-center gap-2 text-purple-600 hover:text-purple-700 font-medium transition-colors"
+              >
+                <MessageCircle className="w-5 h-5" />
+                Ask AI about this session
+              </button>
             </div>
 
             {/* Track and Level */}

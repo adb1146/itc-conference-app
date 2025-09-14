@@ -8,19 +8,24 @@ datasource db {
 }
 
 model Session {
-  id          String   @id @default(cuid())
-  title       String   @unique
-  description String
-  startTime   DateTime
-  endTime     DateTime
-  location    String
-  track       String?
-  level       String?
-  tags        String[]
-  sourceUrl   String?
-  lastUpdated DateTime @default(now())
-  createdAt   DateTime @default(now())
-  
+  id                String   @id @default(cuid())
+  title             String   @unique
+  description       String
+  startTime         DateTime
+  endTime           DateTime
+  location          String
+  track             String?
+  level             String?
+  tags              String[]
+  sourceUrl         String?
+  enrichedSummary   String?  @db.Text  // AI-generated comprehensive summary
+  keyTakeaways      String[] @default([])  // Main learning points
+  industryContext   String?  @db.Text  // Relevant industry trends and context
+  relatedTopics     String[] @default([])  // Related concepts and technologies
+  lastEnrichmentSync DateTime?  // When the enrichment was last fetched
+  lastUpdated       DateTime @default(now())
+  createdAt         DateTime @default(now())
+
   speakers    SessionSpeaker[]
   favorites   Favorite[]
 }
@@ -41,8 +46,9 @@ model Speaker {
   achievements    String[] @default([])
   lastProfileSync DateTime?
   createdAt       DateTime @default(now())
-  
+
   sessions  SessionSpeaker[]
+  favorites Favorite[]
 }
 
 model SessionSpeaker {
@@ -105,14 +111,19 @@ model Conversation {
 
 model Favorite {
   id        String   @id @default(cuid())
-  sessionId String
+  sessionId String?  // Optional - for session favorites
+  speakerId String?  // Optional - for speaker favorites
   userId    String
+  type      String   // "session" or "speaker"
   notes     String?  // User can add notes to favorites
   reminder  Boolean  @default(false)
   createdAt DateTime @default(now())
-  
-  session   Session  @relation(fields: [sessionId], references: [id])
+
+  session   Session? @relation(fields: [sessionId], references: [id])
+  speaker   Speaker? @relation(fields: [speakerId], references: [id])
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   @@unique([sessionId, userId])
+  @@unique([speakerId, userId])
+  @@index([userId, type])
 }

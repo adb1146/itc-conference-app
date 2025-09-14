@@ -1,230 +1,501 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { User, Calendar, Building, Target, Heart, LogOut } from 'lucide-react';
+import {
+  User, Building, Briefcase, Target, Heart, Clock,
+  Save, ArrowLeft, Bell, Link as LinkIcon, Calendar,
+  Star, Sparkles, MessageSquare, Settings, LogOut,
+  CheckCircle, X, Loader2
+} from 'lucide-react';
+import Navigation from '@/components/Navigation';
+import Footer from '@/components/Footer';
+import UserDashboard from '@/components/UserDashboard';
 import { signOut } from 'next-auth/react';
 
-interface UserProfile {
-  id: string;
+interface ProfileData {
+  name: string;
   email: string;
-  name: string | null;
-  role: string | null;
-  company: string | null;
+  role: string;
+  company: string;
+  organizationType: string;
   interests: string[];
   goals: string[];
-}
-
-interface Favorite {
-  id: string;
-  session: {
-    id: string;
-    title: string;
-    startTime: string;
-    endTime: string;
-    room: string;
-    track: string;
-    day: number;
+  usingSalesforce: boolean;
+  interestedInSalesforce: boolean;
+  profile?: {
+    bio: string;
+    linkedinUrl: string;
+    position: string;
+    yearsExperience: number;
+    timezone: string;
+    notifications: boolean;
   };
 }
+
+const ORGANIZATION_TYPES = [
+  'Carrier',
+  'Broker',
+  'MGA/MGU',
+  'Reinsurer',
+  'InsurTech',
+  'Vendor/Service Provider',
+  'Consultant',
+  'Other'
+];
+
+const ROLES = [
+  'Executive/C-Suite',
+  'VP/Director',
+  'Product Manager',
+  'Developer/Engineer',
+  'Sales/Business Development',
+  'Marketing',
+  'Operations',
+  'Claims',
+  'Underwriting',
+  'Actuary',
+  'Consultant',
+  'Other'
+];
+
+const INTERESTS = [
+  'Artificial Intelligence',
+  'Machine Learning',
+  'Claims Automation',
+  'Underwriting Innovation',
+  'Digital Distribution',
+  'Customer Experience',
+  'Data Analytics',
+  'Cybersecurity',
+  'Blockchain',
+  'IoT & Telematics',
+  'Climate Risk',
+  'Embedded Insurance',
+  'API & Integration',
+  'Cloud Infrastructure',
+  'RegTech & Compliance'
+];
+
+const GOALS = [
+  'Learn about new technologies',
+  'Network with peers',
+  'Find vendors/partners',
+  'Discover investment opportunities',
+  'Recruit talent',
+  'Share knowledge',
+  'Build brand awareness',
+  'Explore career opportunities'
+];
 
 export default function ProfilePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [profileData, setProfileData] = useState<ProfileData>({
+    name: '',
+    email: '',
+    role: '',
+    company: '',
+    organizationType: '',
+    interests: [],
+    goals: [],
+    usingSalesforce: false,
+    interestedInSalesforce: false,
+    profile: {
+      bio: '',
+      linkedinUrl: '',
+      position: '',
+      yearsExperience: 0,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      notifications: true
+    }
+  });
 
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/auth/signin');
-    } else if (status === 'authenticated' && session?.user?.email) {
+    } else if (session) {
       fetchProfile();
-      fetchFavorites();
     }
-  }, [status, session, router]);
+  }, [session, status]);
 
   const fetchProfile = async () => {
     try {
-      const response = await fetch('/api/user/profile');
+      const response = await fetch('/api/profile');
       if (response.ok) {
         const data = await response.json();
-        setProfile(data);
+        setProfileData(data);
       }
     } catch (error) {
-      console.error('Failed to fetch profile:', error);
+      console.error('Error fetching profile:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchFavorites = async () => {
+  const handleSave = async () => {
+    setSaving(true);
+    setSuccessMessage('');
+
     try {
-      const response = await fetch('/api/user/favorites');
+      const response = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(profileData)
+      });
+
       if (response.ok) {
-        const data = await response.json();
-        setFavorites(data);
+        setSuccessMessage('Profile updated successfully!');
+        setTimeout(() => setSuccessMessage(''), 3000);
       }
     } catch (error) {
-      console.error('Failed to fetch favorites:', error);
+      console.error('Error saving profile:', error);
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleSignOut = async () => {
-    await signOut({ redirect: true, callbackUrl: '/' });
+  const toggleInterest = (interest: string) => {
+    setProfileData(prev => ({
+      ...prev,
+      interests: prev.interests.includes(interest)
+        ? prev.interests.filter(i => i !== interest)
+        : [...prev.interests, interest]
+    }));
+  };
+
+  const toggleGoal = (goal: string) => {
+    setProfileData(prev => ({
+      ...prev,
+      goals: prev.goals.includes(goal)
+        ? prev.goals.filter(g => g !== goal)
+        : [...prev.goals, goal]
+    }));
   };
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-gray-50">
+        <Navigation />
+        <div className="h-16"></div>
+        <div className="max-w-6xl mx-auto px-4 py-8">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/3 mb-8"></div>
+            <div className="space-y-4">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-32 bg-gray-200 rounded"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <Footer />
       </div>
     );
   }
 
-  if (!session || !profile) {
-    return null;
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white shadow-xl rounded-lg overflow-hidden">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-8">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="bg-white rounded-full p-3">
-                  <User className="h-12 w-12 text-blue-600" />
-                </div>
-                <div className="text-white">
-                  <h1 className="text-2xl font-bold">{profile.name || 'User Profile'}</h1>
-                  <p className="text-blue-100">{profile.email}</p>
-                </div>
+    <div className="min-h-screen bg-gray-50">
+      <Navigation />
+      <div className="h-16"></div>
+
+      {/* User Dashboard Navigation */}
+      <UserDashboard activeTab="profile" />
+
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className="bg-white rounded-xl shadow-sm p-8">
+          <div className="flex items-center justify-between mb-8">
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <User className="w-6 h-6" />
+              My Profile
+            </h1>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+                saving
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  Save Changes
+                </>
+              )}
+            </button>
+          </div>
+
+          {successMessage && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-green-800">
+              <CheckCircle className="w-5 h-5" />
+              {successMessage}
+            </div>
+          )}
+
+          {/* Basic Information */}
+          <div className="space-y-6 mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 border-b pb-2">
+              Basic Information
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  value={profileData.name}
+                  onChange={(e) => setProfileData(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="John Doe"
+                />
               </div>
-              <button
-                onClick={handleSignOut}
-                className="flex items-center space-x-2 bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg transition"
-              >
-                <LogOut className="h-5 w-5" />
-                <span>Sign Out</span>
-              </button>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={profileData.email}
+                  disabled
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Building className="w-4 h-4 inline mr-1" />
+                  Company
+                </label>
+                <input
+                  type="text"
+                  value={profileData.company}
+                  onChange={(e) => setProfileData(prev => ({ ...prev, company: e.target.value }))}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Acme Insurance Co."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Briefcase className="w-4 h-4 inline mr-1" />
+                  Position/Title
+                </label>
+                <input
+                  type="text"
+                  value={profileData.profile?.position || ''}
+                  onChange={(e) => setProfileData(prev => ({
+                    ...prev,
+                    profile: { ...prev.profile!, position: e.target.value }
+                  }))}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="VP of Innovation"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Role Type
+                </label>
+                <select
+                  value={profileData.role}
+                  onChange={(e) => setProfileData(prev => ({ ...prev, role: e.target.value }))}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select a role</option>
+                  {ROLES.map(role => (
+                    <option key={role} value={role}>{role}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Organization Type
+                </label>
+                <select
+                  value={profileData.organizationType}
+                  onChange={(e) => setProfileData(prev => ({ ...prev, organizationType: e.target.value }))}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select organization type</option>
+                  {ORGANIZATION_TYPES.map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Years of Experience
+                </label>
+                <input
+                  type="number"
+                  value={profileData.profile?.yearsExperience || ''}
+                  onChange={(e) => setProfileData(prev => ({
+                    ...prev,
+                    profile: { ...prev.profile!, yearsExperience: parseInt(e.target.value) || 0 }
+                  }))}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="10"
+                  min="0"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <LinkIcon className="w-4 h-4 inline mr-1" />
+                  LinkedIn Profile
+                </label>
+                <input
+                  type="url"
+                  value={profileData.profile?.linkedinUrl || ''}
+                  onChange={(e) => setProfileData(prev => ({
+                    ...prev,
+                    profile: { ...prev.profile!, linkedinUrl: e.target.value }
+                  }))}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="https://linkedin.com/in/johndoe"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Bio / About
+              </label>
+              <textarea
+                value={profileData.profile?.bio || ''}
+                onChange={(e) => setProfileData(prev => ({
+                  ...prev,
+                  profile: { ...prev.profile!, bio: e.target.value }
+                }))}
+                rows={4}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                placeholder="Tell us about yourself, your experience, and what you're looking to achieve at ITC Vegas..."
+              />
             </div>
           </div>
 
-          {/* Profile Information */}
-          <div className="p-6 space-y-6">
-            {/* Basic Info */}
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                  <Building className="h-5 w-5 mr-2 text-gray-500" />
-                  Professional Information
-                </h2>
-                <div className="space-y-2">
-                  <div className="flex justify-between py-2 border-b">
-                    <span className="text-gray-600">Company:</span>
-                    <span className="font-medium">{profile.company || 'Not specified'}</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b">
-                    <span className="text-gray-600">Role:</span>
-                    <span className="font-medium">{profile.role || 'Not specified'}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                  <Target className="h-5 w-5 mr-2 text-gray-500" />
-                  Conference Goals
-                </h2>
-                <div className="flex flex-wrap gap-2">
-                  {profile.goals.length > 0 ? (
-                    profile.goals.map((goal, index) => (
-                      <span
-                        key={index}
-                        className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm"
-                      >
-                        {goal}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-gray-500">No goals specified</span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Interests */}
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                <Heart className="h-5 w-5 mr-2 text-gray-500" />
-                Areas of Interest
-              </h2>
-              <div className="flex flex-wrap gap-2">
-                {profile.interests.length > 0 ? (
-                  profile.interests.map((interest, index) => (
-                    <span
-                      key={index}
-                      className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
-                    >
-                      {interest}
-                    </span>
-                  ))
-                ) : (
-                  <span className="text-gray-500">No interests specified</span>
-                )}
-              </div>
-            </div>
-
-            {/* Favorite Sessions */}
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                <Calendar className="h-5 w-5 mr-2 text-gray-500" />
-                Favorite Sessions ({favorites.length})
-              </h2>
-              {favorites.length > 0 ? (
-                <div className="space-y-3">
-                  {favorites.map((favorite) => (
-                    <div
-                      key={favorite.id}
-                      className="border rounded-lg p-4 hover:shadow-md transition cursor-pointer"
-                      onClick={() => router.push(`/agenda?day=${favorite.session.day}`)}
-                    >
-                      <h3 className="font-medium text-gray-900">{favorite.session.title}</h3>
-                      <div className="mt-2 text-sm text-gray-600 space-y-1">
-                        <p>Day {favorite.session.day} • {favorite.session.startTime} - {favorite.session.endTime}</p>
-                        <p>{favorite.session.room} • {favorite.session.track}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-500">No favorite sessions yet. Browse the agenda to add favorites!</p>
-              )}
-            </div>
-
-            {/* Actions */}
-            <div className="pt-6 border-t">
-              <div className="flex flex-col sm:flex-row gap-4">
+          {/* Interests */}
+          <div className="space-y-4 mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 border-b pb-2 flex items-center gap-2">
+              <Heart className="w-5 h-5" />
+              Areas of Interest
+            </h2>
+            <p className="text-sm text-gray-600">
+              Select topics you're interested in. This helps us personalize your agenda and recommendations.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {INTERESTS.map(interest => (
                 <button
-                  onClick={() => router.push('/agenda')}
-                  className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-medium"
+                  key={interest}
+                  onClick={() => toggleInterest(interest)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                    profileData.interests.includes(interest)
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
                 >
-                  Browse Agenda
+                  {interest}
                 </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Goals */}
+          <div className="space-y-4 mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 border-b pb-2 flex items-center gap-2">
+              <Target className="w-5 h-5" />
+              Conference Goals
+            </h2>
+            <p className="text-sm text-gray-600">
+              What do you hope to achieve at ITC Vegas 2025?
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {GOALS.map(goal => (
                 <button
-                  onClick={() => router.push('/profile/edit')}
-                  className="flex-1 border border-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 transition font-medium"
+                  key={goal}
+                  onClick={() => toggleGoal(goal)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                    profileData.goals.includes(goal)
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
                 >
-                  Edit Profile
+                  {goal}
                 </button>
-              </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Salesforce */}
+          <div className="space-y-4 mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 border-b pb-2">
+              Platform Information
+            </h2>
+            <div className="space-y-3">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={profileData.usingSalesforce}
+                  onChange={(e) => setProfileData(prev => ({ ...prev, usingSalesforce: e.target.checked }))}
+                  className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                />
+                <span className="text-gray-700">I currently use Salesforce</span>
+              </label>
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={profileData.interestedInSalesforce}
+                  onChange={(e) => setProfileData(prev => ({ ...prev, interestedInSalesforce: e.target.checked }))}
+                  className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                />
+                <span className="text-gray-700">I'm interested in learning about Salesforce for Insurance</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Preferences */}
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900 border-b pb-2 flex items-center gap-2">
+              <Settings className="w-5 h-5" />
+              Preferences
+            </h2>
+            <div className="space-y-3">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={profileData.profile?.notifications || false}
+                  onChange={(e) => setProfileData(prev => ({
+                    ...prev,
+                    profile: { ...prev.profile!, notifications: e.target.checked }
+                  }))}
+                  className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                />
+                <div>
+                  <span className="text-gray-700">Email notifications</span>
+                  <p className="text-sm text-gray-500">Receive updates about schedule changes and recommendations</p>
+                </div>
+              </label>
             </div>
           </div>
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 }

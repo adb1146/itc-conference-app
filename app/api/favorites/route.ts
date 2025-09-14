@@ -6,17 +6,21 @@ import prisma from '@/lib/db';
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(getAuthOptions());
-    
+
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const { searchParams } = new URL(req.url);
+    const type = searchParams.get('type'); // 'session', 'speaker', or null for all
 
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
       include: {
         favorites: {
+          where: type ? { type } : undefined,
           include: {
-            session: {
+            session: type === 'session' || !type ? {
               include: {
                 speakers: {
                   include: {
@@ -24,8 +28,10 @@ export async function GET(req: NextRequest) {
                   }
                 }
               }
-            }
-          }
+            } : undefined,
+            speaker: type === 'speaker' || !type ? true : undefined
+          },
+          orderBy: { createdAt: 'desc' }
         }
       }
     });
@@ -44,15 +50,23 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(getAuthOptions());
-    
+
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { sessionId } = await req.json();
+    const { sessionId, speakerId, type, notes } = await req.json();
 
-    if (!sessionId) {
+    if (!type || !['session', 'speaker'].includes(type)) {
+      return NextResponse.json({ error: 'Valid type required (session or speaker)' }, { status: 400 });
+    }
+
+    if (type === 'session' && !sessionId) {
       return NextResponse.json({ error: 'Session ID required' }, { status: 400 });
+    }
+
+    if (type === 'speaker' && !speakerId) {
+      return NextResponse.json({ error: 'Speaker ID required' }, { status: 400 });
     }
 
     const user = await prisma.user.findUnique({
@@ -67,21 +81,43 @@ export async function POST(req: NextRequest) {
     const existing = await prisma.favorite.findFirst({
       where: {
         userId: user.id,
-        sessionId: sessionId
+        ...(type === 'session' ? { sessionId } : { speakerId })
       }
     });
 
     if (existing) {
-      return NextResponse.json({ message: 'Already favorited' }, { status: 200 });
+      // Update notes if provided
+      if (notes !== undefined) {
+        const updated = await prisma.favorite.update({
+          where: { id: existing.id },
+          data: { notes },
+          include: {
+            session: type === 'session' ? {
+              include: {
+                speakers: {
+                  include: {
+                    speaker: true
+                  }
+                }
+              }
+            } : undefined,
+            speaker: type === 'speaker' ? true : undefined
+          }
+        });
+        return NextResponse.json({ favorite: updated, updated: true });
+      }
+      return NextResponse.json({ message: 'Already favorited', favorite: existing }, { status: 200 });
     }
 
     const favorite = await prisma.favorite.create({
       data: {
         userId: user.id,
-        sessionId: sessionId
+        type,
+        ...(type === 'session' ? { sessionId } : { speakerId }),
+        notes
       },
       include: {
-        session: {
+        session: type === 'session' ? {
           include: {
             speakers: {
               include: {
@@ -89,7 +125,8 @@ export async function POST(req: NextRequest) {
               }
             }
           }
-        }
+        } : undefined,
+        speaker: type === 'speaker' ? true : undefined
       }
     });
 
@@ -103,16 +140,26 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const session = await getServerSession(getAuthOptions());
-    
+
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { searchParams } = new URL(req.url);
     const sessionId = searchParams.get('sessionId');
+    const speakerId = searchParams.get('speakerId');
+    const type = searchParams.get('type');
 
-    if (!sessionId) {
+    if (!type || !['session', 'speaker'].includes(type)) {
+      return NextResponse.json({ error: 'Valid type required' }, { status: 400 });
+    }
+
+    if (type === 'session' && !sessionId) {
       return NextResponse.json({ error: 'Session ID required' }, { status: 400 });
+    }
+
+    if (type === 'speaker' && !speakerId) {
+      return NextResponse.json({ error: 'Speaker ID required' }, { status: 400 });
     }
 
     const user = await prisma.user.findUnique({
@@ -126,7 +173,7 @@ export async function DELETE(req: NextRequest) {
     const favorite = await prisma.favorite.findFirst({
       where: {
         userId: user.id,
-        sessionId: sessionId
+        ...(type === 'session' ? { sessionId } : { speakerId })
       }
     });
 

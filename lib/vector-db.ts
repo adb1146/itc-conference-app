@@ -7,21 +7,48 @@ import { Pinecone } from '@pinecone-database/pinecone';
 import { OpenAI } from 'openai';
 import { OpenAIEmbeddings } from '@langchain/openai';
 
-// Initialize Pinecone client
-export const pinecone = new Pinecone({
-  apiKey: process.env.PINECONE_API_KEY || '',
-});
+// Lazy initialization of Pinecone client
+let pineconeClient: Pinecone | null = null;
+export function getPineconeClient(): Pinecone | null {
+  if (!process.env.PINECONE_API_KEY || process.env.PINECONE_API_KEY.includes('<your')) {
+    return null;
+  }
+  if (!pineconeClient) {
+    pineconeClient = new Pinecone({
+      apiKey: process.env.PINECONE_API_KEY,
+    });
+  }
+  return pineconeClient;
+}
 
-// Initialize OpenAI for embeddings
-export const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || '',
-});
+// Lazy initialization of OpenAI for embeddings
+let openaiClient: OpenAI | null = null;
+export function getOpenAIClient(): OpenAI | null {
+  if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY.includes('<your')) {
+    return null;
+  }
+  if (!openaiClient) {
+    openaiClient = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return openaiClient;
+}
 
-// Initialize OpenAI embeddings for LangChain
-export const embeddings = new OpenAIEmbeddings({
-  openAIApiKey: process.env.OPENAI_API_KEY || '',
-  modelName: 'text-embedding-3-small', // Newer, cheaper, better model
-});
+// Lazy initialization of OpenAI embeddings for LangChain
+let embeddingsClient: OpenAIEmbeddings | null = null;
+export function getEmbeddings(): OpenAIEmbeddings | null {
+  if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY.includes('<your')) {
+    return null;
+  }
+  if (!embeddingsClient) {
+    embeddingsClient = new OpenAIEmbeddings({
+      openAIApiKey: process.env.OPENAI_API_KEY,
+      modelName: 'text-embedding-3-small', // Newer, cheaper, better model
+    });
+  }
+  return embeddingsClient;
+}
 
 // Vector database configuration
 export const VECTOR_CONFIG = {
@@ -37,6 +64,11 @@ export const VECTOR_CONFIG = {
  */
 export async function getOrCreateIndex() {
   try {
+    const pinecone = getPineconeClient();
+    if (!pinecone) {
+      throw new Error('Pinecone client not initialized - API key missing or invalid');
+    }
+
     const indexes = await pinecone.listIndexes();
     const indexExists = indexes.indexes?.some(
       index => index.name === VECTOR_CONFIG.indexName
@@ -72,6 +104,11 @@ export async function getOrCreateIndex() {
  */
 export async function generateEmbedding(text: string): Promise<number[]> {
   try {
+    const openai = getOpenAIClient();
+    if (!openai) {
+      throw new Error('OpenAI client not initialized - API key missing or invalid');
+    }
+
     const response = await openai.embeddings.create({
       model: 'text-embedding-3-small',
       input: text,
