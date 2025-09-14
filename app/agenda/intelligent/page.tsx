@@ -1,16 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
-  Calendar, Clock, MapPin, Search, Filter, Heart, User, Tag,
+  Calendar, Clock, MapPin, Search, Filter, Star, User, Tag,
   MessageCircle, Brain, Sparkles, TrendingUp, AlertCircle,
   ChevronRight, X, Zap, Target, Users, BarChart3,
   ThumbsUp, ThumbsDown, RefreshCw, Wand2, Info
 } from 'lucide-react';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
-import Footer from '@/components/Footer';
 
 interface Speaker {
   id?: string;
@@ -49,6 +48,7 @@ interface AIInsight {
 
 export default function IntelligentAgendaPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [filteredSessions, setFilteredSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,6 +67,9 @@ export default function IntelligentAgendaPage() {
   const [aiInsights, setAiInsights] = useState<AIInsight[]>([]);
   const [showAIPanel, setShowAIPanel] = useState(true);
   const [aiSearchQuery, setAiSearchQuery] = useState('');
+  const [lastAiSearch, setLastAiSearch] = useState(''); // Track last search for persistence
+  const [isAiSearchActive, setIsAiSearchActive] = useState(false); // Track if AI search is active
+  const [allAiSearchResults, setAllAiSearchResults] = useState<Session[]>([]); // Store all AI results
   const [isAIThinking, setIsAIThinking] = useState(false);
   const [personalizedSessions, setPersonalizedSessions] = useState<Session[]>([]);
   const [conflicts, setConflicts] = useState<Map<string, string[]>>(new Map());
@@ -76,14 +79,72 @@ export default function IntelligentAgendaPage() {
     loadUserProfile();
   }, []);
 
+  // Initialize from URL parameters
   useEffect(() => {
-    filterSessions();
-  }, [sessions, selectedDay, searchQuery, selectedTrack]);
+    const trackParam = searchParams.get('track');
+    const dayParam = searchParams.get('day');
+
+    if (trackParam && trackParam !== selectedTrack) {
+      setSelectedTrack(trackParam);
+    }
+
+    // Handle day parameter (convert from day number to date)
+    if (dayParam) {
+      const dayMap = {
+        '1': '2025-10-15',
+        '2': '2025-10-16',
+        '3': '2025-10-17'
+      };
+      const targetDate = dayMap[dayParam as keyof typeof dayMap];
+      if (targetDate && targetDate !== selectedDay) {
+        setSelectedDay(targetDate);
+      }
+    }
+  }, [searchParams, selectedTrack, selectedDay]);
+
+  useEffect(() => {
+    // Only filter if not using AI search
+    if (!isAiSearchActive) {
+      filterSessions();
+    }
+  }, [sessions, selectedDay, searchQuery, selectedTrack, isAiSearchActive]);
 
   useEffect(() => {
     generateAIInsights();
     detectConflicts();
   }, [filteredSessions, favorites, userProfile, selectedDay]);
+
+  // Re-filter AI search results when day changes
+  useEffect(() => {
+    if (isAiSearchActive && allAiSearchResults.length > 0) {
+      const dayFilteredSessions = allAiSearchResults.filter(session => {
+        const sessionDate = new Date(session.startTime).toISOString().split('T')[0];
+        return sessionDate === selectedDay;
+      });
+      setFilteredSessions(dayFilteredSessions);
+
+      // Update insights for the new day
+      const day1Count = allAiSearchResults.filter(s =>
+        new Date(s.startTime).toISOString().split('T')[0] === '2025-10-15'
+      ).length;
+      const day2Count = allAiSearchResults.filter(s =>
+        new Date(s.startTime).toISOString().split('T')[0] === '2025-10-16'
+      ).length;
+      const day3Count = allAiSearchResults.filter(s =>
+        new Date(s.startTime).toISOString().split('T')[0] === '2025-10-17'
+      ).length;
+
+      setAiInsights([{
+        type: 'recommendation',
+        message: `🔍 Showing ${dayFilteredSessions.length} of ${allAiSearchResults.length} "${lastAiSearch}" results on ${new Date(selectedDay).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`,
+        sessionIds: dayFilteredSessions.slice(0, 3).filter(s => s && s.id).map(s => s.id)
+      }, {
+        type: 'tip',
+        message: `📊 Distribution: Day 1 (${day1Count}), Day 2 (${day2Count}), Day 3 (${day3Count})`,
+        sessionIds: []
+      }]);
+    }
+  }, [selectedDay, isAiSearchActive, allAiSearchResults, lastAiSearch]);
 
   const fetchSessions = async () => {
     try {
@@ -305,7 +366,7 @@ export default function IntelligentAgendaPage() {
         insights.push({
           type: 'recommendation',
           message: `Found ${trackSessions.length} sessions in ${selectedTrack} track`,
-          sessionIds: trackSessions.slice(0, 3).map(s => s.id)
+          sessionIds: trackSessions.slice(0, 3).filter(s => s && s.id).map(s => s.id)
         });
       }
     }
@@ -341,7 +402,7 @@ export default function IntelligentAgendaPage() {
         insights.push({
           type: 'recommendation',
           message: `💡 Matches your interests: ${relevantSessions.length} sessions`,
-          sessionIds: relevantSessions.slice(0, 3).map(s => s.id)
+          sessionIds: relevantSessions.slice(0, 3).filter(s => s && s.id).map(s => s.id)
         });
       }
     } else {
@@ -402,40 +463,128 @@ export default function IntelligentAgendaPage() {
     if (!aiSearchQuery.trim()) return;
 
     setIsAIThinking(true);
+    setIsAiSearchActive(true);
+    setLastAiSearch(aiSearchQuery); // Store the search query
 
     try {
+      // First, try the intelligent chat endpoint which has better semantic search
       const response = await fetch('/api/chat/intelligent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: aiSearchQuery,
           userProfile: userProfile,
-          context: 'agenda_search'
+          context: 'agenda_search',
+          includeAllDays: true // Request sessions from all days
         })
       });
 
       const data = await response.json();
 
-      // Parse AI response to filter sessions
+      // The intelligent endpoint returns relevant sessions in its response
+      if (data.sessions && Array.isArray(data.sessions)) {
+        // Store ALL AI-found sessions for filtering by day
+        const allAiSessions = data.sessions;
+        setAllAiSearchResults(allAiSessions); // Store for re-filtering when day changes
+
+        // Filter to show only sessions for the selected day
+        const dayFilteredSessions = allAiSessions.filter((session: Session) => {
+          const sessionDate = new Date(session.startTime).toISOString().split('T')[0];
+          return sessionDate === selectedDay;
+        });
+
+        setFilteredSessions(dayFilteredSessions);
+
+        // Count sessions for each day to give better feedback
+        const day1Count = allAiSessions.filter((s: Session) =>
+          new Date(s.startTime).toISOString().split('T')[0] === '2025-10-15'
+        ).length;
+        const day2Count = allAiSessions.filter((s: Session) =>
+          new Date(s.startTime).toISOString().split('T')[0] === '2025-10-16'
+        ).length;
+        const day3Count = allAiSessions.filter((s: Session) =>
+          new Date(s.startTime).toISOString().split('T')[0] === '2025-10-17'
+        ).length;
+
+        // Add comprehensive insight about the search
+        const insights = [{
+          type: 'recommendation' as const,
+          message: `🔍 AI found ${allAiSessions.length} total relevant sessions for "${aiSearchQuery}"`,
+          sessionIds: dayFilteredSessions.slice(0, 3).filter((s: Session) => s && s.id).map((s: Session) => s.id)
+        }];
+
+        if (dayFilteredSessions.length > 0) {
+          insights.push({
+            type: 'recommendation' as const,
+            message: `📅 Showing ${dayFilteredSessions.length} on ${new Date(selectedDay).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}`,
+            sessionIds: dayFilteredSessions.slice(0, 3).filter((s: Session) => s && s.id).map((s: Session) => s.id)
+          });
+        }
+
+        insights.push({
+          type: 'tip' as const,
+          message: `📊 Distribution: Day 1 (${day1Count}), Day 2 (${day2Count}), Day 3 (${day3Count})`,
+          sessionIds: []
+        });
+
+        setAiInsights([...insights, ...aiInsights.slice(0, 2)]); // Keep some old insights
+      } else if (data.response) {
+        // If we got a text response, extract session recommendations from it
+        const relevantSessions = sessions.filter(session => {
+          const sessionDate = new Date(session.startTime).toISOString().split('T')[0];
+          if (sessionDate !== selectedDay) return false;
+
+          const searchLower = aiSearchQuery.toLowerCase();
+          const sessionText = `${session.title} ${session.description || ''} ${session.tags?.join(' ') || ''}`.toLowerCase();
+
+          // More comprehensive matching for underwriters
+          const underwriterKeywords = ['underwriting', 'risk', 'assessment', 'pricing', 'claims', 'actuarial', 'data', 'analytics', 'automation', 'ai', 'machine learning', 'insurtech', 'policy', 'commercial', 'specialty'];
+
+          if (searchLower.includes('underwriter')) {
+            return underwriterKeywords.some(keyword => sessionText.includes(keyword));
+          }
+
+          return sessionText.includes(searchLower);
+        });
+
+        setFilteredSessions(relevantSessions);
+
+        setAiInsights([{
+          type: 'recommendation' as const,
+          message: `🔍 Found ${relevantSessions.length} sessions for "${aiSearchQuery}" on ${new Date(selectedDay).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`,
+          sessionIds: relevantSessions.slice(0, 5).filter(s => s && s.id).map(s => s.id)
+        }, ...aiInsights.slice(0, 4)]);
+      }
+
+    } catch (error) {
+      console.error('AI search error:', error);
+
+      // Enhanced fallback search with better keyword matching
       const relevantSessions = sessions.filter(session => {
-        // AI logic to match sessions based on natural language query
-        return data.response.toLowerCase().includes(session.title.toLowerCase());
+        const sessionDate = new Date(session.startTime).toISOString().split('T')[0];
+        if (sessionDate !== selectedDay) return false;
+
+        const searchLower = aiSearchQuery.toLowerCase();
+        const sessionText = `${session.title} ${session.description || ''} ${session.tags?.join(' ') || ''}`.toLowerCase();
+
+        // Special handling for role-based searches
+        if (searchLower.includes('underwriter')) {
+          const underwriterKeywords = ['underwriting', 'risk', 'assessment', 'pricing', 'claims', 'actuarial', 'data', 'analytics', 'automation'];
+          return underwriterKeywords.some(keyword => sessionText.includes(keyword));
+        }
+
+        return sessionText.includes(searchLower);
       });
 
       setFilteredSessions(relevantSessions);
 
-      // Add insight about the search
       setAiInsights([{
-        type: 'recommendation',
-        message: `Found ${relevantSessions.length} sessions matching "${aiSearchQuery}"`,
-        sessionIds: relevantSessions.map(s => s.id)
-      }, ...aiInsights]);
-
-    } catch (error) {
-      console.error('AI search error:', error);
+        type: 'tip' as const,
+        message: `⚠️ Using enhanced keyword search for "${aiSearchQuery}" - found ${relevantSessions.length} sessions`,
+      }, ...aiInsights.slice(0, 4)]);
     } finally {
       setIsAIThinking(false);
-      setAiSearchQuery('');
+      // Don't clear the search query to maintain persistence
     }
   };
 
@@ -456,7 +605,7 @@ export default function IntelligentAgendaPage() {
       filtered = filtered.filter(session =>
         session.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         session.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        session.speakers?.some(s => 
+        session.speakers?.some(s =>
           s.speaker.name?.toLowerCase().includes(searchQuery.toLowerCase())
         )
       );
@@ -470,6 +619,16 @@ export default function IntelligentAgendaPage() {
     filtered.sort((a, b) => (b.relevanceScore || 0) - (a.relevanceScore || 0));
 
     setFilteredSessions(filtered);
+  };
+
+
+  // Clear AI search
+  const clearAISearch = () => {
+    setAiSearchQuery('');
+    setLastAiSearch('');
+    setIsAiSearchActive(false);
+    setAllAiSearchResults([]); // Clear stored AI results
+    filterSessions(); // Revert to normal filtering
   };
 
   const toggleFavorite = (sessionId: string) => {
@@ -542,7 +701,11 @@ export default function IntelligentAgendaPage() {
           ].map((day) => (
             <button
               key={day.date}
-              onClick={() => setSelectedDay(day.date)}
+              onClick={() => {
+                setSelectedDay(day.date);
+                // When AI search is active, the useEffect will handle re-filtering
+                // based on the day change
+              }}
               className={`flex-1 py-2 px-3 rounded-lg text-center transition-colors ${
                 selectedDay === day.date
                   ? 'bg-blue-600 text-white'
@@ -557,6 +720,21 @@ export default function IntelligentAgendaPage() {
 
         {/* Smart Search Bar */}
         <div className="px-4 py-3 border-t border-gray-100">
+          {/* Show active search indicator */}
+          {isAiSearchActive && lastAiSearch && (
+            <div className="mb-2 flex items-center justify-between bg-purple-50 border border-purple-200 rounded-lg px-3 py-2">
+              <div className="flex items-center gap-2 text-sm text-purple-700">
+                <Sparkles className="w-4 h-4" />
+                <span>AI Search: "{lastAiSearch}"</span>
+              </div>
+              <button
+                onClick={clearAISearch}
+                className="text-purple-600 hover:text-purple-800"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
           <div className="flex gap-2">
             <div className="flex-1 flex gap-2">
               <div className="flex-1 relative">
@@ -820,18 +998,22 @@ export default function IntelligentAgendaPage() {
                     )}
                     
                     <div className="flex justify-between items-start mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900 flex-1">
+                      <Link
+                        href={`/agenda/session/${session.id}`}
+                        className="text-lg font-semibold text-gray-900 flex-1 hover:text-purple-600 transition-colors cursor-pointer"
+                      >
                         {session.title}
-                      </h3>
+                      </Link>
                       <button
                         onClick={() => toggleFavorite(session.id)}
                         className={`p-2 rounded-lg transition-colors ${
                           favorites.has(session.id)
-                            ? 'text-red-500 bg-red-50'
-                            : 'text-gray-400 hover:text-red-500 hover:bg-red-50'
+                            ? 'text-yellow-500 bg-yellow-50'
+                            : 'text-gray-400 hover:text-yellow-500 hover:bg-yellow-50'
                         }`}
+                        title={favorites.has(session.id) ? 'Remove from favorites' : 'Add to favorites'}
                       >
-                        <Heart className={`h-5 w-5 ${favorites.has(session.id) ? 'fill-current' : ''}`} />
+                        <Star className={`h-5 w-5 ${favorites.has(session.id) ? 'fill-current' : ''}`} />
                       </button>
                     </div>
 
@@ -940,7 +1122,6 @@ export default function IntelligentAgendaPage() {
       </div>
 
 
-      <Footer />
     </div>
   );
 }

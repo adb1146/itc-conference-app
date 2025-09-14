@@ -56,6 +56,7 @@ CRITICAL - ALWAYS INCLUDE ACTIONABLE HYPERLINKS:
 - **Track mentions** should link to filtered views with URL encoding:
   - For "AI Track": [AI Track](/agenda?track=AI%20Track)
   - For "Data & Analytics": [Data & Analytics](/agenda?track=Data%20%26%20Analytics)
+  - For "LATAM": [LATAM](/agenda?track=LATAM)
   - Always URL encode spaces and special characters in track names
 - **Day references** should link to day views: [Day 1](/agenda?day=1), [Day 2](/agenda?day=2), [Day 3](/agenda?day=3)
 - **Venue locations** MUST link as: [Location Name](/locations?location={URL-encoded-location})

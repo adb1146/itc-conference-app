@@ -5,7 +5,6 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Search, Users, Calendar, Map, Star, ArrowLeft } from 'lucide-react';
 import Navigation from '@/components/Navigation';
-import Footer from '@/components/Footer';
 
 export default function SearchPage() {
   const searchParams = useSearchParams();
@@ -190,7 +189,6 @@ export default function SearchPage() {
         ))}
       </div>
 
-      <Footer />
     </div>
   );
 }

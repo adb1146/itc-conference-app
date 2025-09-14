@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { MapPin, Navigation2, Clock, Users, Info, ExternalLink, ChevronRight } from 'lucide-react';
 import Navigation from '@/components/Navigation';
-import Footer from '@/components/Footer';
 
 // ITC Vegas 2025 takes place at Mandalay Bay Resort & Casino
 const venueInfo = {
@@ -346,7 +345,6 @@ export default function LocationsPage() {
           </div>
         </div>
       </div>
-      <Footer />
     </>
   );
 }

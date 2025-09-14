@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react';
 import { User, Briefcase, Search, Building, Award, Users, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
-import Footer from '@/components/Footer';
 
 interface Speaker {
   id: string;
@@ -426,7 +425,6 @@ export default function SpeakersPage() {
         </span>
       </Link>
 
-      <Footer />
     </div>
   );
 }

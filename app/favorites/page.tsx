@@ -10,7 +10,6 @@ import {
   LogIn, UserPlus, Sparkles, Loader2, X, AlertCircle
 } from 'lucide-react';
 import Navigation from '@/components/Navigation';
-import Footer from '@/components/Footer';
 import UserDashboard from '@/components/UserDashboard';
 import SmartAgendaView from '@/components/agenda/SmartAgendaView';
 import { SmartAgenda } from '@/lib/tools/schedule/types';
@@ -333,7 +332,6 @@ export default function FavoritesPage() {
             </div>
           </div>
         </div>
-        <Footer />
       </div>
     );
   }
@@ -379,7 +377,6 @@ export default function FavoritesPage() {
             </div>
           </div>
         </div>
-        <Footer />
       </div>
     );
   }
@@ -723,7 +720,6 @@ export default function FavoritesPage() {
         </div>
       )}
 
-      <Footer />
     </div>
   );
 }

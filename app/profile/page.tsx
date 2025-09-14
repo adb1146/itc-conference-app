@@ -10,7 +10,6 @@ import {
   CheckCircle, X, Loader2
 } from 'lucide-react';
 import Navigation from '@/components/Navigation';
-import Footer from '@/components/Footer';
 import UserDashboard from '@/components/UserDashboard';
 import { signOut } from 'next-auth/react';
 
@@ -192,7 +191,6 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
-        <Footer />
       </div>
     );
   }
@@ -495,7 +493,6 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <Footer />
     </div>
   );
 }

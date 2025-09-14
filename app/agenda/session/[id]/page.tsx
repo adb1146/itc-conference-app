@@ -3,12 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
-  Calendar, Clock, MapPin, Users, Tag, ArrowLeft, Heart,
+  Calendar, Clock, MapPin, Users, Tag, ArrowLeft,
   User, Building, ExternalLink, Mail, Share2, AlertCircle, MessageCircle, Sparkles
 } from 'lucide-react';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
-import Footer from '@/components/Footer';
 import FavoriteButton from '@/components/FavoriteButton';
 
 interface Speaker {
@@ -289,16 +288,8 @@ export default function SessionDetailPage() {
           <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
             <div className="flex justify-between items-start mb-6">
               <div className="flex-1">
-                <div className="flex items-start justify-between mb-4">
-                  <h1 className="text-3xl font-bold text-gray-900">{session.title}</h1>
-                  <FavoriteButton
-                    itemId={session.id}
-                    type="session"
-                    showLabel={true}
-                    className="ml-4"
-                  />
-                </div>
-                
+                <h1 className="text-3xl font-bold text-gray-900 mb-4">{session.title}</h1>
+
                 {/* Tags */}
                 {session.tags && session.tags.length > 0 && (
                   <div className="flex flex-wrap gap-2 mb-4">
@@ -313,30 +304,24 @@ export default function SessionDetailPage() {
                   </div>
                 )}
               </div>
-              
-              {/* Action Buttons */}
-              <div className="flex gap-2 ml-4">
+
+              {/* Action Buttons - All aligned together */}
+              <div className="flex items-center gap-2 ml-4">
+                <FavoriteButton
+                  itemId={session.id}
+                  type="session"
+                  showLabel={false}
+                />
                 <button
                   onClick={askAIAboutSession}
-                  className="p-3 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                  className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
                   title="Ask AI about this session"
                 >
                   <MessageCircle className="h-6 w-6" />
                 </button>
                 <button
-                  onClick={toggleFavorite}
-                  className={`p-3 rounded-lg transition-colors ${
-                    isFavorite
-                      ? 'text-red-500 bg-red-50'
-                      : 'text-gray-400 hover:text-red-500 hover:bg-red-50'
-                  }`}
-                  title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-                >
-                  <Heart className={`h-6 w-6 ${isFavorite ? 'fill-current' : ''}`} />
-                </button>
-                <button
                   onClick={shareSession}
-                  className="p-3 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                  className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                   title="Share session"
                 >
                   <Share2 className="h-6 w-6" />
@@ -639,7 +624,6 @@ export default function SessionDetailPage() {
           )}
         </div>
       </div>
-      <Footer />
     </>
   );
 }

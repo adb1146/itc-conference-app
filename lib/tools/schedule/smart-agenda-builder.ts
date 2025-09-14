@@ -13,7 +13,7 @@ import {
   AlternativeSession
 } from './types';
 import { calculateVenueDistance, hasEnoughTravelTime, filterByWalkingDistance } from './venue-distance';
-import { hybridSearch, searchSimilarSessions } from '@/lib/vector-db';
+import { searchSimilarSessions } from '@/lib/vector-db';
 import { generateEmbedding } from '@/lib/vector-db';
 import prisma from '@/lib/db';
 import {
@@ -800,44 +800,80 @@ async function findBestSessionForGap(
     ? profileKeywords.join(' ')
     : 'insurance technology innovation';
 
-  try {
-    // Use vector search to find similar sessions
-    const results = await hybridSearch(
-      searchQuery,
-      user.interests || [],
-      user.interests || [],
-      candidateSessions.length
-    );
+  // Simple keyword-based scoring instead of expensive vector search
+  for (const candidate of candidateSessions) {
+    let score = 0;
+    const matchedKeywords = [];
 
-    // Find the best matching candidate
-    for (const result of results) {
-      const candidate = candidateSessions.find(s => s.id === result.id);
-      if (candidate && result.similarity > bestScore) {
-        bestSession = candidate;
-        bestScore = result.similarity;
+    // Convert session text to lowercase for matching
+    const sessionText = `${candidate.title} ${candidate.description} ${candidate.track}`.toLowerCase();
 
-        // Build personalized reasoning
-        const reasoningParts = [];
-        if (user.interests?.length > 0) {
-          reasoningParts.push(`interests in ${user.interests.slice(0, 2).join(' and ')}`);
+    // Score based on interests
+    if (user.interests?.length > 0) {
+      for (const interest of user.interests) {
+        if (sessionText.includes(interest.toLowerCase())) {
+          score += 3;
+          matchedKeywords.push(interest);
         }
-        if (user.goals?.length > 0) {
-          reasoningParts.push(`goals of ${user.goals[0].toLowerCase()}`);
-        }
-        if (user.role) {
-          reasoningParts.push(`${user.role} role`);
-        }
-
-        bestReasoning = reasoningParts.length > 0
-          ? `Matches your ${reasoningParts.join(', ')}`
-          : 'Recommended based on your profile';
       }
     }
-  } catch (error) {
-    console.error('Vector search failed, falling back to basic matching:', error);
-    // Fallback to simple matching
+
+    // Score based on goals
+    if (user.goals?.length > 0) {
+      for (const goal of user.goals) {
+        if (sessionText.includes(goal.toLowerCase())) {
+          score += 2;
+          matchedKeywords.push(goal);
+        }
+      }
+    }
+
+    // Score based on role
+    if (user.role && sessionText.includes(user.role.toLowerCase())) {
+      score += 2;
+    }
+
+    // Score based on organization type
+    if (user.organizationType && sessionText.includes(user.organizationType.toLowerCase())) {
+      score += 1;
+    }
+
+    // Bonus for favorited speakers
+    if (user.favorites?.length > 0) {
+      const favoritedSpeakerIds = user.favorites
+        .filter(f => f.type === 'speaker')
+        .map(f => f.speakerId);
+
+      if (candidate.speakers?.some(s => favoritedSpeakerIds.includes(s.speakerId))) {
+        score += 5;
+        matchedKeywords.push('favorite speaker');
+      }
+    }
+
+    // Update best if this is better
+    if (score > bestScore) {
+      bestSession = candidate;
+      bestScore = score;
+
+      // Build personalized reasoning
+      const reasoningParts = [];
+      if (matchedKeywords.length > 0) {
+        reasoningParts.push(`matches ${matchedKeywords.slice(0, 3).join(', ')}`);
+      }
+      if (user.role && sessionText.includes(user.role.toLowerCase())) {
+        reasoningParts.push(`relevant to ${user.role} role`);
+      }
+
+      bestReasoning = reasoningParts.length > 0
+        ? reasoningParts.join(' and ')
+        : 'Selected to fill schedule gap';
+    }
+  }
+
+  // If no matches found based on scoring, pick the first available
+  if (!bestSession && candidateSessions.length > 0) {
     bestSession = candidateSessions[0];
-    bestScore = 0.5;
+    bestScore = 0.1;
     bestReasoning = 'Selected to fill schedule gap';
   }
 
