@@ -13,36 +13,32 @@ export interface AgendaOptions {
 
 export interface ScheduleItem {
   id: string;
-  time: string;
-  endTime: string;
+  title: string;
+  description: string;
+  startTime: Date;
+  endTime: Date;
+  location: string;
   type: 'session' | 'meal' | 'break' | 'travel';
   source: 'user-favorite' | 'ai-suggested' | 'system';
-
-  // The actual content
-  item: {
+  confidence: number;
+  track?: string;
+  speakers?: Array<{
     id: string;
-    title: string;
-    description?: string;
-    location?: string;
-    speakers?: any[];
-    track?: string;
-  };
+    name: string;
+    title?: string;
+  }>;
 
-  // Editing capabilities
-  actions: {
-    canRemove: boolean;
-    canReplace: boolean;
-    canMoveTime: boolean;
-    alternatives: AlternativeSession[];
-  };
+  // The actual content - optional for backward compatibility
+  item?: any;
 
   // AI metadata for suggested items
   aiMetadata?: {
-    confidence: number;
-    reasoning: string;
-    matchScore: number;
-    similarityToFavorites: number;
-    method: 'vector-similarity' | 'keyword-match' | 'track-based';
+    score?: number;
+    reasoning?: string;
+    confidence?: number;
+    matchScore?: number;
+    similarityToFavorites?: number;
+    method?: 'vector-similarity' | 'keyword-match' | 'track-based';
   };
 }
 

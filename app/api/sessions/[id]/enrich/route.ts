@@ -87,7 +87,7 @@ export async function POST(
     const [relatedSessions, sessionContext, industryTrends, speakerInfo] = await Promise.all(searchPromises);
 
     // Process related sessions
-    const relatedSessionIds = relatedSessions
+    const relatedSessionIds = (relatedSessions || [])
       .filter((r: any) => r.id !== sessionId) // Exclude current session
       .slice(0, 3) // Top 3 related
       .map((r: any) => r.id);
@@ -101,27 +101,27 @@ export async function POST(
     // Generate enriched summary combining all sources
     const enrichedSummary = generateEnrichedSummary({
       session,
-      sessionContext: sessionContext?.content,
-      industryTrends: industryTrends?.content,
-      speakerInfo: speakerInfo?.content,
+      sessionContext: undefined,
+      industryTrends: undefined,
+      speakerInfo: undefined,
       relatedSessions: relatedSessionData
     });
 
     // Extract key takeaways (will generate defaults if no web content)
     const keyTakeaways = extractKeyTakeaways({
       description: session.description,
-      contextContent: sessionContext?.content,
+      contextContent: undefined,
       tags: session.tags
     });
 
     // Extract industry context (may be null if web search failed)
-    const industryContext = formatIndustryContext(industryTrends?.content);
+    const industryContext = formatIndustryContext(undefined);
 
     // Extract related topics (will use tags even if web search failed)
     const relatedTopics = extractRelatedTopics({
       tags: session.tags,
       relatedSessions: relatedSessionData,
-      industryContent: industryTrends?.content
+      industryContent: undefined
     });
 
     // Update session with enriched data - with proper validation

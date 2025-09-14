@@ -43,10 +43,9 @@ export async function POST(req: NextRequest) {
     if (!result.success) {
       return NextResponse.json(
         {
-          error: result.error || 'Failed to generate agenda',
-          requiresAuth: result.requiresAuth
+          error: result.error || 'Failed to generate agenda'
         },
-        { status: result.requiresAuth ? 401 : 500 }
+        { status: 500 }
       );
     }
 

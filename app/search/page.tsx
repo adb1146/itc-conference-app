@@ -137,10 +137,10 @@ export default function SearchPage() {
         {Object.entries(groupedResults).map(([type, results]) => (
           <div key={type} className="mb-8">
             <h2 className="text-lg font-semibold text-gray-900 mb-4 capitalize">
-              {type}s ({results.length})
+              {type}s ({(results as any[]).length})
             </h2>
             <div className="space-y-3">
-              {results.map((result) => {
+              {(results as any[]).map((result) => {
                 const Icon = getResultIcon(result.type);
                 return (
                   <Link

@@ -225,7 +225,7 @@ export default function ChatPage() {
             ? `${context.data.name} from ${context.data.company}`
             : context.data.title;
 
-          setMessages([
+          setMessages(() => [
             {
               id: generateMessageId(),
               role: 'assistant',
@@ -588,8 +588,8 @@ export default function ChatPage() {
                   throw new Error(parsed.content || 'An error occurred while processing your request');
                 }
               } catch (e) {
-                // Re-throw error messages from server, but log parsing errors
-                if (e instanceof Error && parsed?.type === 'error') {
+                // Re-throw error messages from server
+                if (e instanceof Error && e.message) {
                   throw e;
                 }
                 console.error('Error parsing stream data:', e);

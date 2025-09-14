@@ -95,8 +95,9 @@ export async function POST(
           .trim();
 
         // Validate it's a valid image URL
-        if (profileImageUrl.includes('licdn.com') ||
-            profileImageUrl.match(/\.(jpg|jpeg|png|webp)/i)) {
+        if (profileImageUrl &&
+            (profileImageUrl.includes('licdn.com') ||
+             profileImageUrl.match(/\.(jpg|jpeg|png|webp)/i))) {
           console.log('Valid LinkedIn image found:', profileImageUrl);
           break;
         }

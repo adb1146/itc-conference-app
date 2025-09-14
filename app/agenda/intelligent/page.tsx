@@ -522,7 +522,7 @@ export default function IntelligentAgendaPage() {
         }
 
         insights.push({
-          type: 'tip' as const,
+          type: 'recommendation' as const,
           message: `📊 Distribution: Day 1 (${day1Count}), Day 2 (${day2Count}), Day 3 (${day3Count})`,
           sessionIds: []
         });

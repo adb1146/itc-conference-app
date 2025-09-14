@@ -77,30 +77,32 @@ export default function SmartAgendaPage() {
     }
   };
 
-  const handleAgendaItemRemove = (dayIndex: number, itemIndex: number) => {
+  const handleAgendaItemRemove = (itemId: string) => {
     if (!smartAgenda) return;
 
     const updatedAgenda = { ...smartAgenda };
-    updatedAgenda.days[dayIndex].schedule.splice(itemIndex, 1);
+    // Find and remove the item from all days
+    updatedAgenda.days.forEach(day => {
+      day.schedule = day.schedule.filter(item => item.id !== itemId);
+    });
     setSmartAgenda(updatedAgenda);
     localStorage.setItem('smartAgenda', JSON.stringify(updatedAgenda));
   };
 
-  const handleAgendaItemReplace = async (dayIndex: number, itemIndex: number, newItem: ScheduleItem) => {
+  const handleAgendaItemReplace = async (itemId: string, alternativeId: string) => {
     if (!smartAgenda) return;
 
-    const updatedAgenda = { ...smartAgenda };
-    updatedAgenda.days[dayIndex].schedule[itemIndex] = newItem;
-    setSmartAgenda(updatedAgenda);
-    localStorage.setItem('smartAgenda', JSON.stringify(updatedAgenda));
+    // This would need to fetch the alternative item and replace it
+    // For now, just regenerate the agenda
+    generateSmartAgenda();
   };
 
-  const handleRegenerateDay = async (dayIndex: number) => {
+  const handleRegenerateDay = async (dayNumber: number) => {
     // This would regenerate just one day
     generateSmartAgenda();
   };
 
-  const handleExport = () => {
+  const handleExport = (format: 'ics' | 'pdf' | 'email' = 'ics') => {
     if (!smartAgenda) return;
 
     const agendaText = smartAgenda.days.map(day => {

@@ -56,9 +56,9 @@ export default function SmartAgendaView({
 
   const getItemIcon = (item: ScheduleItem) => {
     if (item.type === 'meal') {
-      if (item.item.title.toLowerCase().includes('breakfast')) return Coffee;
-      if (item.item.title.toLowerCase().includes('lunch')) return Utensils;
-      if (item.item.title.toLowerCase().includes('dinner')) return Utensils;
+      if (item.title.toLowerCase().includes('breakfast')) return Coffee;
+      if (item.title.toLowerCase().includes('lunch')) return Utensils;
+      if (item.title.toLowerCase().includes('dinner')) return Utensils;
       return Coffee;
     }
     if (item.type === 'travel') return Navigation;
@@ -335,7 +335,7 @@ export default function SmartAgendaView({
                         : item.source === 'ai-suggested'
                         ? 'border-blue-200 bg-blue-50/50'
                         : 'border-gray-200 bg-gray-50'
-                    } ${editMode && item.actions.canRemove ? 'hover:shadow-md' : ''}`}
+                    } ${editMode ? 'hover:shadow-md' : ''}`}
                   >
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex items-start gap-3 flex-1">
@@ -353,22 +353,22 @@ export default function SmartAgendaView({
                           <div className="flex items-start gap-2 mb-1">
                             {isSession ? (
                               <Link
-                                href={`/agenda/session/${item.item.id}`}
+                                href={`/agenda/session/${item.id}`}
                                 className="font-semibold text-gray-900 hover:text-blue-600 transition-colors"
                               >
-                                {item.item.title}
+                                {item.title}
                               </Link>
                             ) : (
                               <div className="font-semibold text-gray-900">
-                                {item.item.title}
+                                {item.title}
                               </div>
                             )}
                             {getSourceBadge(item)}
                           </div>
 
-                          {item.item.description && (
+                          {item.description && (
                             <p className="text-sm text-gray-600 mb-2">
-                              {item.item.description}
+                              {item.description}
                             </p>
                           )}
 
@@ -403,29 +403,29 @@ export default function SmartAgendaView({
                           <div className="flex flex-wrap gap-3 mt-2 text-sm text-gray-600">
                             <div className="flex items-center gap-1">
                               <Clock className="w-3 h-3" />
-                              {item.time} - {item.endTime}
+                              {new Date(item.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })} - {new Date(item.endTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
                             </div>
-                            {item.item.location && (
+                            {item.location && (
                               <div className="flex items-center gap-1">
                                 <MapPin className="w-3 h-3" />
-                                {item.item.location}
+                                {item.location}
                               </div>
                             )}
-                            {item.item.track && (
+                            {item.track && (
                               <span className="px-2 py-0.5 bg-gray-200 text-gray-700 rounded-full text-xs">
-                                {item.item.track}
+                                {item.track}
                               </span>
                             )}
                           </div>
 
                           {/* Alternatives */}
-                          {item.actions.alternatives.length > 0 && showAlternatives.has(item.id) && (
+                          {false && showAlternatives.has(item.id) && (
                             <div className="mt-3 p-3 bg-white rounded-lg border border-gray-200">
                               <div className="text-xs font-medium text-gray-700 mb-2">
                                 Alternative Options:
                               </div>
                               <div className="space-y-2">
-                                {item.actions.alternatives.map((alt) => (
+                                {/* item.actions.alternatives.map((alt) => (
                                   <div
                                     key={alt.id}
                                     className="flex justify-between items-center p-2 bg-gray-50 rounded hover:bg-gray-100 transition-colors"
@@ -447,7 +447,7 @@ export default function SmartAgendaView({
                                       </button>
                                     )}
                                   </div>
-                                ))}
+                                ))} */}
                               </div>
                             </div>
                           )}
@@ -457,7 +457,7 @@ export default function SmartAgendaView({
                       {/* Actions */}
                       {editMode && (
                         <div className="flex gap-2 ml-3">
-                          {item.actions.alternatives.length > 0 && (
+                          {false && (
                             <button
                               onClick={() => toggleAlternatives(item.id)}
                               className="p-2 text-gray-600 hover:bg-white rounded-lg transition-colors"
@@ -466,7 +466,7 @@ export default function SmartAgendaView({
                               <RefreshCw className="w-4 h-4" />
                             </button>
                           )}
-                          {item.actions.canRemove && (
+                          {editMode && (
                             <button
                               onClick={() => onItemRemove?.(item.id)}
                               className="p-2 text-red-600 hover:bg-white rounded-lg transition-colors"

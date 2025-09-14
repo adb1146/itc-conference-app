@@ -35,23 +35,25 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const schedule = user.favorites.map(fav => ({
-      sessionId: fav.sessionId,
-      addedAt: fav.createdAt,
-      session: {
-        id: fav.session.id,
-        title: fav.session.title,
-        startTime: fav.session.startTime,
-        endTime: fav.session.endTime,
-        location: fav.session.location,
-        track: fav.session.track,
-        speakers: fav.session.speakers.map(ss => ({
-          name: ss.speaker.name,
-          role: ss.speaker.role,
-          company: ss.speaker.company
-        }))
-      }
-    }));
+    const schedule = user.favorites
+      .filter(fav => fav.session) // Filter out favorites without sessions
+      .map(fav => ({
+        sessionId: fav.sessionId,
+        addedAt: fav.createdAt,
+        session: {
+          id: fav.session!.id,
+          title: fav.session!.title,
+          startTime: fav.session!.startTime,
+          endTime: fav.session!.endTime,
+          location: fav.session!.location,
+          track: fav.session!.track,
+          speakers: fav.session!.speakers.map(ss => ({
+            name: ss.speaker.name,
+            role: ss.speaker.role,
+            company: ss.speaker.company
+          }))
+        }
+      }));
 
     return NextResponse.json({ schedule });
   } catch (error) {
@@ -119,7 +121,8 @@ export async function POST(request: NextRequest) {
     const favorite = await prisma.favorite.create({
       data: {
         userId: user.id,
-        sessionId: sessionId
+        sessionId: sessionId,
+        type: 'session'
       }
     });
 
