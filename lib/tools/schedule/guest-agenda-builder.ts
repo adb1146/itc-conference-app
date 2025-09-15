@@ -266,7 +266,6 @@ export async function generateGuestAgenda(
 
           schedule.push({
             id: `session-${session.id}`,
-            title: session.title,
             time: new Date(session.startTime).toLocaleTimeString('en-US', {
               hour: 'numeric',
               minute: '2-digit',
