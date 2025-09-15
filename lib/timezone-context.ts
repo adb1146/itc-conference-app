@@ -92,14 +92,15 @@ export function getTimeContext(): TimeContext {
     const daysUntil = Math.ceil((CONFERENCE_START.getTime() - currentTimeVegas.getTime()) / (1000 * 60 * 60 * 24));
     relativeTimeContext += `The conference starts in ${daysUntil} days (October 14-16, 2025). `;
     relativeTimeContext += `When users ask about "today" or "this morning", they likely mean the first day of the conference, not the current date.`;
-  } else if (conferenceStatus === 'during') {
+  } else if (conferenceStatus === 'during' && conferenceDay) {
     relativeTimeContext += `The conference is currently in progress (Day ${conferenceDay} of 3). `;
     relativeTimeContext += `It is currently ${timeOfDay.replace('_', ' ')}. `;
 
+    const tomorrowDay = Math.min(conferenceDay + 1, 3);
     if (timeOfDay === 'morning') {
-      relativeTimeContext += `"This afternoon" means today after 12pm. "Tomorrow" means Day ${Math.min(conferenceDay + 1, 3)}.`;
+      relativeTimeContext += `"This afternoon" means today after 12pm. "Tomorrow" means Day ${tomorrowDay}.`;
     } else if (timeOfDay === 'afternoon' || timeOfDay === 'evening') {
-      relativeTimeContext += `"This morning" has already passed. "Tomorrow" means Day ${Math.min(conferenceDay + 1, 3)}.`;
+      relativeTimeContext += `"This morning" has already passed. "Tomorrow" means Day ${tomorrowDay}.`;
     }
   } else {
     relativeTimeContext += `The conference has ended (was October 14-16, 2025).`;
@@ -184,7 +185,7 @@ export function parseRelativeTime(query: string, context: TimeContext): {
           clarificationMessage: "Tomorrow would be after the conference ends. Did you mean to ask about something on the final day (Thursday, October 16)?"
         };
       }
-      interpretedTime = `Tomorrow (Day ${context.conferenceDay + 1})`;
+      interpretedTime = `Tomorrow (Day ${(context.conferenceDay || 0) + 1})`;
     }
 
     return {
@@ -217,7 +218,7 @@ export function getTemporalContextForAI(): string {
     prompt += `- The conference hasn't started yet. Be careful with relative time references.\n`;
     prompt += `- If someone asks about "today" or "this morning/afternoon", ask for clarification.\n`;
     prompt += `- Assume they might mean the conference days, not the current date.\n`;
-  } else if (context.conferenceStatus === 'during') {
+  } else if (context.conferenceStatus === 'during' && context.conferenceDay) {
     prompt += `- We are currently on Day ${context.conferenceDay} of the conference.\n`;
     prompt += `- "Today" = Day ${context.conferenceDay} (${['Tuesday', 'Wednesday', 'Thursday'][context.conferenceDay - 1]})\n`;
     prompt += `- "Tomorrow" = Day ${Math.min(context.conferenceDay + 1, 3)}\n`;

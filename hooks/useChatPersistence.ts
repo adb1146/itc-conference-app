@@ -1,12 +1,23 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 
+interface PreferenceOption {
+  id: string;
+  label: string;
+  category: 'interest' | 'role' | 'focus' | 'days';
+  value: string;
+}
+
 interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: Date;
   actionType?: string;
+  interactiveContent?: {
+    type: 'preference_collection';
+    options?: PreferenceOption[];
+  };
 }
 
 const STORAGE_PREFIX = 'itc-chat-history';

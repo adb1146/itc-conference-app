@@ -379,8 +379,7 @@ export class InChatRegistrationHandler {
           name: this.registrationData.name!,
           company: this.registrationData.company,
           role: this.registrationData.role,
-          interests: this.registrationData.interests || [],
-          isActive: true
+          interests: this.registrationData.interests || []
         }
       });
 
@@ -426,9 +425,9 @@ export class InChatRegistrationHandler {
       const sessionIds: string[] = [];
 
       agenda.days.forEach(day => {
-        day.sessions.forEach(session => {
-          if (session.id && !session.isBreak) {
-            sessionIds.push(session.id);
+        day.schedule.forEach(scheduleItem => {
+          if (scheduleItem.item.id && scheduleItem.type === 'session') {
+            sessionIds.push(scheduleItem.item.id);
           }
         });
       });
@@ -450,19 +449,8 @@ export class InChatRegistrationHandler {
         }
       }
 
-      // Also save agenda metadata to user profile
-      await prisma.user.update({
-        where: { id: userId },
-        data: {
-          metadata: {
-            smartAgenda: {
-              generatedAt: new Date(),
-              sessionCount: savedCount,
-              preferences: agenda.metadata
-            }
-          }
-        }
-      });
+      // Log success
+      console.log(`[Registration] Saved ${savedCount} sessions from agenda for user ${userId}`);
 
     } catch (error) {
       console.error('[RegistrationHandler] Error saving agenda:', error);

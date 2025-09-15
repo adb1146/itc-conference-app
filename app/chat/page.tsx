@@ -6,8 +6,7 @@ import { useSession, signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useChatPersistence } from '@/hooks/useChatPersistence';
-import { PreferenceSelector } from '@/components/chat/preference-selector';
-import type { PreferenceOption } from '@/components/chat/preference-selector';
+import { PreferenceSelector, type PreferenceOption } from '@/components/chat/preference-selector';
 
 interface Message {
   id: string;

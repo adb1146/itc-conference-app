@@ -25,7 +25,7 @@ import {
   updateRegistrationState,
   markAgendaSaved
 } from '@/lib/conversation-state';
-import { InChatRegistrationHandler } from '@/lib/chat/registration-handler';
+import { InChatRegistrationHandler, type RegistrationState } from '@/lib/chat/registration-handler';
 import { getTemporalContextForAI, parseRelativeTime, getTimeContext } from '@/lib/timezone-context';
 import { shouldSuggestMeeting, formatMeetingSuggestion, getPSAdvisoryFooter } from '@/lib/ps-advisory-context';
 import { LocalRecommendationsAgent } from '@/lib/agents/local-recommendations-agent';
@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
           // Process registration input
           const response = await registrationHandler.processInput(
             message,
-            registrationState.step || 'offer_save',
+            (registrationState.step || 'offer_save') as RegistrationState,
             registrationState.data || {}
           );
 
@@ -242,12 +242,22 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Check if user is requesting research-based personalization
+        // Check if user is requesting research-based personalization or introducing themselves
+        const messageLower = message.toLowerCase();
+        const isIntroduction = (
+          (messageLower.includes("i'm ") || messageLower.includes("i am ")) &&
+          (messageLower.includes(" from ") || messageLower.includes(" at ") ||
+           messageLower.includes(" with ") || messageLower.includes(" work ") ||
+           messageLower.includes(" ceo ") || messageLower.includes(" vp ") ||
+           messageLower.includes(" president ") || messageLower.includes(" director "))
+        );
+
         const isResearchRequest = !userPreferences?.email && (
-          message.toLowerCase().includes('research') ||
-          message.toLowerCase().includes('personalized agenda with research') ||
-          message.toLowerCase().includes('build me a personalized agenda') ||
-          message.toLowerCase().includes('create my agenda')
+          isIntroduction ||
+          messageLower.includes('research') ||
+          messageLower.includes('personalized agenda with research') ||
+          messageLower.includes('build me a personalized agenda') ||
+          messageLower.includes('create my agenda')
         );
 
         if (isResearchRequest) {
@@ -322,7 +332,8 @@ export async function POST(request: NextRequest) {
 
                   const formattedResponse = formatAgendaResponse(agendaResult.agenda);
 
-                  const enhancedResponse = `${formattedResponse}\n\n---\n\n🔒 **Would you like to save this agenda to your profile?**\n\nI can help you create a free account right here in the chat to:\n• Save all ${agendaResult.agenda.metadata?.totalSessions || 'your'} selected sessions\n• Get reminders before sessions start\n• Export to your calendar\n• Access from any device\n\n**Just say "yes" to save your agenda**, or continue exploring sessions without saving.`;
+                  const totalSessions = agendaResult.agenda.days.reduce((total, day) => total + day.schedule.length, 0);
+                  const enhancedResponse = `${formattedResponse}\n\n---\n\n🔒 **Would you like to save this agenda to your profile?**\n\nI can help you create a free account right here in the chat to:\n• Save all ${totalSessions || 'your'} selected sessions\n• Get reminders before sessions start\n• Export to your calendar\n• Access from any device\n\n**Just say "yes" to save your agenda**, or continue exploring sessions without saving.`;
 
                   await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(enhancedResponse)}}\n\n`));
                   await writer.write(encoder.encode(`data: {"type":"metadata","content":${JSON.stringify({
@@ -425,8 +436,8 @@ export async function POST(request: NextRequest) {
                 agenda: agendaResult.agenda,
                 performance: {
                   model: 'Agenda Builder Tool',
-                  executionTime: agendaResult.executionTime,
-                  sessionsAnalyzed: agendaResult.metadata?.sessionsConsidered || 0,
+                  executionTime: Date.now() - Date.now(), // Placeholder for execution time
+                  sessionsAnalyzed: agendaResult.agenda.metrics?.aiSuggestionsAdded || 0,
                   toolUsed: 'smart_agenda_builder'
                 }
               })}}\n\n`));
@@ -720,10 +731,6 @@ export async function POST(request: NextRequest) {
         await writer.write(encoder.encode(`data: {"type":"done","sessionId":"${sessionId}"}\n\n`));
       } catch (error) {
         console.error('Streaming error:', error);
-        // Clear the timeout on error
-        if (typeof timeout !== 'undefined') {
-          clearTimeout(timeout);
-        }
         // Try to send error message and done event if stream is still open
         try {
           await writer.write(encoder.encode(`data: {"type":"error","content":"An error occurred while processing your request. Please try again."}\n\n`));

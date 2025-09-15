@@ -173,7 +173,7 @@ export async function generateGuestAgenda(
           if (goal.includes('technologies') && sessionContent.includes('innovation')) {
             score += 5;
           }
-          if (goal.includes('network') && session.type === 'networking') {
+          if (goal.includes('network') && sessionContent.includes('networking')) {
             score += 10;
           }
           if (goal.includes('solution') && sessionContent.includes('case study')) {
@@ -183,12 +183,14 @@ export async function generateGuestAgenda(
       }
 
       // Keynote sessions get a boost
-      if (session.type === 'keynote') {
+      if (session.title.toLowerCase().includes('keynote')) {
         score += 20;
       }
 
       // Meal sessions get a small boost
-      if (session.type === 'meal' || session.type === 'break') {
+      if (session.title.toLowerCase().includes('lunch') ||
+          session.title.toLowerCase().includes('breakfast') ||
+          session.title.toLowerCase().includes('break')) {
         score += 3;
       }
 
@@ -275,8 +277,8 @@ export async function generateGuestAgenda(
               minute: '2-digit',
               hour12: true
             }),
-            type: session.type || 'session',
-            source: 'ai-recommended',
+            type: 'session' as const,
+            source: 'ai-suggested' as const,
             score: score,
             item: {
               id: session.id,
@@ -289,8 +291,7 @@ export async function generateGuestAgenda(
                 company: s.speaker.company,
                 role: s.speaker.role
               })),
-              track: session.track || '',
-              type: session.type || 'session'
+              track: session.track || ''
             }
           });
 

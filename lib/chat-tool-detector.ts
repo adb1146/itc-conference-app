@@ -3,7 +3,7 @@
  * Analyzes chat messages to determine if they should trigger specific tools/agents
  */
 
-export type ToolType = 'agenda_builder' | 'session_search' | 'speaker_lookup' | 'general_chat' | 'preference_response' | 'local_recommendations';
+export type ToolType = 'agenda_builder' | 'session_search' | 'speaker_lookup' | 'general_chat' | 'preference_response' | 'local_recommendations' | 'profile_research';
 
 export interface ToolDetectionResult {
   shouldUseTool: boolean;

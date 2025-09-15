@@ -151,9 +151,10 @@ export class LocalRecommendationsAgent {
 
     // Filter by walk time
     if (query.walkTime) {
+      const maxWalkTime = query.walkTime;
       results = results.filter(v => {
         const walkMinutes = parseInt(v.walk_time);
-        return walkMinutes <= query.walkTime;
+        return walkMinutes <= maxWalkTime;
       });
     }
 

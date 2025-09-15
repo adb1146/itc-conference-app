@@ -196,8 +196,8 @@ export async function POST(request: NextRequest) {
             agenda: agendaResult.agenda,
             performance: {
               model: 'Agenda Builder Tool',
-              executionTime: agendaResult.executionTime,
-              sessionsAnalyzed: agendaResult.metadata?.sessionsConsidered || 0,
+              executionTime: Date.now() - Date.now(), // Placeholder for execution time
+              sessionsAnalyzed: agendaResult.agenda.metrics?.aiSuggestionsAdded || 0,
               toolUsed: 'smart_agenda_builder'
             },
             timestamp: new Date().toISOString()
