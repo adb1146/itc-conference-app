@@ -6,10 +6,17 @@
 import { UserProfileResearchAgent, BasicUserInfo, EnrichedUserProfile } from './user-profile-researcher';
 import { generateSmartAgenda } from '@/lib/tools/schedule/smart-agenda-builder';
 import { generateGuestAgenda } from '@/lib/tools/schedule/guest-agenda-builder';
+import {
+  savePersonalizedAgenda,
+  getActiveAgenda,
+  hasExistingAgenda,
+  updatePersonalizedAgenda
+} from '@/lib/services/agenda-storage-service';
 import prisma from '@/lib/db';
 
 export type ConversationPhase =
   | 'greeting'
+  | 'checking_existing'  // New phase to check for existing agenda
   | 'collecting_info'
   | 'researching'
   | 'confirming_profile'
@@ -21,6 +28,9 @@ export interface ConversationState {
   userInfo: Partial<BasicUserInfo>;
   researchProfile?: EnrichedUserProfile;
   agendaBuilt: boolean;
+  hasExistingAgenda?: boolean;
+  existingAgendaId?: string;
+  userWantsUpdate?: boolean;  // Track if user wants to update vs replace
   messages: Array<{ role: 'user' | 'assistant'; content: string }>;
 }
 
@@ -66,6 +76,15 @@ export class AgentOrchestrator {
     // Get or create conversation state
     let state = this.conversationStates.get(sessionId) || this.createNewState();
 
+    // Check for existing agenda if userId provided and not yet checked
+    if (userId && state.phase === 'greeting' && !state.hasExistingAgenda) {
+      const hasAgenda = await hasExistingAgenda(userId);
+      if (hasAgenda) {
+        state.hasExistingAgenda = true;
+        state.phase = 'checking_existing';
+      }
+    }
+
     // Add message to history
     state.messages.push({ role: 'user', content: message });
 
@@ -75,6 +94,10 @@ export class AgentOrchestrator {
     switch (state.phase) {
       case 'greeting':
         response = await this.handleGreeting(state, message);
+        break;
+
+      case 'checking_existing':
+        response = await this.handleExistingAgenda(state, message, userId);
         break;
 
       case 'collecting_info':
@@ -120,6 +143,91 @@ export class AgentOrchestrator {
       userInfo: {},
       agendaBuilt: false,
       messages: []
+    };
+  }
+
+  /**
+   * Handle existing agenda check
+   */
+  private async handleExistingAgenda(
+    state: ConversationState,
+    message: string,
+    userId?: string
+  ): Promise<OrchestratorResponse> {
+    if (!userId) {
+      state.phase = 'collecting_info';
+      return this.handleInfoCollection(state, message);
+    }
+
+    const existingAgenda = await getActiveAgenda(userId);
+
+    if (!existingAgenda) {
+      // No active agenda found, continue with normal flow
+      state.phase = 'collecting_info';
+      return this.handleInfoCollection(state, message);
+    }
+
+    // Parse user response
+    const wantsView = message.toLowerCase().includes('view') ||
+                     message.toLowerCase().includes('show') ||
+                     message.toLowerCase().includes('see');
+    const wantsUpdate = message.toLowerCase().includes('update') ||
+                       message.toLowerCase().includes('modify') ||
+                       message.toLowerCase().includes('change');
+    const wantsNew = message.toLowerCase().includes('new') ||
+                    message.toLowerCase().includes('replace') ||
+                    message.toLowerCase().includes('create');
+
+    if (wantsView) {
+      // Show existing agenda
+      state.phase = 'complete';
+      return {
+        message: `Here's your existing agenda created on ${existingAgenda.createdAt.toLocaleDateString()}:\n\n${this.formatAgendaResponse(existingAgenda.agendaData)}\n\nWould you like to update it or create a new one?`,
+        agenda: existingAgenda.agendaData,
+        nextAction: 'complete',
+        metadata: {
+          phase: 'complete',
+          confidence: 1.0,
+          dataCompleteness: 100
+        }
+      };
+    } else if (wantsUpdate) {
+      // Mark for update and continue
+      state.userWantsUpdate = true;
+      state.existingAgendaId = existingAgenda.id;
+      state.phase = 'collecting_info';
+      return {
+        message: `I'll update your existing agenda. Let me gather some additional information to refine it.\n\nWhat specific changes would you like to make? Or shall I research your latest profile to update recommendations?`,
+        nextAction: 'collect_info',
+        metadata: {
+          phase: 'collecting_info',
+          confidence: 1.0,
+          dataCompleteness: 50
+        }
+      };
+    } else if (wantsNew) {
+      // Create new agenda
+      state.phase = 'collecting_info';
+      return {
+        message: `I'll create a fresh agenda for you. Let me start by gathering your information.\n\nCould you tell me your full name, company, and role?`,
+        nextAction: 'collect_info',
+        metadata: {
+          phase: 'collecting_info',
+          confidence: 1.0,
+          dataCompleteness: 0
+        }
+      };
+    }
+
+    // First time asking
+    return {
+      message: `I found your existing personalized agenda from ${existingAgenda.createdAt.toLocaleDateString()}.\n\nWould you like to:\n📋 **View** your current agenda\n🔄 **Update** it with new preferences\n✨ **Create** a completely new one\n\nWhat would you prefer?`,
+      nextAction: 'collect_info',
+      metadata: {
+        phase: 'checking_existing',
+        confidence: 1.0,
+        dataCompleteness: 100
+      }
     };
   }
 
@@ -363,6 +471,34 @@ export class AgentOrchestrator {
       }
 
       if (agenda) {
+        // Save or update the agenda in database
+        if (userId) {
+          try {
+            if (state.userWantsUpdate && state.existingAgendaId) {
+              // Update existing agenda
+              await updatePersonalizedAgenda(
+                state.existingAgendaId,
+                agenda,
+                {
+                  createVersion: true,
+                  changeDescription: 'Updated via AI agent with new preferences',
+                  changedBy: 'ai_agent'
+                }
+              );
+            } else {
+              // Save new agenda
+              await savePersonalizedAgenda(userId, agenda, {
+                researchProfile: state.researchProfile,
+                generatedBy: 'ai_agent',
+                title: `Conference Schedule - ${new Date().toLocaleDateString()}`,
+                description: 'AI-generated personalized conference agenda'
+              });
+            }
+          } catch (error) {
+            console.error('[Orchestrator] Failed to save agenda:', error);
+          }
+        }
+
         state.agendaBuilt = true;
         state.phase = 'complete';
 
@@ -538,21 +674,106 @@ Return ONLY the JSON object, no other text.`
       message += `*Customized for your interests in: ${profile.inferred.interests.slice(0, 3).join(', ')}*\n\n`;
     }
 
-    // Add agenda details (simplified for brevity)
-    message += `## Day 1 Highlights\n`;
-    message += `• 8:00 AM - Keynote: Future of Insurance\n`;
-    message += `• 10:00 AM - AI Innovation Workshop\n`;
-    message += `• 2:00 PM - Digital Transformation Panel\n\n`;
-
-    message += `## Key Recommendations\n`;
-    if (profile?.recommendations.networkingTargets) {
-      message += `**Network with:** ${profile.recommendations.networkingTargets.join(', ')}\n`;
-    }
-    if (profile?.recommendations.vendorsToMeet) {
-      message += `**Visit vendors:** ${profile.recommendations.vendorsToMeet.slice(0, 3).join(', ')}\n`;
+    // Check if we have actual agenda data
+    if (!agenda || !agenda.days || typeof agenda.days !== 'object') {
+      return message + '\n❌ Unable to generate agenda at this time. Please try again.';
     }
 
-    message += `\n✨ This agenda was created based on your professional profile and interests.`;
+    // Statistics
+    let totalSessions = 0;
+    let favoriteSessions = 0;
+    for (const day of Object.values(agenda.days)) {
+      const daySchedule = day as any;
+      totalSessions += daySchedule.sessions?.filter((s: any) => s.type === 'session').length || 0;
+      favoriteSessions += daySchedule.sessions?.filter((s: any) => s.type === 'session' && s.isFavorite).length || 0;
+    }
+
+    message += `📊 **Schedule Overview**\n`;
+    message += `• Total Sessions: ${totalSessions}\n`;
+    if (favoriteSessions > 0) {
+      message += `• ⭐ Favorite Sessions Included: ${favoriteSessions}\n`;
+    }
+    message += `\n`;
+
+    // Format each day
+    const dayNames = ['Day 1 - Tuesday, Oct 15', 'Day 2 - Wednesday, Oct 16', 'Day 3 - Thursday, Oct 17'];
+
+    for (const [dayKey, daySchedule] of Object.entries(agenda.days)) {
+      const dayNum = parseInt(dayKey.replace('day', '')) - 1;
+      const dayName = dayNames[dayNum] || `Day ${dayNum + 1}`;
+      const schedule = daySchedule as any;
+
+      message += `## ${dayName}\n\n`;
+
+      if (!schedule.sessions || schedule.sessions.length === 0) {
+        message += `*No sessions scheduled*\n\n`;
+        continue;
+      }
+
+      for (const item of schedule.sessions) {
+        if (item.type === 'meal') {
+          message += `🍴 **${item.time}** - ${item.title}\n\n`;
+        } else if (item.type === 'session') {
+          // Highlight favorites with star
+          const favoriteIcon = item.isFavorite ? '⭐ ' : '';
+          const priorityBadge = item.priority >= 100 ? ' **[MUST ATTEND]**' :
+                               item.priority >= 85 ? ' *[Highly Recommended]*' : '';
+
+          message += `${favoriteIcon}**${item.time}** - ${item.title}${priorityBadge}\n`;
+
+          if (item.location) {
+            message += `   📍 ${item.location}\n`;
+          }
+
+          if (item.speakers && item.speakers.length > 0) {
+            message += `   👤 ${item.speakers.join(', ')}\n`;
+          }
+
+          if (item.reason) {
+            message += `   💡 *${item.reason}*\n`;
+          }
+
+          if (item.conflictInfo && item.conflictInfo.hasConflict) {
+            message += `   ⚠️ *Conflict resolved - chose over: ${item.conflictInfo.conflictsWith}*\n`;
+          }
+
+          message += '\n';
+        }
+      }
+    }
+
+    // Add recommendations if available
+    if (profile?.recommendations) {
+      message += `## 🤝 Networking Recommendations\n\n`;
+
+      if (profile.recommendations.networkingTargets?.length > 0) {
+        message += `**Key People to Meet:**\n`;
+        profile.recommendations.networkingTargets.slice(0, 5).forEach(target => {
+          message += `• ${target}\n`;
+        });
+        message += '\n';
+      }
+
+      if (profile.recommendations.vendorsToMeet?.length > 0) {
+        message += `**Vendors to Visit:**\n`;
+        profile.recommendations.vendorsToMeet.slice(0, 5).forEach(vendor => {
+          message += `• ${vendor}\n`;
+        });
+        message += '\n';
+      }
+    }
+
+    // Add footer with save prompt
+    message += `\n---\n`;
+    message += `✨ This personalized agenda was created based on:\n`;
+    if (favoriteSessions > 0) {
+      message += `• Your ${favoriteSessions} favorited sessions (all included!)\n`;
+    }
+    if (profile) {
+      message += `• Your professional profile and interests\n`;
+      message += `• AI analysis of session relevance\n`;
+    }
+    message += `\n💾 **Would you like to save this agenda to your account?**`;
 
     return message;
   }

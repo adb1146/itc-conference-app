@@ -5,6 +5,7 @@
 
 import { ConversationContext } from '@/lib/conversation-state';
 import { SmartAgenda } from '@/lib/tools/schedule/types';
+import { savePersonalizedAgenda } from '@/lib/services/agenda-storage-service';
 import bcrypt from 'bcryptjs';
 import prisma from '@/lib/db';
 
@@ -421,19 +422,30 @@ export class InChatRegistrationHandler {
     let savedCount = 0;
 
     try {
-      // Extract all session IDs from the agenda
-      const sessionIds: string[] = [];
-
-      agenda.days.forEach(day => {
-        day.schedule.forEach(scheduleItem => {
-          if (scheduleItem.item.id && scheduleItem.type === 'session') {
-            sessionIds.push(scheduleItem.item.id);
-          }
-        });
+      // Save the complete agenda using our storage service
+      await savePersonalizedAgenda(userId, agenda, {
+        generatedBy: 'ai_agent',
+        title: `ITC Vegas 2025 - ${new Date().toLocaleDateString()}`,
+        description: 'Your personalized conference agenda created during registration'
       });
 
-      // Save sessions as favorites
-      for (const sessionId of sessionIds) {
+      // Count sessions in the agenda
+      for (const day of Object.values(agenda.days)) {
+        savedCount += day.sessions?.filter((s: any) => s.type === 'session').length || 0;
+      }
+
+      // Also save individual sessions as favorites if they were marked
+      const favoriteSessionIds: string[] = [];
+      for (const day of Object.values(agenda.days)) {
+        for (const item of day.sessions || []) {
+          if (item.type === 'session' && item.isFavorite && item.sessionId) {
+            favoriteSessionIds.push(item.sessionId);
+          }
+        }
+      }
+
+      // Save favorites
+      for (const sessionId of favoriteSessionIds) {
         try {
           await prisma.favorite.create({
             data: {
@@ -442,7 +454,6 @@ export class InChatRegistrationHandler {
               type: 'session'
             }
           });
-          savedCount++;
         } catch (error) {
           // Ignore duplicate favorites
           console.log(`Session ${sessionId} might already be favorited`);
@@ -450,7 +461,7 @@ export class InChatRegistrationHandler {
       }
 
       // Log success
-      console.log(`[Registration] Saved ${savedCount} sessions from agenda for user ${userId}`);
+      console.log(`[Registration] Saved agenda with ${savedCount} sessions for user ${userId}`);
 
     } catch (error) {
       console.error('[RegistrationHandler] Error saving agenda:', error);

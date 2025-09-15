@@ -126,6 +126,9 @@ export async function generateSmartAgenda(
       .filter(f => f.type === 'session' && f.session)
       .map(f => f.session!);
 
+    // Create a set of favorite session IDs for quick lookup
+    const favoriteSessionIds = new Set(favoritedSessions.map(s => s.id));
+
     // Extract favorited speakers
     const favoritedSpeakers = user.favorites
       .filter(f => f.type === 'speaker' && f.speaker)

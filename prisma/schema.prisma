@@ -28,6 +28,7 @@ model Session {
 
   speakers    SessionSpeaker[]
   favorites   Favorite[]
+  agendaSessions AgendaSession[]
 }
 
 model Speaker {
@@ -78,9 +79,10 @@ model User {
   updatedAt               DateTime  @updatedAt
   
   // Relations
-  favorites     Favorite[]
-  conversations Conversation[]
-  profile       UserProfile?
+  favorites          Favorite[]
+  conversations      Conversation[]
+  profile            UserProfile?
+  personalizedAgendas PersonalizedAgenda[]
 }
 
 model UserProfile {
@@ -126,4 +128,62 @@ model Favorite {
   @@unique([sessionId, userId])
   @@unique([speakerId, userId])
   @@index([userId, type])
+}
+
+// Personalized Agenda Models
+model PersonalizedAgenda {
+  id                String   @id @default(cuid())
+  userId            String
+  title             String   @default("My Conference Schedule")
+  description       String?
+  agendaData        Json     // Stores the complete agenda structure
+  metadata          Json?    // Stores reasoning, confidence scores, etc.
+  isActive          Boolean  @default(true)  // Currently active agenda
+  version           Int      @default(1)
+  generatedBy       String   // "ai_agent", "manual", "imported"
+  researchProfile   Json?    // Cached research profile used for generation
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessions          AgendaSession[]
+  versions          AgendaVersion[]
+
+  @@index([userId, isActive])
+  @@index([userId, createdAt])
+}
+
+model AgendaSession {
+  id                String   @id @default(cuid())
+  agendaId          String
+  sessionId         String
+  dayNumber         Int      // 1, 2, or 3
+  priority          Int      // 100 = must attend (favorite), 85 = highly recommended, etc.
+  isLocked          Boolean  @default(false) // User locked this session
+  isFavorite        Boolean  @default(false) // Session was a favorite when added
+  addedReason       String?  // Why this session was recommended
+  conflictResolved  Boolean  @default(false) // Was there a conflict that got resolved?
+  alternativeFor    String?  // If this replaced another session due to conflict
+  createdAt         DateTime @default(now())
+
+  agenda            PersonalizedAgenda @relation(fields: [agendaId], references: [id], onDelete: Cascade)
+  session           Session @relation(fields: [sessionId], references: [id])
+
+  @@unique([agendaId, sessionId])
+  @@index([agendaId, dayNumber])
+}
+
+model AgendaVersion {
+  id                String   @id @default(cuid())
+  agendaId          String
+  version           Int
+  agendaData        Json     // Snapshot of the agenda at this version
+  changeDescription String?  // What changed in this version
+  changedBy         String   // "user", "ai_agent", "system"
+  createdAt         DateTime @default(now())
+
+  agenda            PersonalizedAgenda @relation(fields: [agendaId], references: [id], onDelete: Cascade)
+
+  @@unique([agendaId, version])
+  @@index([agendaId, createdAt])
 }
