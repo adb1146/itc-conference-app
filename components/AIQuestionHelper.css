@@ -1,0 +1,69 @@
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes breathing {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out;
+}
+
+.animate-breathing {
+  animation: breathing 3s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+/* Question transition animation */
+.question-transition {
+  transition: opacity 0.3s ease-in-out;
+}
+
+.question-enter {
+  opacity: 0;
+}
+
+.question-enter-active {
+  opacity: 1;
+}
+
+.question-exit {
+  opacity: 1;
+}
+
+.question-exit-active {
+  opacity: 0;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 640px) {
+  .speech-bubble-mobile {
+    max-width: 280px;
+    font-size: 0.875rem;
+  }
+}

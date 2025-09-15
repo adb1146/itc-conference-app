@@ -7,6 +7,28 @@ import { hybridSearch } from '@/lib/vector-db';
 import { searchLocalSessions, upsertSessionsToLocalDB } from '@/lib/local-vector-db';
 import prisma from '@/lib/db';
 import { responseCache } from '@/lib/response-cache';
+import { detectToolIntent, formatAgendaResponse } from '@/lib/chat-tool-detector';
+import { generateFastAgenda } from '@/lib/tools/schedule/fast-agenda-builder';
+import { generateGuestAgenda, formatPreferenceQuestions, parsePreferenceResponses, getPreferenceOptions } from '@/lib/tools/schedule/guest-agenda-builder';
+import {
+  getConversation,
+  addMessage,
+  updateConversationState,
+  getConversationHistory,
+  extractContext,
+  shouldAskForPreferences,
+  generateSessionId,
+  storePendingAgenda,
+  getPendingAgenda,
+  isRegistrationInProgress,
+  getRegistrationState,
+  updateRegistrationState,
+  markAgendaSaved
+} from '@/lib/conversation-state';
+import { InChatRegistrationHandler } from '@/lib/chat/registration-handler';
+import { getTemporalContextForAI, parseRelativeTime, getTimeContext } from '@/lib/timezone-context';
+import { shouldSuggestMeeting, formatMeetingSuggestion, getPSAdvisoryFooter } from '@/lib/ps-advisory-context';
+import { LocalRecommendationsAgent } from '@/lib/agents/local-recommendations-agent';
 
 /**
  * Streaming Vector-based Chat API
@@ -15,11 +37,25 @@ import { responseCache } from '@/lib/response-cache';
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, userPreferences } = await request.json();
+    const { message, userPreferences, sessionId: providedSessionId } = await request.json();
 
     if (!message) {
       return new Response('Message is required', { status: 400 });
     }
+
+    // Get or create session ID
+    const sessionId = providedSessionId || generateSessionId();
+    const userId = userPreferences?.email || undefined;
+
+    // Get conversation context
+    const conversation = getConversation(sessionId, userId);
+
+    // Add user message to history
+    addMessage(sessionId, 'user', message);
+
+    // Check for ambiguous time references
+    const timeContext = getTimeContext();
+    const timeParseResult = parseRelativeTime(message, timeContext);
 
     // Create a TransformStream for streaming
     const encoder = new TextEncoder();
@@ -34,6 +70,14 @@ export async function POST(request: NextRequest) {
     // Start async processing
     (async () => {
       try {
+        // Handle time clarification if needed
+        if (timeParseResult.needsClarification) {
+          await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(timeParseResult.clarificationMessage)}}\n\n`));
+          await writer.write(encoder.encode(`data: {"type":"done","sessionId":"${sessionId}"}\n\n`));
+          await writer.close();
+          return;
+        }
+
         // Check cache first
         const cacheKey = responseCache.generateKey(message, userPreferences);
         const cached = responseCache.get(cacheKey);
@@ -52,7 +96,356 @@ export async function POST(request: NextRequest) {
           return;
         }
 
-        // Send initial status
+        // Check if research agent is already active (continuing conversation) - MUST CHECK BEFORE REGISTRATION
+        const conversation = getConversation(sessionId);
+        if (conversation.state.researchAgentActive) {
+          console.log('[Stream API] Continuing research agent conversation');
+
+          // Get the singleton orchestrator instance
+          const { getOrchestrator } = await import('@/lib/agents/orchestrator-singleton');
+          const orchestrator = getOrchestrator();
+
+          // Continue the conversation
+          const response = await orchestrator.processMessage(sessionId, message, undefined);
+
+          // Handle different response types
+          if (response.nextAction === 'research') {
+            await writer.write(encoder.encode(`data: {"type":"status","content":"Researching your background..."}\n\n`));
+            // The orchestrator will handle the actual research
+          }
+
+          await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(response.message)}}\n\n`));
+
+          if (response.agenda) {
+            // Store the agenda for potential saving
+            storePendingAgenda(sessionId, response.agenda);
+            updateConversationState(sessionId, {
+              agendaBuilt: true,
+              researchAgentActive: false
+            });
+          }
+
+          if (response.metadata) {
+            await writer.write(encoder.encode(`data: {"type":"metadata","content":${JSON.stringify(response.metadata)}}\n\n`));
+          }
+
+          await writer.write(encoder.encode(`data: {"type":"done","sessionId":"${sessionId}"}\n\n`));
+          await writer.close();
+          return;
+        }
+
+        // Check if registration is in progress
+        if (isRegistrationInProgress(sessionId)) {
+          console.log('[Stream API] Registration in progress, handling registration flow');
+
+          const registrationState = getRegistrationState(sessionId);
+          const pendingAgenda = getPendingAgenda(sessionId);
+          const registrationHandler = new InChatRegistrationHandler(pendingAgenda);
+
+          // Restore previous registration data if exists
+          if (registrationState.data) {
+            Object.assign(registrationHandler, { registrationData: registrationState.data });
+          }
+
+          // Process registration input
+          const response = await registrationHandler.processInput(
+            message,
+            registrationState.step || 'offer_save',
+            registrationState.data || {}
+          );
+
+          // Update conversation state with new registration step
+          if (response.nextStep && response.nextStep !== 'complete') {
+            updateRegistrationState(sessionId, response.nextStep, registrationHandler.getRegistrationData());
+          } else if (response.success) {
+            markAgendaSaved(sessionId);
+          }
+
+          // Send registration response
+          await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(response.message)}}\n\n`));
+
+          if (response.success && response.sessionsSaved) {
+            await writer.write(encoder.encode(`data: {"type":"metadata","content":{"agendaSaved":true,"sessionsSaved":${response.sessionsSaved}}}\n\n`));
+          }
+
+          await writer.write(encoder.encode(`data: {"type":"done"}\n\n`));
+          await writer.close();
+          return;
+        }
+
+        // Check if user wants to save agenda (response to save offer)
+        const pendingAgenda = getPendingAgenda(sessionId);
+        if (pendingAgenda && !userPreferences?.email) {
+          const lowerMessage = message.toLowerCase();
+          const wantsToSave = ['yes', 'yeah', 'sure', 'save', 'ok', 'please'].some(word => lowerMessage.includes(word));
+
+          if (wantsToSave) {
+            console.log('[Stream API] User wants to save agenda, starting registration');
+
+            // Start registration flow
+            updateRegistrationState(sessionId, 'collect_email');
+
+            const registrationHandler = new InChatRegistrationHandler(pendingAgenda);
+            const response = await registrationHandler.processInput('yes', 'offer_save', {});
+
+            await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(response.message)}}\n\n`));
+            await writer.write(encoder.encode(`data: {"type":"done"}\n\n`));
+            await writer.close();
+            return;
+          }
+        }
+
+        // Check if we're waiting for preferences from a previous question
+        const waitingForPreferences = shouldAskForPreferences(sessionId);
+
+        // Check if this message should trigger the agenda builder tool
+        const toolDetection = detectToolIntent(message);
+
+        // Handle local recommendations queries (restaurants, bars, activities)
+        if (toolDetection.shouldUseTool && toolDetection.toolType === 'local_recommendations') {
+          console.log('[Stream API] Detected local recommendations request with confidence:', toolDetection.confidence);
+
+          await writer.write(encoder.encode(`data: {"type":"status","content":"Finding Mandalay Bay recommendations..."}\n\n`));
+
+          // Create local recommendations agent
+          const localAgent = new LocalRecommendationsAgent();
+
+          try {
+            // Get recommendations (fast, cached response)
+            const recommendations = await localAgent.getRecommendations(message);
+
+            // Send the recommendations
+            await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(recommendations)}}\n\n`));
+
+            // Add conversation tracking
+            addMessage(sessionId, 'assistant', recommendations);
+
+            // Update conversation state
+            updateConversationState(sessionId, {
+              lastToolUsed: 'local_recommendations'
+            });
+
+            // Send metadata about the tool used
+            await writer.write(encoder.encode(`data: {"type":"metadata","content":${JSON.stringify({
+              toolUsed: 'local_recommendations',
+              responseTime: 'instant',
+              cached: true
+            })}}\n\n`));
+
+            await writer.write(encoder.encode(`data: {"type":"done","sessionId":"${sessionId}"}\n\n`));
+            await writer.close();
+            return;
+          } catch (error) {
+            console.error('[Stream API] Error getting local recommendations:', error);
+            // Fall through to regular chat if agent fails
+            await writer.write(encoder.encode(`data: {"type":"status","content":"Switching to regular chat mode..."}\n\n`));
+          }
+        }
+
+        // Check if user is requesting research-based personalization
+        const isResearchRequest = !userPreferences?.email && (
+          message.toLowerCase().includes('research') ||
+          message.toLowerCase().includes('personalized agenda with research') ||
+          message.toLowerCase().includes('build me a personalized agenda') ||
+          message.toLowerCase().includes('create my agenda')
+        );
+
+        if (isResearchRequest) {
+          console.log('[Stream API] Detected research request from guest user');
+
+          // Get the singleton orchestrator instance
+          const { getOrchestrator } = await import('@/lib/agents/orchestrator-singleton');
+          const orchestrator = getOrchestrator();
+
+          // Process the initial message
+          const response = await orchestrator.processMessage(sessionId, message, undefined);
+
+          // Send the response
+          await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(response.message)}}\n\n`));
+
+          if (response.metadata) {
+            await writer.write(encoder.encode(`data: {"type":"metadata","content":${JSON.stringify(response.metadata)}}\n\n`));
+          }
+
+          // Store orchestrator state for next interaction
+          updateConversationState(sessionId, {
+            researchAgentActive: true,
+            researchPhase: response.metadata?.phase
+          });
+
+          await writer.write(encoder.encode(`data: {"type":"done","sessionId":"${sessionId}"}\n\n`));
+          await writer.close();
+          return;
+        }
+
+
+        // Handle preference responses for non-authenticated users
+        if (!userPreferences?.email && (waitingForPreferences || toolDetection.toolType === 'general_chat')) {
+          // Check if the message contains preference information (response to our questions)
+          const messageContainsPreferences = message.toLowerCase().includes('interested in') ||
+                                            message.toLowerCase().includes('i am a') ||
+                                            message.toLowerCase().includes('my role') ||
+                                            message.toLowerCase().includes('attending') ||
+                                            message.toLowerCase().includes('all three days') ||
+                                            message.toLowerCase().includes('all 3 days') ||
+                                            message.toLowerCase().includes('day 1') ||
+                                            message.toLowerCase().includes('day 2') ||
+                                            message.toLowerCase().includes('day 3');
+
+          if (messageContainsPreferences) {
+            console.log('[Stream API] Detected preference response from guest user');
+
+            // Parse preferences from the message
+            const guestPreferences = parsePreferenceResponses(message);
+
+            // Check if we have enough information to build an agenda
+            if (guestPreferences.interests.length > 0) {
+              await writer.write(encoder.encode(`data: {"type":"status","content":"Building your personalized agenda based on your preferences..."}\n\n`));
+
+              try {
+                const agendaResult = await generateGuestAgenda(guestPreferences, {
+                  includeMeals: true,
+                  maxSessionsPerDay: 8
+                });
+
+                if (agendaResult.success && agendaResult.agenda) {
+                  // Update conversation state
+                  updateConversationState(sessionId, {
+                    agendaBuilt: true,
+                    waitingForPreferences: false,
+                    userPreferences: guestPreferences,
+                    lastToolUsed: 'guest_agenda_builder'
+                  });
+
+                  // Store the agenda in conversation state for potential registration
+                  storePendingAgenda(sessionId, agendaResult.agenda);
+
+                  const formattedResponse = formatAgendaResponse(agendaResult.agenda);
+
+                  const enhancedResponse = `${formattedResponse}\n\n---\n\n🔒 **Would you like to save this agenda to your profile?**\n\nI can help you create a free account right here in the chat to:\n• Save all ${agendaResult.agenda.metadata?.totalSessions || 'your'} selected sessions\n• Get reminders before sessions start\n• Export to your calendar\n• Access from any device\n\n**Just say "yes" to save your agenda**, or continue exploring sessions without saving.`;
+
+                  await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(enhancedResponse)}}\n\n`));
+                  await writer.write(encoder.encode(`data: {"type":"metadata","content":${JSON.stringify({
+                    agenda: agendaResult.agenda,
+                    performance: {
+                      model: 'Guest Agenda Builder',
+                      executionTime: agendaResult.executionTime,
+                      sessionsAnalyzed: agendaResult.metadata?.sessionsConsidered || 0,
+                      toolUsed: 'guest_agenda_builder'
+                    }
+                  })}}\n\n`));
+                  await writer.write(encoder.encode(`data: {"type":"done"}\n\n`));
+                  await writer.close();
+                  return;
+                }
+              } catch (error) {
+                console.error('[Stream API] Error building guest agenda:', error);
+                await writer.write(encoder.encode(`data: {"type":"error","content":"Sorry, I encountered an error building your agenda. Please try again."}\n\n`));
+                await writer.write(encoder.encode(`data: {"type":"done"}\n\n`));
+                await writer.close();
+                return;
+              }
+            } else {
+              // Not enough info yet, ask for more
+              await writer.write(encoder.encode(`data: {"type":"status","content":"I need a bit more information"}\n\n`));
+
+              const followUpResponse = `I see you're starting to share your preferences! To build the best agenda for you, could you also tell me:\n\n**What topics interest you?** (e.g., AI, cybersecurity, claims technology, etc.)`;
+
+              await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(followUpResponse)}}\n\n`));
+              await writer.write(encoder.encode(`data: {"type":"done"}\n\n`));
+              await writer.close();
+              return;
+            }
+          }
+        }
+
+        if (toolDetection.shouldUseTool && toolDetection.toolType === 'agenda_builder') {
+          console.log('[Stream API] Detected agenda building request with confidence:', toolDetection.confidence);
+
+          // Check if user is authenticated for agenda building
+          if (!userPreferences?.email) {
+            console.log('[Stream API] User not authenticated, starting guest agenda flow');
+
+            // Ask for preferences if we don't have enough information
+            updateConversationState(sessionId, {
+              waitingForPreferences: true,
+              agendaBuilt: false
+            });
+
+            await writer.write(encoder.encode(`data: {"type":"status","content":"Let's personalize your agenda"}\n\n`));
+
+            const questionResponse = formatPreferenceQuestions();
+            const preferenceOptions = getPreferenceOptions();
+
+            await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(questionResponse)}}\n\n`));
+            await writer.write(encoder.encode(`data: {"type":"interactive","content":{"type":"preference_collection","requiresResponse":true,"options":${JSON.stringify(preferenceOptions)}}}\n\n`));
+            await writer.write(encoder.encode(`data: {"type":"done"}\n\n`));
+            await writer.close();
+            return;
+          }
+
+          // Get user from database
+          const user = await prisma.user.findUnique({
+            where: { email: userPreferences.email }
+          });
+
+          if (!user) {
+            await writer.write(encoder.encode(`data: {"type":"status","content":"User profile not found"}\n\n`));
+            await writer.write(encoder.encode(`data: {"type":"content","content":"I couldn't find your user profile. Please make sure you're signed in and try again."}\n\n`));
+            await writer.write(encoder.encode(`data: {"type":"done"}\n\n`));
+            await writer.close();
+            return;
+          }
+
+          // Build the agenda using the fast agenda builder
+          console.log('[Stream API] Building agenda for user:', user.email);
+          await writer.write(encoder.encode(`data: {"type":"status","content":"Building your personalized agenda..."}\n\n`));
+
+          const agendaOptions = {
+            ...toolDetection.extractedParams,
+            includeMeals: true,
+            maxSessionsPerDay: 8
+          };
+
+          try {
+            const agendaResult = await generateFastAgenda(user.id, agendaOptions);
+
+            if (agendaResult.success && agendaResult.agenda) {
+              // Update conversation state
+              updateConversationState(sessionId, {
+                agendaBuilt: true,
+                waitingForPreferences: false,
+                lastToolUsed: 'smart_agenda_builder'
+              });
+
+              const formattedResponse = formatAgendaResponse(agendaResult.agenda);
+
+              await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(formattedResponse)}}\n\n`));
+              await writer.write(encoder.encode(`data: {"type":"metadata","content":${JSON.stringify({
+                agenda: agendaResult.agenda,
+                performance: {
+                  model: 'Agenda Builder Tool',
+                  executionTime: agendaResult.executionTime,
+                  sessionsAnalyzed: agendaResult.metadata?.sessionsConsidered || 0,
+                  toolUsed: 'smart_agenda_builder'
+                }
+              })}}\n\n`));
+              await writer.write(encoder.encode(`data: {"type":"done"}\n\n`));
+              await writer.close();
+              return;
+            } else {
+              // Fallback to regular chat if agenda building fails
+              console.error('[Stream API] Agenda building failed:', agendaResult.error);
+              await writer.write(encoder.encode(`data: {"type":"status","content":"Switching to regular chat mode..."}\n\n`));
+            }
+          } catch (agendaError) {
+            console.error('[Stream API] Error building agenda:', agendaError);
+            // Continue to regular chat as fallback
+            await writer.write(encoder.encode(`data: {"type":"status","content":"Switching to regular chat mode..."}\n\n`));
+          }
+        }
+
+        // Send initial status for regular chat
         await writer.write(encoder.encode(`data: {"type":"status","content":"Analyzing your question..."}\n\n`));
 
         // Analyze query complexity for FASTER model selection
@@ -221,12 +614,23 @@ export async function POST(request: NextRequest) {
 
         const temperature = AI_CONFIG.TEMPERATURE_BY_COMPLEXITY[queryComplexity];
 
-        // Build system prompt
+        // Get conversation history and context
+        const conversationHistory = getConversationHistory(sessionId, 5);
+        const conversationContext = extractContext(sessionId);
+
+        // Build system prompt with conversation context
         const baseSystemPrompt = createSystemPrompt(
           userPreferences,
           sessionsContext,
           webSearchResults
         );
+
+        // Add temporal context for time-aware responses
+        const temporalContext = getTemporalContextForAI();
+
+        const contextualSystemPrompt = conversationContext
+          ? `${baseSystemPrompt}\n\n## Conversation Context:\n${conversationContext}\n\n${temporalContext}`
+          : `${baseSystemPrompt}\n\n${temporalContext}`;
 
         const masterPrompts = selectMasterPrompts(message);
         const enhancedPrompt = createEnhancedPrompt(
@@ -234,9 +638,10 @@ export async function POST(request: NextRequest) {
             userMessage: message,
             userProfile: userPreferences,
             sessionData: sessionsContext,
-            complexity: queryComplexity
+            complexity: queryComplexity,
+            conversationHistory // Add conversation history
           },
-          baseSystemPrompt + '\n\n' + masterPrompts
+          contextualSystemPrompt + '\n\n' + masterPrompts
         );
 
         // Initialize Anthropic with streaming
@@ -246,7 +651,12 @@ export async function POST(request: NextRequest) {
 
         await writer.write(encoder.encode(`data: {"type":"model","content":"${model}"}\n\n`));
 
-        // Create streaming response
+        // Create streaming response with timeout
+        const controller = new AbortController();
+        const timeout = setTimeout(() => {
+          controller.abort();
+        }, 60000); // 60 second timeout
+
         const stream = await anthropic.messages.create({
           model,
           max_tokens: maxTokens,
@@ -272,6 +682,30 @@ export async function POST(request: NextRequest) {
           }
         }
 
+        // Clear the timeout since streaming completed successfully
+        clearTimeout(timeout);
+
+        // Save assistant's response to conversation history
+        addMessage(sessionId, 'assistant', fullResponse);
+
+        // Check if we should suggest a meeting with Nancy Paul
+        const messageCount = conversation.messages.length;
+        const meetingContext = shouldSuggestMeeting(message, fullResponse, sessionId, messageCount);
+
+        if (meetingContext.shouldSuggest) {
+          const meetingSuggestion = formatMeetingSuggestion(meetingContext, sessionId);
+          if (meetingSuggestion) {
+            // Add the meeting suggestion to the response
+            await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(meetingSuggestion)}}\n\n`));
+          }
+        }
+
+        // Add PS Advisory footer on certain messages
+        const footer = getPSAdvisoryFooter(messageCount);
+        if (footer) {
+          await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(footer)}}\n\n`));
+        }
+
         // Send sources at the end
         const sources = formatSources(sessionsContext, webSearchResults);
         await writer.write(encoder.encode(`data: {"type":"sources","content":${JSON.stringify(sources)}}\n\n`));
@@ -282,13 +716,29 @@ export async function POST(request: NextRequest) {
           responseCache.set(cacheKey, fullResponse, sources, sortedSessions);
         }
 
-        // Send completion signal
-        await writer.write(encoder.encode(`data: {"type":"done"}\n\n`));
+        // Send completion signal with session ID
+        await writer.write(encoder.encode(`data: {"type":"done","sessionId":"${sessionId}"}\n\n`));
       } catch (error) {
         console.error('Streaming error:', error);
-        await writer.write(encoder.encode(`data: {"type":"error","content":"An error occurred while processing your request"}\n\n`));
+        // Clear the timeout on error
+        if (typeof timeout !== 'undefined') {
+          clearTimeout(timeout);
+        }
+        // Try to send error message and done event if stream is still open
+        try {
+          await writer.write(encoder.encode(`data: {"type":"error","content":"An error occurred while processing your request. Please try again."}\n\n`));
+          await writer.write(encoder.encode(`data: {"type":"done","sessionId":"${sessionId}"}\n\n`));
+        } catch (writeError) {
+          // Stream is already closed, can't write
+          console.error('Could not write error to stream:', writeError);
+        }
       } finally {
-        await writer.close();
+        // Close the writer if it's still open
+        try {
+          await writer.close();
+        } catch (closeError) {
+          // Already closed
+        }
       }
     })();
 

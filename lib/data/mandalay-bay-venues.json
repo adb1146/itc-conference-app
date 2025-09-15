@@ -1,0 +1,298 @@
+{
+  "restaurants": {
+    "fine_dining": [
+      {
+        "name": "Aureole",
+        "cuisine": "Contemporary American",
+        "price": "$$$$",
+        "location": "Mandalay Bay Tower",
+        "walk_time": "3 min",
+        "hours": "Wed-Sun 5:30pm-10:00pm",
+        "reservations": "Highly recommended",
+        "quick_note": "Famous wine tower, perfect for business dinners",
+        "dietary": ["vegetarian_options", "gluten_free_options"],
+        "website": "https://mandalaybay.mgmresorts.com/en/restaurants/aureole.html",
+        "phone": "702-632-7401"
+      },
+      {
+        "name": "StripSteak",
+        "cuisine": "Steakhouse",
+        "price": "$$$$",
+        "location": "Mandalay Bay",
+        "walk_time": "2 min",
+        "hours": "Daily 5:00pm-10:00pm",
+        "reservations": "Recommended",
+        "quick_note": "Modern steakhouse by Michael Mina",
+        "dietary": ["gluten_free_options"],
+        "website": "https://mandalaybay.mgmresorts.com/en/restaurants/stripsteak.html",
+        "phone": "702-632-7414"
+      },
+      {
+        "name": "Fleur by Hubert Keller",
+        "cuisine": "French",
+        "price": "$$$",
+        "location": "Mandalay Bay",
+        "walk_time": "2 min",
+        "hours": "Daily 11:30am-10:00pm",
+        "reservations": "Recommended",
+        "quick_note": "French tapas and famous burgers",
+        "dietary": ["vegetarian_options"],
+        "website": "https://mandalaybay.mgmresorts.com/en/restaurants/fleur-by-hubert-keller.html",
+        "phone": "702-632-9400"
+      }
+    ],
+    "casual": [
+      {
+        "name": "Citizens Kitchen & Bar",
+        "cuisine": "American",
+        "price": "$$",
+        "location": "Mandalay Bay Casino Floor",
+        "walk_time": "1 min",
+        "hours": "Daily 11:00am-11:00pm",
+        "reservations": "Not required",
+        "quick_note": "Great for casual business lunch",
+        "dietary": ["vegetarian_options", "vegan_options", "gluten_free_options"],
+        "website": "https://mandalaybay.mgmresorts.com/en/restaurants/citizens-kitchen-and-bar.html",
+        "phone": "702-632-7777"
+      },
+      {
+        "name": "Hussong's Cantina",
+        "cuisine": "Mexican",
+        "price": "$$",
+        "location": "Mandalay Bay Shoppes",
+        "walk_time": "3 min",
+        "hours": "Daily 11:00am-11:00pm",
+        "reservations": "Walk-ins welcome",
+        "quick_note": "Authentic Mexican, great margaritas",
+        "dietary": ["vegetarian_options", "gluten_free_options"]
+      },
+      {
+        "name": "Border Grill",
+        "cuisine": "Mexican",
+        "price": "$$",
+        "location": "Mandalay Bay",
+        "walk_time": "2 min",
+        "hours": "Daily 11:00am-10:00pm",
+        "reservations": "Accepted",
+        "quick_note": "Modern Mexican by celebrity chefs",
+        "dietary": ["vegetarian_options", "vegan_options", "gluten_free_options"],
+        "website": "https://mandalaybay.mgmresorts.com/en/restaurants/border-grill.html",
+        "phone": "702-632-7403"
+      },
+      {
+        "name": "Ri Ra Irish Pub",
+        "cuisine": "Irish/Pub Food",
+        "price": "$$",
+        "location": "Mandalay Bay Shoppes",
+        "walk_time": "3 min",
+        "hours": "Daily 11:00am-2:00am",
+        "reservations": "Not required",
+        "quick_note": "Sports bar atmosphere, late night",
+        "dietary": ["vegetarian_options"]
+      }
+    ],
+    "quick_bites": [
+      {
+        "name": "Starbucks",
+        "cuisine": "Coffee/Pastries",
+        "price": "$",
+        "location": "Multiple locations",
+        "walk_time": "1 min",
+        "hours": "Daily 5:30am-11:00pm",
+        "reservations": "Not required",
+        "quick_note": "Quick coffee between sessions",
+        "dietary": ["vegetarian_options", "vegan_options"],
+        "website": "https://www.starbucks.com"
+      },
+      {
+        "name": "Mandalay Bay Food Court",
+        "cuisine": "Various",
+        "price": "$",
+        "location": "Casino Floor",
+        "walk_time": "2 min",
+        "hours": "Daily 6:00am-11:00pm",
+        "reservations": "Not required",
+        "quick_note": "Nathan's, Bonanno's NY Pizza, Burger King",
+        "dietary": ["vegetarian_options"]
+      },
+      {
+        "name": "Slice of Vegas",
+        "cuisine": "Pizza",
+        "price": "$",
+        "location": "Mandalay Bay Shoppes",
+        "walk_time": "3 min",
+        "hours": "Daily 11:00am-11:00pm",
+        "reservations": "Not required",
+        "quick_note": "Quick pizza by the slice",
+        "dietary": ["vegetarian_options"]
+      },
+      {
+        "name": "Beach Bar & Grill",
+        "cuisine": "American",
+        "price": "$$",
+        "location": "Mandalay Bay Beach",
+        "walk_time": "5 min",
+        "hours": "Seasonal 11:00am-6:00pm",
+        "reservations": "Not required",
+        "quick_note": "Poolside dining (seasonal)",
+        "dietary": ["vegetarian_options", "gluten_free_options"]
+      }
+    ],
+    "buffet": [
+      {
+        "name": "Bayside Buffet",
+        "cuisine": "International",
+        "price": "$$$",
+        "location": "Mandalay Bay",
+        "walk_time": "3 min",
+        "hours": "Closed (Check for updates)",
+        "reservations": "Not required",
+        "quick_note": "Currently closed, check status",
+        "dietary": ["vegetarian_options", "vegan_options", "gluten_free_options"]
+      }
+    ]
+  },
+  "bars": [
+    {
+      "name": "Minus5 Ice Bar",
+      "type": "Experience Bar",
+      "price": "$$$",
+      "location": "Mandalay Bay Shoppes",
+      "walk_time": "3 min",
+      "hours": "Daily 11:00am-12:00am",
+      "quick_note": "Unique ice bar experience, jackets provided",
+      "age_restriction": "21+",
+      "website": "https://minus5experience.com/las-vegas-mandalay-bay/",
+      "phone": "702-740-5800"
+    },
+    {
+      "name": "Eyecandy Sound Lounge",
+      "type": "Lounge",
+      "price": "$$",
+      "location": "Mandalay Bay Casino",
+      "walk_time": "2 min",
+      "hours": "Daily 6:00pm-3:00am",
+      "quick_note": "DJ, dancing, cocktails",
+      "age_restriction": "21+"
+    },
+    {
+      "name": "Sports Book Bar",
+      "type": "Sports Bar",
+      "price": "$$",
+      "location": "Mandalay Bay Race & Sports Book",
+      "walk_time": "2 min",
+      "hours": "Daily 10:00am-12:00am",
+      "quick_note": "Watch games, place bets",
+      "age_restriction": "21+"
+    }
+  ],
+  "entertainment": [
+    {
+      "name": "Michael Jackson ONE",
+      "type": "Cirque du Soleil Show",
+      "price": "$$$$",
+      "location": "Mandalay Bay Theatre",
+      "walk_time": "3 min",
+      "show_times": "7:00pm & 9:30pm (Dark Mon-Tue)",
+      "duration": "90 minutes",
+      "quick_note": "Popular show, book in advance",
+      "booking": "Box office or online",
+      "website": "https://www.cirquedusoleil.com/michael-jackson-one",
+      "phone": "877-632-7400"
+    },
+    {
+      "name": "Shark Reef Aquarium",
+      "type": "Attraction",
+      "price": "$$",
+      "location": "Mandalay Bay",
+      "walk_time": "5 min",
+      "hours": "Daily 10:00am-8:00pm",
+      "duration": "45-60 minutes",
+      "quick_note": "1.6 million gallon aquarium",
+      "booking": "Tickets at entrance",
+      "website": "https://mandalaybay.mgmresorts.com/en/entertainment/shark-reef-aquarium.html",
+      "phone": "702-632-4555"
+    },
+    {
+      "name": "Mandalay Bay Beach",
+      "type": "Pool Complex",
+      "price": "Free for guests",
+      "location": "Mandalay Bay Pool Deck",
+      "walk_time": "5 min",
+      "hours": "Seasonal 9:00am-6:00pm",
+      "quick_note": "11-acre beach with wave pool",
+      "booking": "Hotel guests only"
+    },
+    {
+      "name": "House of Blues",
+      "type": "Live Music Venue",
+      "price": "$$$",
+      "location": "Mandalay Bay",
+      "walk_time": "3 min",
+      "hours": "Show times vary",
+      "quick_note": "Live concerts and Gospel brunch",
+      "booking": "Check schedule online",
+      "website": "https://www.houseofblues.com/lasvegas",
+      "phone": "702-632-7600"
+    }
+  ],
+  "shopping": [
+    {
+      "name": "Mandalay Bay Shoppes",
+      "type": "Shopping Mall",
+      "location": "Mandalay Bay",
+      "walk_time": "2 min",
+      "hours": "Daily 10:00am-11:00pm",
+      "stores": ["Art of Music", "Elton's Men's Store", "Pearl Moon Boutique"],
+      "quick_note": "Convenient shopping between sessions"
+    }
+  ],
+  "nearby_walking": [
+    {
+      "name": "Luxor",
+      "type": "Casino Resort",
+      "walk_time": "5 min via indoor walkway",
+      "highlights": ["Titanic Artifact Exhibition", "Bodies Exhibition", "Casino"],
+      "quick_note": "Connected via indoor walkway"
+    },
+    {
+      "name": "Excalibur",
+      "type": "Casino Resort",
+      "walk_time": "10 min via Luxor",
+      "highlights": ["Tournament of Kings show", "Fun Dungeon arcade"],
+      "quick_note": "Family-friendly castle theme"
+    },
+    {
+      "name": "Park MGM",
+      "type": "Casino Resort",
+      "walk_time": "15 min or free tram",
+      "highlights": ["Eataly marketplace", "NoMad Restaurant"],
+      "quick_note": "Take the free tram for faster access"
+    }
+  ],
+  "tips": {
+    "conference_attendee": [
+      "The conference center is on Level 2 - South Convention Center",
+      "Multiple Starbucks locations for morning coffee - closest is on casino floor",
+      "For quick lunch between sessions, try the food court or Citizens Kitchen",
+      "Make dinner reservations early for fine dining restaurants",
+      "Happy hours typically 3-6pm at most bars",
+      "The Shoppes at Mandalay Place connects to Luxor via climate-controlled walkway",
+      "Free tram to Excalibur and Park MGM runs until 2am",
+      "Rideshare pickup is at North or South Tour Lobby"
+    ],
+    "dietary": {
+      "vegetarian": "Most restaurants offer vegetarian options - Border Grill has excellent selection",
+      "vegan": "Citizens Kitchen and Border Grill have dedicated vegan menus",
+      "gluten_free": "StripSteak and Citizens Kitchen have gluten-free menus available",
+      "kosher": "Limited options - check with concierge for current availability",
+      "halal": "Limited options - some restaurants can accommodate with advance notice"
+    },
+    "budget": {
+      "$": "Food court, Starbucks, pizza by the slice",
+      "$$": "Most casual restaurants, happy hour specials",
+      "$$$": "Upscale casual, some fine dining lunch menus",
+      "$$$$": "Fine dining, celebrity chef restaurants"
+    }
+  }
+}

@@ -6,6 +6,8 @@ import { useSession, signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useChatPersistence } from '@/hooks/useChatPersistence';
+import { PreferenceSelector } from '@/components/chat/preference-selector';
+import type { PreferenceOption } from '@/components/chat/preference-selector';
 
 interface Message {
   id: string;
@@ -13,6 +15,10 @@ interface Message {
   content: string;
   timestamp: Date;
   actionType?: 'auth' | 'register' | 'profile' | 'complete-registration';
+  interactiveContent?: {
+    type: 'preference_collection';
+    options?: PreferenceOption[];
+  };
 }
 
 const SAMPLE_QUESTIONS = [
@@ -135,6 +141,12 @@ function ChatContent() {
   const [authError, setAuthError] = useState('');
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const [hasProcessedUrlMessage, setHasProcessedUrlMessage] = useState(false);
+  const [shouldAutoSubmit, setShouldAutoSubmit] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [pendingInteractiveContent, setPendingInteractiveContent] = useState<{
+    type: 'preference_collection';
+    options?: PreferenceOption[];
+  } | null>(null);
 
   // Generate unique message IDs
   const generateMessageId = () => {
@@ -264,18 +276,20 @@ function ChatContent() {
       const decodedMessage = decodeURIComponent(messageParam);
       setInput(decodedMessage);
 
+      // Mark that we should auto-submit this message
+      setShouldAutoSubmit(true);
+
       // Clear the URL parameter to prevent re-triggering on back navigation
       const newUrl = new URL(window.location.href);
       newUrl.searchParams.delete('message');
       router.replace(newUrl.pathname, { scroll: false });
-
-      // The message will be auto-sent by the existing auto-submit logic below
     }
   }, [searchParams, hasProcessedUrlMessage, router]);
 
   // Auto-submit when input is set from context or URL parameter
   useEffect(() => {
     if (input && !isLoading && (
+      shouldAutoSubmit || // Auto-submit messages from URL params
       input.includes('Tell me everything about') ||
       input.includes('Search the web for information') ||
       input.includes("I'd like to know more about the session") // From agenda "Ask AI" button
@@ -284,10 +298,11 @@ function ChatContent() {
       const timer = setTimeout(() => {
         const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
         handleSubmit(fakeEvent);
+        setShouldAutoSubmit(false); // Reset the flag after submitting
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [input, isLoading]);
+  }, [input, isLoading, shouldAutoSubmit]);
 
   // Initialize welcome message
   useEffect(() => {
@@ -516,12 +531,14 @@ function ChatContent() {
         },
         body: JSON.stringify({
           message: messageText.trim(),
+          sessionId: sessionId, // Include session ID for conversation continuity
           userPreferences: session?.user ? {
             name: (session.user as any).name,
             role: (session.user as any).role,
             company: (session.user as any).company,
             interests: (session.user as any).interests || [],
-            isFirstTime: isFirstTime
+            isFirstTime: isFirstTime,
+            email: (session.user as any).email
           } : {}
         }),
       });
@@ -570,6 +587,9 @@ function ChatContent() {
                       ? { ...msg, content: streamedContent }
                       : msg
                   ));
+                } else if (parsed.type === 'interactive' && parsed.content) {
+                  // Store interactive content to be added to message after streaming completes
+                  setPendingInteractiveContent(parsed.content);
                 } else if (parsed.type === 'sources' && parsed.content) {
                   // Add sources to the end
                   const sourcesText = '\n\n---\n**Sources:**\n' +
@@ -582,6 +602,12 @@ function ChatContent() {
                       ? { ...msg, content: streamedContent }
                       : msg
                   ));
+                } else if (parsed.type === 'done') {
+                  // Capture session ID from the done event
+                  if (parsed.sessionId) {
+                    setSessionId(parsed.sessionId);
+                    console.log('Session established:', parsed.sessionId);
+                  }
                 } else if (parsed.type === 'error') {
                   // Don't throw here, let the outer catch handle it
                   console.error('Server error:', parsed.content);
@@ -597,6 +623,16 @@ function ChatContent() {
             }
           }
         }
+      }
+
+      // Add interactive content to the message if present
+      if (pendingInteractiveContent) {
+        setMessages(prev => prev.map(msg =>
+          msg.id === assistantMessageId
+            ? { ...msg, interactiveContent: pendingInteractiveContent }
+            : msg
+        ));
+        setPendingInteractiveContent(null);
       }
 
       // If not authenticated, add a subtle auth prompt occasionally
@@ -765,15 +801,43 @@ function ChatContent() {
       // Add the link
       const linkText = match[1];
       const linkUrl = match[2];
-      elements.push(
-        <Link
-          key={`link-${match.index}`}
-          href={linkUrl}
-          className="text-blue-600 hover:text-blue-700 underline font-medium"
-        >
-          {linkText}
-        </Link>
-      );
+
+      // Check if it's a valid URL or an internal path
+      const isExternalUrl = linkUrl.startsWith('http://') || linkUrl.startsWith('https://');
+      const isInternalPath = linkUrl.startsWith('/');
+
+      if (isExternalUrl) {
+        // External links use regular anchor tag
+        elements.push(
+          <a
+            key={`link-${match.index}`}
+            href={linkUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:text-blue-700 underline font-medium"
+          >
+            {linkText}
+          </a>
+        );
+      } else if (isInternalPath) {
+        // Internal links use Next.js Link
+        elements.push(
+          <Link
+            key={`link-${match.index}`}
+            href={linkUrl}
+            className="text-blue-600 hover:text-blue-700 underline font-medium"
+          >
+            {linkText}
+          </Link>
+        );
+      } else {
+        // If it's not a valid URL (like "McKinsey & Company"), just show the text without a link
+        elements.push(
+          <span key={`text-${match.index}`} className="font-medium">
+            {linkText}
+          </span>
+        );
+      }
       
       lastIndex = match.index + match[0].length;
     }
@@ -1324,10 +1388,32 @@ function ChatContent() {
                           // Simple rendering for user messages to preserve white text
                           <p className="text-white">{message.content}</p>
                         ) : (
-                          // Rich formatting for assistant messages
-                          typeof message.content === 'string'
-                            ? formatContent(message.content)
-                            : message.content
+                          <>
+                            {/* Rich formatting for assistant messages */}
+                            {typeof message.content === 'string'
+                              ? formatContent(message.content)
+                              : message.content
+                            }
+                            {/* Render interactive preference selector if present */}
+                            {message.interactiveContent?.type === 'preference_collection' && message.interactiveContent.options && (
+                              <PreferenceSelector
+                                options={message.interactiveContent.options}
+                                onSelectionChange={(selected) => {
+                                  // This could be used to track selections
+                                  console.log('Selected preferences:', selected);
+                                }}
+                                onSubmit={(prompt) => {
+                                  // Send the generated prompt as a new message
+                                  setInput(prompt);
+                                  // Auto-submit after a brief delay to allow user to see the prompt
+                                  setTimeout(() => {
+                                    const submitButton = document.querySelector('[data-testid="send-button"]') as HTMLButtonElement;
+                                    submitButton?.click();
+                                  }, 100);
+                                }}
+                              />
+                            )}
+                          </>
                         )}
                       </div>
                       <p className={`text-xs mt-2 ${

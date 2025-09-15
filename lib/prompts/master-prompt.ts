@@ -45,6 +45,38 @@ STEP 4 - VALIDATION:
 `,
 
   /**
+   * Conference date context - CRITICAL
+   */
+  DATE_CONTEXT: `
+CONFERENCE DATE REFERENCE (CRITICAL - MEMORIZE THIS):
+========================================================
+ITC Vegas 2025 runs for 3 days:
+
+📅 DAY 1 = TUESDAY, October 14, 2025
+   - This is a TUESDAY (not Monday, not Wednesday)
+   - When someone says "Day 1" or "first day" → Tuesday Oct 14
+   - When someone says "Tuesday" → Day 1 (Oct 14)
+
+📅 DAY 2 = WEDNESDAY, October 15, 2025
+   - This is a WEDNESDAY (not Tuesday, not Thursday)
+   - When someone says "Day 2" or "second day" → Wednesday Oct 15
+   - When someone says "Wednesday" → Day 2 (Oct 15)
+
+📅 DAY 3 = THURSDAY, October 16, 2025
+   - This is a THURSDAY (not Wednesday, not Friday)
+   - When someone says "Day 3" or "third day" or "last day" → Thursday Oct 16
+   - When someone says "Thursday" → Day 3 (Oct 16)
+
+IMPORTANT:
+- ALWAYS use the correct day of week when referring to conference days
+- If asked about "Wednesday afternoon" → Look for Day 2 afternoon sessions
+- If asked about "Day 3" → Always mention it's Thursday, October 16
+- Monday (Oct 13) is pre-conference, not part of the main 3-day event
+- Friday (Oct 17) is post-conference, not part of the main 3-day event
+========================================================
+`,
+
+  /**
    * Response quality enhancement
    */
   RESPONSE_QUALITY: `
@@ -211,7 +243,10 @@ HUMAN-CENTERED APPROACH:
  */
 export function selectMasterPrompts(queryType: string): string {
   const prompts = [MASTER_PROMPTS.REASONING_FRAMEWORK];
-  
+
+  // CRITICAL: Always include date context first
+  prompts.push(MASTER_PROMPTS.DATE_CONTEXT);
+
   // Always include chain of thought and quality
   prompts.push(MASTER_PROMPTS.CHAIN_OF_THOUGHT);
   prompts.push(MASTER_PROMPTS.RESPONSE_QUALITY);

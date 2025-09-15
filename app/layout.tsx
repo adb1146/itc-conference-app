@@ -6,6 +6,8 @@ import Navigation from '@/components/Navigation'
 import DisclaimerBanner from '@/components/DisclaimerBanner'
 import Footer from '@/components/Footer'
 import ChatWidget from '@/components/ChatWidget'
+import { VegasTimeDisplay } from '@/components/vegas-time-display'
+import { PSAdvisoryCTA } from '@/components/ps-advisory-cta'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -35,6 +37,8 @@ export default function RootLayout({
             </main>
             <Footer />
             <ChatWidget />
+            <VegasTimeDisplay />
+            <PSAdvisoryCTA variant="floating" />
           </div>
         </AuthProvider>
       </body>

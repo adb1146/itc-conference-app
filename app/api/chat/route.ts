@@ -4,6 +4,9 @@ import Anthropic from '@anthropic-ai/sdk';
 import { AI_CONFIG } from '@/lib/ai-config';
 import { createEnhancedPrompt, analyzeQueryComplexity } from '@/lib/prompt-engine';
 import { selectMasterPrompts } from '@/lib/prompts/master-prompt';
+import { generateDateContext, parseTimeQuery, getConferenceDay } from '@/lib/conference-dates';
+import { detectToolIntent, formatAgendaResponse } from '@/lib/chat-tool-detector';
+import { generateFastAgenda } from '@/lib/tools/schedule/fast-agenda-builder';
 
 const prisma = new PrismaClient();
 
@@ -45,19 +48,20 @@ function determineModel(message: string): { model: string; maxTokens: number; te
 // Extract relevant context based on query
 async function getRelevantContext(message: string) {
   const lowerMessage = message.toLowerCase();
-  
+
   // Build search conditions
   const searchConditions = [];
-  
-  // Look for day references
-  if (lowerMessage.includes('day 1') || lowerMessage.includes('first day') || lowerMessage.includes('october 15') || lowerMessage.includes('oct 15')) {
-    searchConditions.push({ tags: { has: 'day1' } });
+
+  // Use improved date parsing
+  const timeQuery = parseTimeQuery(message);
+  if (timeQuery.day) {
+    searchConditions.push({ tags: { has: timeQuery.day.tag } });
   }
-  if (lowerMessage.includes('day 2') || lowerMessage.includes('second day') || lowerMessage.includes('october 16') || lowerMessage.includes('oct 16')) {
-    searchConditions.push({ tags: { has: 'day2' } });
-  }
-  if (lowerMessage.includes('day 3') || lowerMessage.includes('third day') || lowerMessage.includes('october 17') || lowerMessage.includes('oct 17')) {
-    searchConditions.push({ tags: { has: 'day3' } });
+
+  // Also check for day-of-week references that our parser handles
+  const dayInfo = getConferenceDay(message);
+  if (dayInfo && !timeQuery.day) {
+    searchConditions.push({ tags: { has: dayInfo.tag } });
   }
   
   // Look for topic keywords in the message
@@ -144,6 +148,70 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 });
     }
 
+    // Check if this message should trigger the agenda builder tool
+    const toolDetection = detectToolIntent(message);
+
+    if (toolDetection.shouldUseTool && toolDetection.toolType === 'agenda_builder') {
+      console.log('[Chat API] Detected agenda building request with confidence:', toolDetection.confidence);
+
+      // Check if user is authenticated for agenda building
+      if (!userPreferences?.email) {
+        return NextResponse.json({
+          response: "I'd love to build you a personalized agenda! However, I need you to be signed in so I can save your preferences and create a schedule tailored to your interests.\n\n**Please sign in to:**\n- Get a personalized agenda based on your profile\n- Save sessions to your favorites\n- Export your schedule to your calendar\n\nOnce you're signed in, just ask me again to build your agenda!",
+          needsAuth: true,
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      // Get user from database
+      const user = await prisma.user.findUnique({
+        where: { email: userPreferences.email }
+      });
+
+      if (!user) {
+        return NextResponse.json({
+          response: "I couldn't find your user profile. Please make sure you're signed in and try again.",
+          error: 'User not found',
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      // Build the agenda using the fast agenda builder
+      console.log('[Chat API] Building agenda for user:', user.email);
+
+      const agendaOptions = {
+        ...toolDetection.extractedParams,
+        includeMeals: true,
+        maxSessionsPerDay: 8
+      };
+
+      try {
+        const agendaResult = await generateFastAgenda(user.id, agendaOptions);
+
+        if (agendaResult.success && agendaResult.agenda) {
+          const formattedResponse = formatAgendaResponse(agendaResult.agenda);
+
+          return NextResponse.json({
+            response: formattedResponse,
+            agenda: agendaResult.agenda,
+            performance: {
+              model: 'Agenda Builder Tool',
+              executionTime: agendaResult.executionTime,
+              sessionsAnalyzed: agendaResult.metadata?.sessionsConsidered || 0,
+              toolUsed: 'smart_agenda_builder'
+            },
+            timestamp: new Date().toISOString()
+          });
+        } else {
+          // Fallback to regular chat if agenda building fails
+          console.error('[Chat API] Agenda building failed:', agendaResult.error);
+        }
+      } catch (agendaError) {
+        console.error('[Chat API] Error building agenda:', agendaError);
+        // Continue to regular chat as fallback
+      }
+    }
+
     // Determine which model to use based on query complexity
     const { model, maxTokens, temperature } = determineModel(message);
     const queryComplexity = analyzeQueryComplexity(message);
@@ -154,16 +222,23 @@ export async function POST(request: NextRequest) {
     // Format sessions for context (optimized format)
     const sessionsContext = sessions.map(session => {
       const dayTag = session.tags?.find((tag: string) => tag.startsWith('day'));
-      const dayNumber = dayTag ? dayTag.replace('day', 'Day ') : null;
-      
+      const dayNumber = dayTag ? dayTag.replace('day', '') : null;
+
+      // Get the day of week for this session
+      let dayInfo = null;
+      if (dayNumber) {
+        dayInfo = getConferenceDay(parseInt(dayNumber));
+      }
+
       const sessionInfo: any = {
         id: session.id, // Include session ID for linking
         title: session.title,
-        day: dayNumber,
-        time: session.startTime ? `${new Date(session.startTime).toLocaleTimeString('en-US', { 
-          hour: 'numeric', 
+        day: dayInfo ? `Day ${dayNumber} (${dayInfo.dayOfWeek})` : `Day ${dayNumber}`,
+        date: dayInfo ? dayInfo.fullDate : null,
+        time: session.startTime ? `${new Date(session.startTime).toLocaleTimeString('en-US', {
+          hour: 'numeric',
           minute: '2-digit',
-          hour12: true 
+          hour12: true
         })}` : 'TBD',
         track: session.track || 'General',
         location: session.location || 'TBD'
@@ -190,8 +265,26 @@ export async function POST(request: NextRequest) {
       apiKey: process.env.ANTHROPIC_API_KEY || '',
     });
 
-    // Create base prompt
-    const basePrompt = `You are an intelligent assistant for ITC Vegas 2025 (October 15-17, 2025).
+    // Parse the query to understand what day is being asked about
+    const timeQuery = parseTimeQuery(message);
+    const dayContext = timeQuery.day
+      ? `\nUSER IS ASKING ABOUT: ${timeQuery.day.dayName} (${timeQuery.day.dayOfWeek}, ${timeQuery.day.fullDate})${timeQuery.timeOfDay ? ` - ${timeQuery.timeOfDay}` : ''}\n`
+      : '';
+
+    // Create base prompt with enhanced date awareness
+    const basePrompt = `You are an intelligent assistant for ITC Vegas 2025.
+
+CRITICAL DATE INFORMATION:
+- Day 1 = Tuesday, October 14, 2025
+- Day 2 = Wednesday, October 15, 2025
+- Day 3 = Thursday, October 16, 2025
+${dayContext}
+
+IMPORTANT CAPABILITY:
+If a user asks you to "build an agenda", "create a schedule", "plan their conference", or similar requests:
+- Tell them to be EXPLICIT with the request: "Build me a personalized agenda" or "Create my conference schedule"
+- This will activate our Smart Agenda Builder tool which creates a complete, optimized schedule
+- The tool considers their interests, avoids conflicts, and includes meal breaks
 
 Available Sessions (${sessions.length} shown):
 ${JSON.stringify(sessionsContext, null, 2)}
@@ -200,6 +293,9 @@ User: ${userPreferences?.name || 'Guest'}
 Interests: ${userPreferences?.interests?.join(', ') || 'Not specified'}
 
 Guidelines:
+- ALWAYS use correct day-of-week associations (Day 1=Tue, Day 2=Wed, Day 3=Thu)
+- When mentioning sessions, include both the day number AND day of week
+- If user wants a full agenda/schedule, remind them to say "Build me a personalized agenda"
 - Be concise but comprehensive
 - Use bullet points for lists
 - Include timing and location details

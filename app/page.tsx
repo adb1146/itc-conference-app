@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { 
-  Calendar, Users, Brain, Map, Star, TrendingUp, 
+import HomeChatInput from '@/components/HomeChatInput'
+import { PSAdvisoryHomepage } from '@/components/ps-advisory-homepage'
+import {
+  Calendar, Users, Brain, Map, Star, TrendingUp,
   ChevronRight, Play, Sparkles, Clock, Target,
   MessageCircle, Award, Globe, Zap, ArrowRight,
   CheckCircle, BarChart3, Loader2
@@ -21,7 +23,7 @@ export default function HomePage() {
   // This enables exploration without forced login
 
   useEffect(() => {
-    const conferenceDate = new Date('2025-10-14')
+    const conferenceDate = new Date('2025-10-14') // Conference starts Tuesday, Oct 14
     const today = new Date()
     const diffTime = Math.abs(conferenceDate.getTime() - today.getTime())
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
@@ -138,7 +140,7 @@ export default function HomePage() {
             </h1>
 
             <p className="text-lg sm:text-xl md:text-2xl text-gray-600 mb-4 sm:mb-6 max-w-3xl mx-auto">
-              Experience ITC Vegas 2025 with an AI assistant that understands context,
+              Experience ITC Vegas 2025 (Oct 14-16) with an AI assistant that understands context,
               tracks time, and creates your perfect 3-day journey through 100+ sessions.
             </p>
             
@@ -169,18 +171,26 @@ export default function HomePage() {
               </div>
             </div>
             
+            {/* Chat Input - New Addition */}
+            <div className="mt-8 mb-6">
+              <HomeChatInput />
+            </div>
+
+            {/* PS Advisory CTA - Homepage variant with smart floating fallback */}
+            <PSAdvisoryHomepage />
+
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-              <Link 
-                href="/chat" 
+              <Link
+                href="/chat"
                 className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all min-h-[44px]"
               >
                 <Brain className="w-5 h-5 mr-2" />
                 Start with AI Concierge
                 <Sparkles className="w-4 h-4 ml-2" />
               </Link>
-              <Link 
-                href="/agenda" 
+              <Link
+                href="/agenda"
                 className="inline-flex items-center justify-center px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-medium text-purple-700 bg-white border-2 border-purple-200 rounded-xl hover:border-purple-300 hover:shadow-lg transform hover:-translate-y-0.5 transition-all min-h-[44px]"
               >
                 <Calendar className="w-5 h-5 mr-2" />
