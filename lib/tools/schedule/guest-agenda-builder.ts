@@ -326,7 +326,6 @@ export async function generateGuestAgenda(
     return {
       success: true,
       agenda: {
-        success: true,
         days,
         metadata: {
           generatedAt: new Date().toISOString(),
