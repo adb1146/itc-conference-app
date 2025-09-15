@@ -278,7 +278,6 @@ export async function generateGuestAgenda(
             }),
             type: 'session' as const,
             source: 'ai-suggested' as const,
-            score: score,
             item: {
               id: session.id,
               title: session.title,
