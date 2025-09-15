@@ -326,26 +326,35 @@ export async function generateGuestAgenda(
     return {
       success: true,
       agenda: {
+        userId: 'guest',
+        generatedAt: new Date(),
         days,
-        metadata: {
-          generatedAt: new Date().toISOString(),
-          totalSessions,
-          daysIncluded: Object.keys(days),
-          tracks: Array.from(includedTracks),
-          preferences: {
-            interests: preferences.interests || [],
-            role: preferences.role,
-            goals: preferences.goals || []
-          },
-          executionTime: `${executionTime}ms`,
-          sessionsConsidered: allSessions.length,
-          isGuestAgenda: true
-        }
+        metrics: {
+          totalFavorites: 0,
+          favoritesIncluded: 0,
+          aiSuggestionsAdded: totalSessions,
+          conflictsResolved: 0,
+          overallConfidence: 0.85
+        },
+        conflicts: [],
+        suggestions: [],
+        warnings: [],
+        usingAI: true
       },
       executionTime,
       metadata: {
+        generatedAt: new Date().toISOString(),
+        totalSessions,
+        daysIncluded: Object.keys(days),
+        tracks: Array.from(includedTracks),
+        preferences: {
+          interests: preferences.interests || [],
+          role: preferences.role,
+          goals: preferences.goals || []
+        },
+        executionTime: `${executionTime}ms`,
         sessionsConsidered: allSessions.length,
-        totalSessions
+        isGuestAgenda: true
       }
     };
 
@@ -492,6 +501,7 @@ export function parsePreferenceResponses(userInput: string): GuestPreferences {
   if (inputLower.includes('all') || inputLower.includes('three day') || inputLower.includes('3 day')) {
     preferences.days = ['Day 1 - Tuesday, Oct 14', 'Day 2 - Wednesday, Oct 15', 'Day 3 - Thursday, Oct 16'];
   } else {
+    preferences.days = [];
     if (inputLower.includes('day 1') || inputLower.includes('tuesday') || inputLower.includes('oct 14')) {
       preferences.days.push('Day 1 - Tuesday, Oct 14');
     }
