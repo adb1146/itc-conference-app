@@ -13,48 +13,35 @@ export interface ToolDetectionResult {
   reason: string;
 }
 
-// Keywords and phrases that indicate agenda building intent
+// Keywords and phrases that indicate EXPLICIT agenda building intent
+// These should only trigger when user explicitly asks for agenda creation
 const AGENDA_KEYWORDS = [
   'build my agenda',
   'build me an agenda',
   'create my schedule',
-  'plan my day',
   'build me a schedule',
   'personalized agenda',
-  'recommend a schedule',
-  'what should i attend',
-  'optimize my schedule',
-  'plan my conference',
   'create an itinerary',
   'build a personalized agenda',
   'generate my agenda',
   'make me a schedule',
-  'suggest a schedule',
-  'conference plan',
-  'day by day plan',
-  'full agenda',
-  'complete schedule',
-  'three day plan',
-  '3 day plan',
-  'my personalized schedule',
-  'can you build me an agenda'
+  'can you build me an agenda',
+  'i want an agenda',
+  'i need an agenda',
+  'create a personalized schedule',
+  'build my itinerary'
 ];
 
+// Only match EXPLICIT requests for agenda building
 const AGENDA_PATTERNS = [
-  /build.*(?:my|me|a).*(?:agenda|schedule|itinerary|plan)/i,
-  /create.*(?:my|me|a).*(?:agenda|schedule|itinerary|plan)/i,
-  /generate.*(?:my|me|a).*(?:agenda|schedule|itinerary)/i,
-  /plan.*(?:my|the).*(?:day|conference|schedule|agenda)/i,
-  /(?:personalized|custom|tailored).*(?:agenda|schedule|plan)/i,
-  /what.*should.*i.*attend/i,
-  /recommend.*(?:schedule|agenda|sessions)/i,
-  /optimize.*(?:my|the).*(?:schedule|time|agenda)/i,
-  /suggest.*(?:schedule|agenda|itinerary)/i,
-  /(?:full|complete|entire).*(?:agenda|schedule|conference)/i,
-  /(?:three|3).*day.*(?:plan|schedule|agenda)/i
+  /(?:please\s+)?build.*(?:my|me|a).*(?:agenda|schedule|itinerary)/i,
+  /(?:please\s+)?create.*(?:my|me|a).*(?:agenda|schedule|itinerary)/i,
+  /(?:please\s+)?generate.*(?:my|me|a).*(?:agenda|schedule|itinerary)/i,
+  /i\s+(?:want|need|would like).*(?:an?\s+)?(?:agenda|schedule|itinerary)/i,
+  /(?:can|could|will)\s+you.*(?:build|create|make).*(?:agenda|schedule|itinerary)/i
 ];
 
-// Keywords that indicate session search (not full agenda)
+// Keywords that indicate session search or questions (not full agenda)
 const SESSION_SEARCH_KEYWORDS = [
   'what sessions',
   'which sessions',
@@ -66,7 +53,20 @@ const SESSION_SEARCH_KEYWORDS = [
   'ai sessions',
   'cybersecurity sessions',
   'when is',
-  'what time'
+  'what time',
+  "what's happening",
+  "what is happening",
+  "what's on",
+  "what is on",
+  'tell me about',
+  'any sessions',
+  'are there sessions',
+  'morning sessions',
+  'afternoon sessions',
+  'tomorrow',
+  'today',
+  'this morning',
+  'this afternoon'
 ];
 
 // Keywords for speaker lookup
@@ -192,7 +192,22 @@ export function detectToolIntent(message: string): ToolDetectionResult {
     }
   }
 
-  // Check for explicit agenda building intent
+  // Check for session search or informational queries BEFORE agenda building
+  const hasSessionSearch = SESSION_SEARCH_KEYWORDS.some(keyword =>
+    lowerMessage.includes(keyword)
+  );
+
+  if (hasSessionSearch) {
+    // User is asking for information, not building an agenda
+    return {
+      shouldUseTool: false,
+      toolType: 'session_search',
+      confidence: 0.8,
+      reason: 'User is asking for session information or what\'s happening'
+    };
+  }
+
+  // Check for explicit agenda building intent - ONLY after ruling out information queries
   const hasAgendaKeyword = AGENDA_KEYWORDS.some(keyword =>
     lowerMessage.includes(keyword)
   );
@@ -254,19 +269,6 @@ export function detectToolIntent(message: string): ToolDetectionResult {
     };
   }
 
-  // Check for session search (not full agenda)
-  const hasSessionSearch = SESSION_SEARCH_KEYWORDS.some(keyword =>
-    lowerMessage.includes(keyword)
-  );
-
-  if (hasSessionSearch && !hasAgendaKeyword) {
-    return {
-      shouldUseTool: false,
-      toolType: 'session_search',
-      confidence: 0.8,
-      reason: 'User is searching for specific sessions, not building a full agenda'
-    };
-  }
 
   // Check for speaker lookup
   const hasSpeakerKeyword = SPEAKER_KEYWORDS.some(keyword =>
@@ -282,25 +284,14 @@ export function detectToolIntent(message: string): ToolDetectionResult {
     };
   }
 
-  // Medium confidence checks - ambiguous cases
+  // If message mentions schedule/agenda but isn't an explicit request, treat as general question
   if (lowerMessage.includes('schedule') || lowerMessage.includes('agenda')) {
-    // Check context to determine if it's about viewing or building
-    if (lowerMessage.includes('show') || lowerMessage.includes('see') || lowerMessage.includes('view')) {
-      return {
-        shouldUseTool: false,
-        toolType: 'general_chat',
-        confidence: 0.6,
-        reason: 'User wants to view existing schedule, not build new one'
-      };
-    }
-
-    // Ambiguous - could be agenda building
+    // User is asking ABOUT schedules, not asking to BUILD one
     return {
-      shouldUseTool: true,
-      toolType: 'agenda_builder',
-      confidence: 0.7,
-      extractedParams: {},
-      reason: 'Message mentions schedule/agenda, possibly wants to build one'
+      shouldUseTool: false,
+      toolType: 'general_chat',
+      confidence: 0.6,
+      reason: 'User asking about schedules/agenda, not explicitly requesting to build one'
     };
   }
 
@@ -317,11 +308,23 @@ export function detectToolIntent(message: string): ToolDetectionResult {
  * Formats the agenda builder response for chat
  */
 export function formatAgendaResponse(agenda: any): string {
-  if (!agenda || !agenda.success) {
+  // Check if agenda is valid - it should have days object
+  if (!agenda || !agenda.days || typeof agenda.days !== 'object') {
+    console.error('[formatAgendaResponse] Invalid agenda structure:', agenda);
     return "I couldn't generate your agenda at this time. Please try again or be more specific about your preferences.";
   }
 
   const { days } = agenda;
+
+  // Check if days object has actual content
+  const hasContent = Object.keys(days).some(dayKey =>
+    days[dayKey]?.schedule && days[dayKey].schedule.length > 0
+  );
+
+  if (!hasContent) {
+    console.error('[formatAgendaResponse] Agenda has no sessions:', agenda);
+    return "I couldn't find enough sessions matching your preferences. Please try being more specific about your interests or goals.";
+  }
   let response = "# 🗓️ Your Personalized ITC Vegas 2025 Agenda\n\n";
   response += "I've created a customized conference schedule based on your interests and profile. ";
   response += `This agenda includes ${agenda.metadata?.totalSessions || 0} carefully selected sessions.\n\n`;

@@ -1,0 +1,126 @@
+{
+  "conference": {
+    "name": "ITC Vegas 2025",
+    "tagline": "A Wonderland of Possibilities",
+    "dates": {
+      "start": "2025-10-14",
+      "end": "2025-10-16",
+      "preConference": "2025-10-13",
+      "kickoffSummit": "2025-10-14"
+    },
+    "statistics": {
+      "expectedAttendees": "9,000+",
+      "speakers": "500+",
+      "contentStages": 14,
+      "countries": 58,
+      "eventsExperiences": "100+",
+      "techProviders": "600+",
+      "possibleConnections": 42481153
+    },
+    "venue": {
+      "name": "Mandalay Bay Resort and Casino",
+      "address": "3950 S Las Vegas Blvd, Las Vegas, NV 89119",
+      "mainBallrooms": ["Ballroom A-F", "Jasmine", "South Pacific"],
+      "breakoutRooms": ["Breakers", "Surf", "Shoreline"],
+      "networkingSpaces": ["Bayside Lawn", "Convention Foyer", "Beach Area"],
+      "expoFloor": "Convention Center Main Hall",
+      "startupAlley": "Convention Foyer",
+      "facilities": {
+        "parking": "Self-parking $15/day, Valet $25/day",
+        "wifi": "Complimentary conference WiFi: ITC2025",
+        "businessCenter": "24/7 access on Level 2",
+        "chargingStations": "Located at every ballroom entrance",
+        "quietSpaces": "Business Center Level 2, Breakers Room (when not in session)"
+      }
+    },
+    "registration": {
+      "desk": {
+        "location": "Convention Center Main Entrance",
+        "hours": {
+          "day0": "2:00 PM - 7:00 PM",
+          "day1": "7:00 AM - 6:00 PM",
+          "day2": "7:30 AM - 5:00 PM",
+          "day3": "8:00 AM - 3:00 PM"
+        }
+      },
+      "pricing": {
+        "insurersCarriersBrokers": "$2,295",
+        "startupsInsurtechs": "$1,095",
+        "independentAgents": "$1,095",
+        "investorsFinance": "$2,295",
+        "solutionProviders": "$2,695",
+        "latinAmerica": "$1,295",
+        "associationNonProfit": "$2,295",
+        "general": "$2,695",
+        "onSite": "$2,995",
+        "wiiseWorkshop": "$295",
+        "cancellationDeadline": "2025-08-12",
+        "earlyBirdSavings": "Save up to $1,000 by registering before Oct 13"
+      }
+    },
+    "tracks": {
+      "main": [
+        {
+          "name": "AI & Automation",
+          "description": "Latest in AI, ML, and process automation for insurance",
+          "keywords": ["artificial intelligence", "machine learning", "RPA", "predictive analytics"]
+        },
+        {
+          "name": "Digital Distribution",
+          "description": "Modern distribution channels and embedded insurance",
+          "keywords": ["embedded", "API", "marketplace", "digital channels"]
+        },
+        {
+          "name": "Claims Innovation",
+          "description": "Transforming claims with technology",
+          "keywords": ["claims automation", "fraud detection", "customer experience"]
+        }
+      ]
+    },
+    "specialEvents": [
+      {
+        "name": "Opening Reception",
+        "date": "2025-10-14",
+        "time": "18:00",
+        "location": "Bayside Lawn",
+        "description": "Welcome reception with open bar and appetizers"
+      },
+      {
+        "name": "Innovation Awards",
+        "date": "2025-10-15",
+        "time": "19:00",
+        "location": "Ballroom A",
+        "description": "Annual InsurTech innovation awards ceremony"
+      }
+    ],
+    "transportation": {
+      "airport": "Harry Reid International Airport (LAS)",
+      "shuttles": "Complimentary shuttles every 30 minutes",
+      "rideshare": "Pickup at North Entrance",
+      "parking": "$15/day self-parking, $25/day valet"
+    },
+    "app": {
+      "mobile": "Download 'ITC Vegas' from App Store or Google Play",
+      "features": ["Live polling", "Session Q&A", "Attendee networking", "Schedule builder"]
+    },
+    "contact": {
+      "helpDesk": "help@itcvegas.com",
+      "phone": "1-800-ITC-2025",
+      "emergencyContact": "702-555-0911"
+    }
+  },
+  "faqs": [
+    {
+      "question": "What should I wear?",
+      "answer": "Business casual is recommended. Las Vegas can be warm in October, but conference rooms are air-conditioned."
+    },
+    {
+      "question": "Is there a conference app?",
+      "answer": "Yes! Download 'ITC Vegas' from your app store for real-time updates, networking, and schedule management."
+    },
+    {
+      "question": "Are meals included?",
+      "answer": "Continental breakfast and lunch are included all three days. Opening reception includes appetizers."
+    }
+  ]
+}

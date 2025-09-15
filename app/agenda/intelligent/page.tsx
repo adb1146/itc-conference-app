@@ -74,6 +74,7 @@ function IntelligentAgendaContent() {
   const [isAIThinking, setIsAIThinking] = useState(false);
   const [personalizedSessions, setPersonalizedSessions] = useState<Session[]>([]);
   const [conflicts, setConflicts] = useState<Map<string, string[]>>(new Map());
+  const [searchDebounceTimer, setSearchDebounceTimer] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     fetchSessions();
@@ -462,21 +463,21 @@ function IntelligentAgendaContent() {
 
   const handleAISearch = async () => {
     if (!aiSearchQuery.trim()) return;
+    if (isAIThinking) return; // Prevent duplicate searches
 
     setIsAIThinking(true);
     setIsAiSearchActive(true);
     setLastAiSearch(aiSearchQuery); // Store the search query
 
     try {
-      // First, try the intelligent chat endpoint which has better semantic search
-      const response = await fetch('/api/chat/intelligent', {
+      // Use the new fast search endpoint for instant results
+      const response = await fetch('/api/agenda/fast-search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: aiSearchQuery,
-          userProfile: userProfile,
-          context: 'agenda_search',
-          includeAllDays: true // Request sessions from all days
+          query: aiSearchQuery,
+          day: selectedDay,
+          userProfile: userProfile
         })
       });
 
@@ -507,10 +508,12 @@ function IntelligentAgendaContent() {
           new Date(s.startTime).toISOString().split('T')[0] === '2025-10-17'
         ).length;
 
-        // Add comprehensive insight about the search
+        // Add comprehensive insight about the search with performance info
+        const searchTime = data.searchTime || 0;
+        const searchType = data.searchType || 'fast';
         const insights = [{
           type: 'recommendation' as const,
-          message: `🔍 AI found ${allAiSessions.length} total relevant sessions for "${aiSearchQuery}"`,
+          message: `🔍 Found ${allAiSessions.length} relevant sessions for "${aiSearchQuery}" in ${searchTime}ms (${searchType} search)`,
           sessionIds: dayFilteredSessions.slice(0, 3).filter((s: Session) => s && s.id).map((s: Session) => s.id)
         }];
 
@@ -747,8 +750,27 @@ function IntelligentAgendaContent() {
                 <input
                   type="text"
                   value={aiSearchQuery}
-                  onChange={(e) => setAiSearchQuery(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleAISearch()}
+                  onChange={(e) => {
+                    setAiSearchQuery(e.target.value);
+                    // Debounced instant search
+                    if (searchDebounceTimer) {
+                      clearTimeout(searchDebounceTimer);
+                    }
+                    if (e.target.value.trim().length > 2) {
+                      const timer = setTimeout(() => {
+                        handleAISearch();
+                      }, 500); // Search after 500ms of no typing
+                      setSearchDebounceTimer(timer);
+                    }
+                  }}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      if (searchDebounceTimer) {
+                        clearTimeout(searchDebounceTimer);
+                      }
+                      handleAISearch();
+                    }
+                  }}
                   placeholder="Ask AI: 'Find AI sessions in the morning' or 'What should a CTO attend?'"
                   className="w-full pl-10 pr-4 py-2 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />

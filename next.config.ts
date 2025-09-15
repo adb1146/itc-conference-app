@@ -26,8 +26,6 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '2mb',
     },
   },
-  // Disable SWC minification if it causes issues
-  swcMinify: true,
   // Output configuration for production
   output: 'standalone',
 };

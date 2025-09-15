@@ -21,12 +21,12 @@ interface Message {
 }
 
 const SAMPLE_QUESTIONS = [
-  "Show me all the keynote speakers",
-  "What's happening on Day 2?",
+  "What are the must-attend sessions?",
+  "Who are the keynote speakers?",
+  "What's happening today?",
   "Find AI and automation sessions",
-  "Which sessions should I attend for cyber insurance?",
-  "Create my personalized schedule",
-  "Who is speaking about embedded insurance?"
+  "Which sessions match my interests?",
+  "Build me a personalized agenda"
 ];
 
 const INTERESTS = [
@@ -146,11 +146,41 @@ function ChatContent() {
     type: 'preference_collection';
     options?: PreferenceOption[];
   } | null>(null);
+  const [dynamicSuggestions, setDynamicSuggestions] = useState<string[]>([]);
+  const [conversationContext, setConversationContext] = useState<any>({});
 
   // Generate unique message IDs
   const generateMessageId = () => {
     messageIdCounter.current += 1;
     return `msg_${Date.now()}_${messageIdCounter.current}`;
+  };
+
+  // Fetch dynamic suggestions based on conversation context
+  const fetchDynamicSuggestions = async (lastUserMessage?: string, lastAssistantMsg?: string, context?: any) => {
+    try {
+      // Count only user messages for interaction tracking
+      const userMessageCount = messages.filter(m => m.role === 'user').length;
+
+      const response = await fetch('/api/ai/question-suggestions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          conversationContext: context || conversationContext,
+          lastMessage: lastUserMessage,
+          lastAssistantMessage: lastAssistantMsg,
+          messageCount: userMessageCount
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setDynamicSuggestions(data.questions || []);
+      }
+    } catch (error) {
+      console.error('Error fetching suggestions:', error);
+      // Fall back to default suggestions
+      setDynamicSuggestions([]);
+    }
   };
 
   // Prevent auto-scrolling and maintain viewport position
@@ -302,6 +332,18 @@ function ChatContent() {
       return () => clearTimeout(timer);
     }
   }, [input, isLoading, shouldAutoSubmit]);
+
+  // Fetch initial suggestions on mount and when messages change
+  useEffect(() => {
+    if (!isLoading) {
+      // Always fetch suggestions to update based on message count
+      fetchDynamicSuggestions(
+        messages.length > 0 ? messages[messages.length - 1]?.content : undefined,
+        undefined,
+        { messageCount: messages.filter(m => m.role === 'user').length }
+      );
+    }
+  }, [messages.length]); // Re-fetch when message count changes
 
   // Initialize welcome message
   useEffect(() => {
@@ -644,6 +686,12 @@ function ChatContent() {
         ));
       }
 
+      // Fetch contextual suggestions based on the assistant's response
+      await fetchDynamicSuggestions(messageText.trim(), streamedContent, {
+        ...conversationContext,
+        messageCount: messages.filter(m => m.role === 'user').length + 1 // Include the message just sent
+      });
+
     } catch (error) {
       console.error('Chat error:', error);
       let errorContent = 'I apologize, but I encountered an error. Please try again or rephrase your question.';
@@ -886,10 +934,16 @@ function ChatContent() {
   };
 
   const getPersonalizedQuestions = () => {
+    // Use dynamic suggestions if available
+    if (dynamicSuggestions.length > 0) {
+      return dynamicSuggestions.slice(0, 6);
+    }
+
+    // Fallback to static suggestions
     const user = session?.user as any;
     const userInterests = user?.interests || [];
     let questions: string[] = [];
-    
+
     if (userInterests.length > 0) {
       userInterests.slice(0, 2).forEach((interest: string) => {
         const interestQuestions = PERSONALIZED_QUESTIONS[interest as keyof typeof PERSONALIZED_QUESTIONS];
@@ -897,7 +951,7 @@ function ChatContent() {
           questions.push(...interestQuestions.slice(0, 2));
         }
       });
-      
+
       if (isFirstTime) {
         questions.unshift("Build my personalized Day 1 schedule");
         questions.push("Show me must-attend sessions");
@@ -908,7 +962,7 @@ function ChatContent() {
     } else {
       questions = SAMPLE_QUESTIONS;
     }
-    
+
     return questions.slice(0, 6);
   };
 
@@ -1244,19 +1298,19 @@ function ChatContent() {
   };
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col overflow-hidden pt-32">
-      <div className="flex-1 flex items-center justify-center px-4 pb-8">
-        <div className="w-full max-w-5xl h-full flex flex-col">
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col flex-1">
+    <div className="fixed inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col pt-20">
+      <div className="flex-1 flex items-center justify-center px-4 pb-4 min-h-0">
+        <div className="w-full max-w-6xl h-full flex flex-col">
+          <div className="bg-white rounded-2xl shadow-xl flex flex-col flex-1 min-h-0">
             {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-6">
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-                  <Bot className="w-6 h-6 text-white" />
+                <div className="w-9 h-9 bg-white/20 rounded-lg flex items-center justify-center">
+                  <Bot className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-white">AI Conference Concierge</h1>
+                  <h1 className="text-xl font-bold text-white">AI Conference Concierge</h1>
                   <p className="text-blue-100 text-sm">
                     {session?.user 
                       ? `Welcome back, ${(session.user as any).name?.split(' ')[0] || 'Attendee'}` 
@@ -1289,7 +1343,7 @@ function ChatContent() {
           </div>
 
           {/* Messages Container */}
-          <div ref={messagesContainerRef} className="h-[700px] overflow-y-auto bg-gray-50 p-6">
+          <div ref={messagesContainerRef} className="flex-1 overflow-y-auto bg-gray-50 p-6 min-h-0">
             <div className="space-y-4">
               {messages.map((message) => {
                 if (message.role === 'system') {
@@ -1450,13 +1504,21 @@ function ChatContent() {
             </div>
           </div>
 
-          {/* Quick Actions */}
-          {messages.length <= 2 && !isLoading && !showAuthForm && (
+          {/* Quick Actions - Show suggestions after responses */}
+          {!isLoading && !showAuthForm && (
             <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
               <p className="text-sm font-medium text-gray-700 mb-3">
-                {session?.user && (session.user as any).interests?.length > 0 
-                  ? `Quick actions for you:` 
-                  : 'Try asking:'}
+                {messages.filter(m => m.role === 'user').length === 0
+                  ? '👋 Get started:'
+                  : messages.length > 2 && dynamicSuggestions.length > 0 && dynamicSuggestions[0].includes('What can')
+                    ? '💡 Discover features:'
+                    : messages.length > 2 && dynamicSuggestions.length > 0
+                      ? '🎯 Follow up:'
+                      : messages.length > 2
+                        ? 'Continue with:'
+                        : session?.user && (session.user as any).interests?.length > 0
+                          ? '✨ Quick actions:'
+                          : 'Try asking:'}
               </p>
               <div className="flex flex-wrap gap-2">
                 {getPersonalizedQuestions().map((question, index) => (

@@ -8,6 +8,7 @@ import { searchLocalSessions, upsertSessionsToLocalDB } from '@/lib/local-vector
 import prisma from '@/lib/db';
 import { responseCache } from '@/lib/response-cache';
 import { detectToolIntent, formatAgendaResponse } from '@/lib/chat-tool-detector';
+import { classifyUserIntent, type IntentClassification, type ConversationContext as IntentContext } from '@/lib/ai-intent-classifier';
 import { generateFastAgenda } from '@/lib/tools/schedule/fast-agenda-builder';
 import { generateGuestAgenda, formatPreferenceQuestions, parsePreferenceResponses, getPreferenceOptions } from '@/lib/tools/schedule/guest-agenda-builder';
 import {
@@ -29,6 +30,11 @@ import { InChatRegistrationHandler, type RegistrationState } from '@/lib/chat/re
 import { getTemporalContextForAI, parseRelativeTime, getTimeContext } from '@/lib/timezone-context';
 import { shouldSuggestMeeting, formatMeetingSuggestion, getPSAdvisoryFooter } from '@/lib/ps-advisory-context';
 import { LocalRecommendationsAgent } from '@/lib/agents/local-recommendations-agent';
+import { getAttendeeNeedResponse, getTimeAwareActivities, getPracticalInfo } from '@/lib/attendee-experience';
+import { getHelpContent, getQuickHelpResponse } from '@/lib/help-content';
+import { getConferenceInfoResponse } from '@/lib/conference-info-handler';
+import { interpretQuery, generateEnhancedSearchQuery, generateAIGuidance } from '@/lib/intelligent-query-interpreter';
+import { detectScheduleOfferOpportunity, generateContextualScheduleOffer, isAcceptingScheduleOffer, generateScheduleBuilderPrompt, shouldUseResearchAgent } from '@/lib/schedule-offer-detector';
 
 /**
  * Streaming Vector-based Chat API
@@ -173,6 +179,67 @@ export async function POST(request: NextRequest) {
           return;
         }
 
+        // Check if user is accepting a schedule offer (before checking save offer)
+        if (!conversation.state.agendaBuilt && isAcceptingScheduleOffer(message)) {
+          // Check if this is in response to a schedule offer
+          const lastAssistantMessage = conversation.messages
+            .filter((m: any) => m.role === 'assistant')
+            .pop();
+
+          if (lastAssistantMessage?.content.includes('personalized schedule') ||
+              lastAssistantMessage?.content.includes('build my schedule') ||
+              lastAssistantMessage?.content.includes('personalized agenda')) {
+            console.log('[Stream API] User accepting schedule offer');
+
+            // Check if they want research-based personalization
+            const useResearch = shouldUseResearchAgent(message) ||
+                              message.toLowerCase().includes('research') ||
+                              message.toLowerCase().includes('look me up');
+
+            if (useResearch && !userPreferences?.email) {
+              console.log('[Stream API] Triggering research agent for deep personalization');
+
+              // Trigger research agent for deeper personalization
+              const { getOrchestrator } = await import('@/lib/agents/orchestrator-singleton');
+              const orchestrator = getOrchestrator();
+
+              const initialMessage = "I'll research your professional background to create a highly personalized agenda. Let me start by learning more about you.";
+              await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(initialMessage)}}\n\n`));
+
+              // Process with research agent
+              const response = await orchestrator.processMessage(sessionId, message, undefined);
+
+              await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(response.message)}}\n\n`));
+
+              if (response.metadata) {
+                await writer.write(encoder.encode(`data: {"type":"metadata","content":${JSON.stringify(response.metadata)}}\n\n`));
+              }
+
+              // Update state for research agent
+              updateConversationState(sessionId, {
+                researchAgentActive: true,
+                researchPhase: response.metadata?.phase
+              });
+
+            } else {
+              console.log('[Stream API] Using standard preference collection');
+
+              // Standard preference collection
+              const schedulePrompt = generateScheduleBuilderPrompt();
+              await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(schedulePrompt)}}\n\n`));
+
+              // Update conversation state to expect preferences
+              updateConversationState(sessionId, {
+                waitingForPreferences: true
+              });
+            }
+
+            await writer.write(encoder.encode(`data: {"type":"done","sessionId":"${sessionId}"}\n\n`));
+            await writer.close();
+            return;
+          }
+        }
+
         // Check if user wants to save agenda (response to save offer)
         const pendingAgenda = getPendingAgenda(sessionId);
         if (pendingAgenda && !userPreferences?.email) {
@@ -195,11 +262,136 @@ export async function POST(request: NextRequest) {
           }
         }
 
+        // Check if user is asking for help about app capabilities
+        const isAskingForHelp = message.toLowerCase().includes('what can you') ||
+                                message.toLowerCase().includes('help me with') ||
+                                message.toLowerCase().includes('show me what') ||
+                                message.toLowerCase().includes('how do i') ||
+                                message.toLowerCase().includes('your features') ||
+                                message.toLowerCase().includes('capabilities');
+
+        // Handle help requests immediately with comprehensive guide
+        if (isAskingForHelp) {
+          const helpContent = message.toLowerCase().includes('everything') ||
+                              message.toLowerCase().includes('all') ||
+                              message.toLowerCase().includes('full')
+                              ? getHelpContent()
+                              : getQuickHelpResponse();
+
+          await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(helpContent)}}\n\n`));
+          await writer.write(encoder.encode(`data: {"type":"done","sessionId":"${sessionId}"}\n\n`));
+          await writer.close();
+          return new Response(stream.readable, {
+            headers: {
+              'Content-Type': 'text/event-stream',
+              'Cache-Control': 'no-cache',
+              'Connection': 'keep-alive',
+            },
+          });
+        }
+
+        // Only use conference info handler for VERY specific queries
+        // Let AI handle compound/complex topics intelligently
+        const isSimpleConferenceQuery =
+          (message.toLowerCase().match(/^(what|when|where|show me).*(parties|party|reception|happy hour)/) ||
+           message.toLowerCase().match(/^(what's|whats|tell me about).*(weather|temperature|climate)\s*$/) ||
+           message.toLowerCase().match(/^(where|how).*(venue|location|mandalay)/) ||
+           message.toLowerCase().match(/^(show|list|what).*(networking|meetup)\s*$/));
+
+        if (isSimpleConferenceQuery) {
+          const conferenceInfo = getConferenceInfoResponse(message);
+          if (conferenceInfo) {
+            await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(conferenceInfo.content)}}\n\n`));
+
+            // Add quick actions as suggestions if available
+            if (conferenceInfo.quickActions && conferenceInfo.quickActions.length > 0) {
+              const suggestionsText = `\n\n**💡 Related questions:**\n` +
+                conferenceInfo.quickActions.map(q => `• ${q}`).join('\n');
+              await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(suggestionsText)}}\n\n`));
+            }
+
+            await writer.write(encoder.encode(`data: {"type":"done","sessionId":"${sessionId}"}\n\n`));
+            await writer.close();
+            return new Response(stream.readable, {
+              headers: {
+                'Content-Type': 'text/event-stream',
+                'Cache-Control': 'no-cache',
+                'Connection': 'keep-alive',
+              },
+            });
+          }
+        }
+
         // Check if we're waiting for preferences from a previous question
         const waitingForPreferences = shouldAskForPreferences(sessionId);
 
-        // Check if this message should trigger the agenda builder tool
-        const toolDetection = detectToolIntent(message);
+        // Use AI to classify user intent instead of keyword detection
+        let intentClassification: IntentClassification;
+        let toolDetection = detectToolIntent(message); // Keep as fallback
+
+        try {
+          // Build context for AI classification
+          const intentContext: IntentContext = {
+            history: conversation.messages.slice(-5).map(m => ({
+              role: m.role,
+              content: m.content
+            })),
+            userProfile: userPreferences,
+            lastIntent: conversation.state.lastIntent,
+            agendaAlreadyBuilt: conversation.state.agendaBuilt
+          };
+
+          // Get AI intent classification
+          intentClassification = await classifyUserIntent(message, intentContext);
+
+          console.log('[Stream API] AI Intent Classification:', {
+            intent: intentClassification.primary_intent,
+            confidence: intentClassification.confidence,
+            action: intentClassification.suggested_action,
+            reasoning: intentClassification.reasoning
+          });
+
+          // Update conversation state with detected intent
+          updateConversationState(sessionId, {
+            lastIntent: intentClassification.primary_intent
+          });
+
+          // Override toolDetection based on AI classification
+          if (intentClassification.primary_intent === 'agenda_building' && intentClassification.confidence > 0.7) {
+            toolDetection = {
+              shouldUseTool: true,
+              toolType: 'agenda_builder',
+              confidence: intentClassification.confidence,
+              extractedParams: intentClassification.extracted_entities || {}
+            };
+          } else if (intentClassification.primary_intent === 'local_recommendations') {
+            toolDetection = {
+              shouldUseTool: true,
+              toolType: 'local_recommendations',
+              confidence: intentClassification.confidence,
+              extractedParams: {}
+            };
+          } else if (intentClassification.primary_intent === 'profile_research' && intentClassification.confidence > 0.8) {
+            // Only trigger profile research for very confident explicit requests
+            toolDetection = {
+              shouldUseTool: true,
+              toolType: 'profile_research',
+              confidence: intentClassification.confidence,
+              extractedParams: intentClassification.extracted_entities || {}
+            };
+          } else {
+            // Default to not using tools, just answering informatively
+            toolDetection = {
+              shouldUseTool: false,
+              toolType: 'session_search',
+              confidence: 0,
+              extractedParams: {}
+            };
+          }
+        } catch (classificationError) {
+          console.error('[Stream API] AI intent classification failed, falling back to keyword detection:', classificationError);
+          // Continue with original keyword-based toolDetection
+        }
 
         // Handle local recommendations queries (restaurants, bars, activities)
         if (toolDetection.shouldUseTool && toolDetection.toolType === 'local_recommendations') {
@@ -242,23 +434,60 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Check if user is requesting research-based personalization or introducing themselves
-        const messageLower = message.toLowerCase();
-        const isIntroduction = (
-          (messageLower.includes("i'm ") || messageLower.includes("i am ")) &&
-          (messageLower.includes(" from ") || messageLower.includes(" at ") ||
-           messageLower.includes(" with ") || messageLower.includes(" work ") ||
-           messageLower.includes(" ceo ") || messageLower.includes(" vp ") ||
-           messageLower.includes(" president ") || messageLower.includes(" director "))
-        );
+        // Handle practical needs and emotional support intents
+        if (intentClassification && ['practical_need', 'emotional_support', 'navigation_help', 'social_planning'].includes(intentClassification.primary_intent)) {
+          console.log('[Stream API] Handling attendee need:', intentClassification.primary_intent);
 
-        const isResearchRequest = !userPreferences?.email && (
-          isIntroduction ||
-          messageLower.includes('research') ||
-          messageLower.includes('personalized agenda with research') ||
-          messageLower.includes('build me a personalized agenda') ||
-          messageLower.includes('create my agenda')
-        );
+          // Map intent to attendee need
+          const needMapping: Record<string, string> = {
+            'practical_need': message.toLowerCase().includes('tired') ? 'tired' :
+                             message.toLowerCase().includes('hungry') ? 'hungry' :
+                             message.toLowerCase().includes('coffee') ? 'tired' :
+                             message.toLowerCase().includes('wifi') ? 'practical' :
+                             message.toLowerCase().includes('charging') ? 'practical' : 'tired',
+            'emotional_support': message.toLowerCase().includes('overwhelmed') ? 'overwhelmed' :
+                                message.toLowerCase().includes('anxious') ? 'overwhelmed' :
+                                message.toLowerCase().includes('bored') ? 'bored' : 'overwhelmed',
+            'navigation_help': 'lost',
+            'social_planning': message.toLowerCase().includes('party') || message.toLowerCase().includes('parties') ? 'networking' : 'networking'
+          };
+
+          const attendeeNeed = needMapping[intentClassification.primary_intent] || 'general';
+          const needResponse = getAttendeeNeedResponse(attendeeNeed, new Date());
+
+          // Format response with suggestions
+          let fullResponse = needResponse.response;
+          if (needResponse.suggestions && needResponse.suggestions.length > 0) {
+            fullResponse += '\n\n**Quick Questions:**\n' +
+              needResponse.suggestions.map(s => `• ${s}`).join('\n');
+          }
+
+          await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(fullResponse)}}\n\n`));
+
+          // Add conversation tracking
+          addMessage(sessionId, 'assistant', fullResponse);
+
+          // Update conversation state
+          updateConversationState(sessionId, {
+            lastIntent: intentClassification.primary_intent
+          });
+
+          // Send metadata
+          await writer.write(encoder.encode(`data: {"type":"metadata","content":${JSON.stringify({
+            intent: intentClassification.primary_intent,
+            attendeeNeed: attendeeNeed,
+            confidence: intentClassification.confidence
+          })}}\n\n`));
+
+          await writer.write(encoder.encode(`data: {"type":"done","sessionId":"${sessionId}"}\n\n`));
+          await writer.close();
+          return;
+        }
+
+        // Check if user is requesting research-based personalization based on AI classification
+        const isResearchRequest = !userPreferences?.email &&
+          toolDetection.toolType === 'profile_research' &&
+          toolDetection.shouldUseTool;
 
         if (isResearchRequest) {
           console.log('[Stream API] Detected research request from guest user');
@@ -332,10 +561,27 @@ export async function POST(request: NextRequest) {
 
                   const formattedResponse = formatAgendaResponse(agendaResult.agenda);
 
-                  const totalSessions = agendaResult.agenda.days.reduce((total, day) => total + day.schedule.length, 0);
-                  const enhancedResponse = `${formattedResponse}\n\n---\n\n🔒 **Would you like to save this agenda to your profile?**\n\nI can help you create a free account right here in the chat to:\n• Save all ${totalSessions || 'your'} selected sessions\n• Get reminders before sessions start\n• Export to your calendar\n• Access from any device\n\n**Just say "yes" to save your agenda**, or continue exploring sessions without saving.`;
+                  // Check if we actually have a valid agenda before offering to save
+                  const hasValidAgenda = agendaResult.agenda?.days &&
+                    typeof agendaResult.agenda.days === 'object' &&
+                    Object.keys(agendaResult.agenda.days).length > 0;
 
-                  await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(enhancedResponse)}}\n\n`));
+                  if (!hasValidAgenda || formattedResponse.includes("couldn't generate") || formattedResponse.includes("couldn't find")) {
+                    // Don't offer to save if agenda generation failed
+                    await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(formattedResponse)}}\n\n`));
+                  } else {
+                    // Calculate total sessions from days object (not array)
+                    let totalSessions = 0;
+                    Object.values(agendaResult.agenda.days).forEach((day: any) => {
+                      if (day?.schedule && Array.isArray(day.schedule)) {
+                        totalSessions += day.schedule.length;
+                      }
+                    });
+
+                    const enhancedResponse = `${formattedResponse}\n\n---\n\n🔒 **Would you like to save this agenda to your profile?**\n\nI can help you create a free account right here in the chat to:\n• Save all ${totalSessions || 'your'} selected sessions\n• Get reminders before sessions start\n• Export to your calendar\n• Access from any device\n\n**Just say "yes" to save your agenda**, or continue exploring sessions without saving.`;
+
+                    await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(enhancedResponse)}}\n\n`));
+                  }
                   await writer.write(encoder.encode(`data: {"type":"metadata","content":${JSON.stringify({
                     agenda: agendaResult.agenda,
                     performance: {
@@ -460,8 +706,15 @@ export async function POST(request: NextRequest) {
         await writer.write(encoder.encode(`data: {"type":"status","content":"Analyzing your question..."}\n\n`));
 
         // Analyze query complexity for FASTER model selection
+        // Intelligently interpret the query
+        const queryInterpretation = interpretQuery(message);
+        const enhancedSearchQuery = generateEnhancedSearchQuery(queryInterpretation);
+        const aiGuidance = generateAIGuidance(queryInterpretation);
+
         const queryComplexity = analyzeQueryComplexity(message);
-        const keywords = extractKeywords(message);
+        // Combine intelligent interpretation with keyword extraction
+        const originalKeywords = extractKeywords(message);
+        const keywords = [...new Set([...originalKeywords, ...queryInterpretation.suggestedSearchTerms.slice(0, 10)])];
 
         // Check query types
         const isAskAIQuery = message.includes('Tell me everything about') &&
@@ -485,7 +738,9 @@ export async function POST(request: NextRequest) {
         const vectorSearchPromise = (async () => {
           if (hasExternalAPIs) {
             try {
-              return await hybridSearch(message, keywords, userPreferences?.interests, topK);
+              // Use enhanced search query for better matching on abstract queries
+              const searchQuery = queryInterpretation.searchStrategy === 'direct' ? message : enhancedSearchQuery;
+              return await hybridSearch(searchQuery, keywords, userPreferences?.interests, topK);
             } catch (error) {
               console.error('Pinecone search failed:', error);
               return await searchLocalSessions(message, keywords, topK);
@@ -629,11 +884,12 @@ export async function POST(request: NextRequest) {
         const conversationHistory = getConversationHistory(sessionId, 5);
         const conversationContext = extractContext(sessionId);
 
-        // Build system prompt with conversation context
+        // Build system prompt with conversation context and AI guidance
         const baseSystemPrompt = createSystemPrompt(
           userPreferences,
           sessionsContext,
-          webSearchResults
+          webSearchResults,
+          aiGuidance
         );
 
         // Add temporal context for time-aware responses
@@ -695,6 +951,30 @@ export async function POST(request: NextRequest) {
 
         // Clear the timeout since streaming completed successfully
         clearTimeout(timeout);
+
+        // Check if we should offer schedule building based on context
+        const scheduleOfferContext = detectScheduleOfferOpportunity(
+          message,
+          getConversationHistory(sessionId, 3),
+          conversation.state.agendaBuilt || false
+        );
+
+        // Add contextual schedule offer if appropriate
+        if (scheduleOfferContext.shouldOffer && !conversation.state.agendaBuilt) {
+          const contextualOffer = generateContextualScheduleOffer(
+            fullResponse,
+            message,
+            conversation.state.agendaBuilt || false
+          );
+
+          if (contextualOffer) {
+            fullResponse += contextualOffer;
+            await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(contextualOffer)}}\n\n`));
+          } else if (scheduleOfferContext.suggestedPrompt) {
+            fullResponse += scheduleOfferContext.suggestedPrompt;
+            await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(scheduleOfferContext.suggestedPrompt)}}\n\n`));
+          }
+        }
 
         // Save assistant's response to conversation history
         addMessage(sessionId, 'assistant', fullResponse);
@@ -785,14 +1065,43 @@ function extractKeywords(message: string): string[] {
   return keywords;
 }
 
+import { getConferenceContext, getVenueNavigationHelp, getNetworkingTips, getDiningRecommendations } from '@/lib/prompts/conference-context';
+
 function createSystemPrompt(
   userPreferences: any,
   sessionsContext: any[],
-  webSearchResults: any
+  webSearchResults: any,
+  aiGuidance?: string
 ): string {
-  return `You are an expert conference concierge AI for ITC Vegas 2025 (October 15-17, 2025).
+  // Determine which additional context to include based on query
+  let additionalContext = '';
+  const messageLower = userPreferences?.lastMessage?.toLowerCase() || '';
 
-IMPORTANT: Provide concise, actionable responses. Focus on the most relevant information.
+  if (messageLower.includes('where') || messageLower.includes('location') || messageLower.includes('room')) {
+    additionalContext += getVenueNavigationHelp();
+  }
+  if (messageLower.includes('network') || messageLower.includes('meet') || messageLower.includes('connect')) {
+    additionalContext += getNetworkingTips();
+  }
+  if (messageLower.includes('food') || messageLower.includes('restaurant') || messageLower.includes('eat') || messageLower.includes('drink')) {
+    additionalContext += getDiningRecommendations();
+  }
+
+  return `You are an expert conference concierge AI for ITC Vegas 2025 (October 14-16, 2025 at Mandalay Bay, Las Vegas).
+
+## CRITICAL INSTRUCTION: ALWAYS CONNECT TO CONFERENCE CONTENT
+For EVERY query, you MUST:
+1. Interpret the question in the context of insurance/insurtech and the conference
+2. Find and recommend relevant sessions, even for abstract or compound topics
+3. Never give generic responses - always tie back to specific ITC Vegas content
+4. For compound topics (e.g., "AI and weather"), find sessions at the intersection (e.g., climate risk, parametric insurance)
+5. Think beyond literal keywords - understand the underlying business need
+
+${getConferenceContext()}
+
+${additionalContext}
+
+${aiGuidance || ''}
 
 USER PROFILE:
 - Name: ${userPreferences?.name || 'Guest'}
@@ -802,13 +1111,16 @@ RELEVANT SESSIONS (${sessionsContext.length} found):
 ${JSON.stringify(sessionsContext.slice(0, 10), null, 2)}
 
 RESPONSE GUIDELINES:
-1. Be concise - aim for 2-3 paragraphs max
-2. Focus on the TOP 3-5 most relevant sessions
-3. Always include clickable links using the format:
+1. ALWAYS recommend 3-5 specific sessions with explanations of relevance
+2. Include clickable links for EVERY session and speaker mentioned:
    - [Session Title](/agenda/session/{session.id})
    - [Speaker Name](/speakers/{speaker.id})
    - [Track Name](/agenda?track={URL-encoded-track})
    - [Location](/locations?location={URL-encoded-location})
+3. For abstract queries, interpret the business need and find relevant content
+4. Explain WHY each session is relevant to the user's specific question
+5. End with actionable next steps and related topics to explore
+6. If discussing trends or impacts, cite specific conference sessions as evidence
 
 ${webSearchResults ? `WEB CONTEXT:\n${webSearchResults.content?.substring(0, 500)}` : ''}`;
 }

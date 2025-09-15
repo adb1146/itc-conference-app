@@ -208,7 +208,7 @@ export async function generateGuestAgenda(
     });
 
     // Build agenda for selected days
-    const days: any = {};
+    const daysArray: any[] = [];
     let dayNumber = 1;
     let totalSessions = 0;
     const includedTracks = new Set<string>();
@@ -311,12 +311,13 @@ export async function generateGuestAgenda(
         return timeA - timeB;
       });
 
-      days[dayTag] = {
+      daysArray.push({
         date: dateString,
+        dayNumber,
         schedule,
         sessionCount: sessionsForDay,
         conflicts: []
-      };
+      });
 
       dayNumber++;
     }
@@ -328,7 +329,7 @@ export async function generateGuestAgenda(
       agenda: {
         userId: 'guest',
         generatedAt: new Date(),
-        days,
+        days: daysArray,
         metrics: {
           totalFavorites: 0,
           favoritesIncluded: 0,
@@ -345,7 +346,7 @@ export async function generateGuestAgenda(
       metadata: {
         generatedAt: new Date().toISOString(),
         totalSessions,
-        daysIncluded: Object.keys(days),
+        daysIncluded: daysArray.map(d => `Day ${d.dayNumber}`),
         tracks: Array.from(includedTracks),
         preferences: {
           interests: preferences.interests || [],

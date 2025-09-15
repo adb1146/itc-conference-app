@@ -1,0 +1,130 @@
+{
+  "parties": {
+    "opening": {
+      "name": "Opening Reception",
+      "date": "2025-10-14",
+      "time": "6:00 PM - 10:00 PM",
+      "location": "Mandalay Bay Beach & Convention Foyer",
+      "description": "The legendary ITC Vegas opening party - don't miss it!",
+      "dress": "Business casual, comfortable shoes recommended",
+      "included": ["Open bar", "Heavy appetizers", "Live entertainment", "Networking zones"],
+      "tips": [
+        "Arrive by 6:30 PM for opening remarks",
+        "Best networking happens 6-8 PM before it gets crowded",
+        "Food stations close at 9 PM",
+        "Exchange business cards early - people run out",
+        "Find the quiet zones if you need a break from the music"
+      ]
+    },
+    "closing": {
+      "name": "Closing Party",
+      "date": "2025-10-16",
+      "time": "7:00 PM - Midnight",
+      "location": "Mandalay Bay Events Center",
+      "description": "The epic finale - ITC's legendary closing celebration",
+      "dress": "Cocktail attire or festive business casual",
+      "included": ["Premium open bar", "Dinner stations", "Live band", "DJ", "Awards ceremony"],
+      "tips": [
+        "Book late flights - you don't want to miss this",
+        "Awards ceremony at 8 PM",
+        "Multiple bars to avoid lines",
+        "VIP section for sponsors on second level",
+        "After-party location announced at 11 PM"
+      ]
+    }
+  },
+  "specialEvents": {
+    "golfTournament": {
+      "name": "ITC Vegas Golf Tournament",
+      "date": "2025-10-13",
+      "time": "8:00 AM - 2:00 PM",
+      "location": "TPC Las Vegas",
+      "price": "Additional fee required",
+      "description": "Network on the greens before the conference begins",
+      "includes": ["Transportation", "Breakfast", "Lunch", "Prizes"]
+    },
+    "wiiseWorkshop": {
+      "name": "WIISE Women Empowerment Workshop",
+      "date": "2025-10-14",
+      "time": "8:00 AM - 12:00 PM",
+      "location": "Jasmine Ballroom",
+      "price": "$295",
+      "description": "Empowering women in insurance technology",
+      "includes": ["Breakfast", "Workshop materials", "Networking lunch"]
+    },
+    "startupPitch": {
+      "name": "Startup Pitch Competition Finals",
+      "date": "2025-10-15",
+      "time": "3:00 PM - 5:00 PM",
+      "location": "Main Stage",
+      "description": "Watch the top insurtechs compete for investment",
+      "tips": ["Arrive early for seating", "Great for investors and innovation scouts"]
+    }
+  },
+  "dailyEvents": {
+    "networking": {
+      "morningCoffee": {
+        "time": "7:30 AM - 9:00 AM",
+        "location": "Convention Foyer",
+        "description": "Casual networking over coffee before sessions"
+      },
+      "happyHours": {
+        "time": "5:00 PM - 6:30 PM",
+        "location": "Various sponsor booths",
+        "days": ["2025-10-14", "2025-10-15"],
+        "description": "Daily happy hours at sponsor booths - free drinks!"
+      },
+      "lunchNetworking": {
+        "time": "12:00 PM - 1:30 PM",
+        "location": "Ballroom Foyer",
+        "description": "Structured networking during lunch"
+      }
+    }
+  },
+  "meetups": {
+    "insurerBreakfast": {
+      "name": "Carriers & Insurers Breakfast",
+      "date": "2025-10-15",
+      "time": "7:30 AM - 8:45 AM",
+      "location": "Breakers Room",
+      "description": "Exclusive breakfast for insurance carriers"
+    },
+    "startupMixer": {
+      "name": "Insurtech Founders Mixer",
+      "date": "2025-10-14",
+      "time": "5:00 PM - 6:30 PM",
+      "location": "Surf Room",
+      "description": "Connect with fellow founders and early-stage companies"
+    },
+    "internationalReception": {
+      "name": "International Attendees Reception",
+      "date": "2025-10-15",
+      "time": "6:00 PM - 7:30 PM",
+      "location": "Shoreline Room",
+      "description": "Special reception for international delegates"
+    }
+  },
+  "tips": {
+    "general": [
+      "Download the ITC Vegas app for real-time event updates",
+      "Most events included with registration except special workshops",
+      "Business cards still matter - bring 200+",
+      "Comfortable shoes are essential - you'll walk 15,000+ steps daily",
+      "Hydrate between drinks - Las Vegas is dry"
+    ],
+    "networking": [
+      "Use the app to schedule 1:1 meetings in advance",
+      "Best networking happens at coffee breaks, not sessions",
+      "Join the WhatsApp groups for your interest areas",
+      "Breakfast meetings are less crowded than evening events",
+      "Follow up within 48 hours while connections are fresh"
+    ],
+    "parties": [
+      "Opening party: arrive early, leave late",
+      "Closing party: don't miss the awards at 8 PM",
+      "Happy hours: different sponsors each day",
+      "Quiet networking spaces available at all parties",
+      "VIP areas typically on upper levels"
+    ]
+  }
+}
