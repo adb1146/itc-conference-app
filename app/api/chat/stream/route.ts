@@ -395,7 +395,7 @@ export async function POST(request: NextRequest) {
           // Update conversation state with detected intent
           updateConversationState(sessionId, {
             lastIntent: intentClassification.primary_intent
-          });
+          } as any);
 
           // Override toolDetection based on AI classification
           if (intentClassification.primary_intent === 'agenda_building' && intentClassification.confidence > 0.7) {
