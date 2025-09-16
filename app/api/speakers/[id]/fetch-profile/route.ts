@@ -28,46 +28,45 @@ export async function POST(
         null
     };
     
-    // Construct the full URL for internal API calls
-    // In production, use relative URLs to avoid CORS and connection issues
-    const isProduction = process.env.NODE_ENV === 'production';
-    const baseUrl = isProduction
-      ? '' // Empty string for relative URLs in production
-      : (process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3011');
-
+    // Don't use fetch for internal API calls - call the function directly
     console.log('Fetch Profile API - Environment check:', {
-      baseUrl: baseUrl || 'relative',
-      isProduction,
       hasAnthropicKey: !!process.env.ANTHROPIC_API_KEY,
       speakerName: speaker.name,
       company: speaker.company
     });
 
-    // Fetch speaker profile from web with LinkedIn prioritization
-    const speakerProfileResponse = await fetch(`${baseUrl}/api/web-search`, {
+    // Import the web search handler directly to avoid internal fetch issues
+    const { POST: webSearchHandler } = await import('../../web-search/route');
+
+    // Create mock request objects for internal API call
+    const createMockRequest = (body: any) => new Request('http://localhost', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+      body: JSON.stringify(body)
+    });
+
+    // Fetch speaker profile from web with LinkedIn prioritization
+    const speakerProfileResponse = await webSearchHandler(
+      createMockRequest({
         query: searchQueries.speaker,
         context: 'Extract professional background, expertise, achievements, notable work, and current role. Look for LinkedIn profile information.',
         allowedDomains: ['linkedin.com', 'insuretechconnect.com', 'insurancejournal.com']
       })
-    });
-    
+    );
+
+    const speakerProfile = await speakerProfileResponse.json();
+
     // Fetch company profile from web (only if company exists)
-    let companyProfileResponse = null;
     let companyProfile = { content: null };
 
     if (searchQueries.company && speaker.company) {
-      companyProfileResponse = await fetch(`${baseUrl}/api/web-search`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const companyProfileResponse = await webSearchHandler(
+        createMockRequest({
           query: searchQueries.company,
           context: 'Extract company overview, insurance technology services, products, market position, recent news, and innovations in insurtech. If this is a startup or smaller company, provide any available information about their mission, founding, and focus areas.',
-          blockedDomains: ['wikipedia.org'] // Avoid generic wiki content
+          blockedDomains: ['wikipedia.org']
         })
-      });
+      );
 
       companyProfile = await companyProfileResponse.json();
 
@@ -75,14 +74,12 @@ export async function POST(
       if (!companyProfile.content || companyProfile.content.includes('Mock profile') || companyProfile.content.length < 100) {
         console.log(`Limited data for ${speaker.company}, trying broader search...`);
 
-        const broaderSearchResponse = await fetch(`${baseUrl}/api/web-search`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+        const broaderSearchResponse = await webSearchHandler(
+          createMockRequest({
             query: `${speaker.name} ${speaker.company} company background mission`,
             context: `Find information about the company ${speaker.company} where ${speaker.name} works as ${speaker.role}. Look for company description, mission, services, or any mentions in industry news.`
           })
-        });
+        );
 
         const broaderResults = await broaderSearchResponse.json();
         if (broaderResults.content && broaderResults.content.length > companyProfile.content?.length) {
@@ -90,8 +87,6 @@ export async function POST(
         }
       }
     }
-
-    const speakerProfile = await speakerProfileResponse.json();
     
     // Parse LinkedIn URL if found
     const linkedinPattern = /linkedin\.com\/in\/([a-zA-Z0-9-]+)/;
