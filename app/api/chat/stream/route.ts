@@ -403,6 +403,7 @@ export async function POST(request: NextRequest) {
               shouldUseTool: true,
               toolType: 'agenda_builder',
               confidence: intentClassification.confidence,
+              reason: intentClassification.reasoning || 'AI classified as agenda building intent',
               extractedParams: intentClassification.extracted_entities || {}
             };
           } else if (intentClassification.primary_intent === 'local_recommendations') {
@@ -410,6 +411,7 @@ export async function POST(request: NextRequest) {
               shouldUseTool: true,
               toolType: 'local_recommendations',
               confidence: intentClassification.confidence,
+              reason: intentClassification.reasoning || 'AI classified as local recommendations intent',
               extractedParams: {}
             };
           } else if (intentClassification.primary_intent === 'profile_research' && intentClassification.confidence > 0.8) {
@@ -417,6 +419,7 @@ export async function POST(request: NextRequest) {
             toolDetection = {
               shouldUseTool: true,
               toolType: 'profile_research',
+              reason: intentClassification.reasoning || 'AI classified as profile research intent',
               confidence: intentClassification.confidence,
               extractedParams: intentClassification.extracted_entities || {}
             };
