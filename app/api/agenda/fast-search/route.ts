@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
       const fullText = `${title} ${description} ${tags} ${track} ${speakers}`;
 
       // Check each search term
-      searchTerms.forEach(term => {
+      searchTerms.forEach((term: string) => {
         if (title.includes(term)) score += 10; // Title match is most important
         if (track.includes(term)) score += 8;  // Track match is very relevant
         if (tags.includes(term)) score += 6;   // Tag match is relevant
