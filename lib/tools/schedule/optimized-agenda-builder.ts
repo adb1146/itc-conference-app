@@ -246,7 +246,7 @@ export async function generateOptimizedAgenda(
 
       days.push({
         date: dateString,
-        dayNumber: `Day ${dayNumber}`,
+        dayNumber: dayNumber,
         schedule,
         stats: {
           totalSessions: schedule.length,
