@@ -28,11 +28,16 @@ export async function POST(
         null
     };
     
-    // Construct the full URL for internal API calls (matching the running port)
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3011';
+    // Construct the full URL for internal API calls
+    // In production, use relative URLs to avoid CORS and connection issues
+    const isProduction = process.env.NODE_ENV === 'production';
+    const baseUrl = isProduction
+      ? '' // Empty string for relative URLs in production
+      : (process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3011');
 
     console.log('Fetch Profile API - Environment check:', {
-      baseUrl,
+      baseUrl: baseUrl || 'relative',
+      isProduction,
       hasAnthropicKey: !!process.env.ANTHROPIC_API_KEY,
       speakerName: speaker.name,
       company: speaker.company
