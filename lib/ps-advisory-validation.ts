@@ -106,12 +106,12 @@ export function getPSAdvisoryMemberInfo(name: string): {
   isFounder: boolean;
   speaksAtConference: boolean;
 } | null {
-  const member = PS_ADVISORY_TEAM[name];
+  const member = PS_ADVISORY_TEAM[name as keyof typeof PS_ADVISORY_TEAM];
   if (!member) {
     // Try case-insensitive match
     const key = Object.keys(PS_ADVISORY_TEAM).find(
       k => k.toLowerCase() === name.toLowerCase()
-    );
+    ) as keyof typeof PS_ADVISORY_TEAM | undefined;
     return key ? PS_ADVISORY_TEAM[key] : null;
   }
   return member;

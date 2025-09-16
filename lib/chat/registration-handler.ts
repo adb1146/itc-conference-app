@@ -431,13 +431,13 @@ export class InChatRegistrationHandler {
 
       // Count sessions in the agenda
       for (const day of Object.values(agenda.days)) {
-        savedCount += day.sessions?.filter((s: any) => s.type === 'session').length || 0;
+        savedCount += (day as any).sessions?.filter((s: any) => s.type === 'session').length || 0;
       }
 
       // Also save individual sessions as favorites if they were marked
       const favoriteSessionIds: string[] = [];
       for (const day of Object.values(agenda.days)) {
-        for (const item of day.sessions || []) {
+        for (const item of (day as any).sessions || []) {
           if (item.type === 'session' && item.isFavorite && item.sessionId) {
             favoriteSessionIds.push(item.sessionId);
           }

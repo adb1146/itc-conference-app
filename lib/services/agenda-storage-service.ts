@@ -232,7 +232,7 @@ export async function rollbackToVersion(
 
   return updatePersonalizedAgenda(
     agendaId,
-    version.agendaData as SmartAgenda,
+    version.agendaData as unknown as SmartAgenda,
     {
       createVersion: true,
       changeDescription: `Rolled back to version ${version.version}`,
@@ -250,7 +250,7 @@ async function createAgendaSessions(agendaId: string, agenda: SmartAgenda) {
   for (const [dayKey, daySchedule] of Object.entries(agenda.days)) {
     const dayNumber = parseInt(dayKey.replace('day', ''));
 
-    for (const item of daySchedule.sessions) {
+    for (const item of (daySchedule as any).sessions || []) {
       if (item.type === 'session' && item.sessionId) {
         sessionRecords.push({
           agendaId,
@@ -280,7 +280,7 @@ async function createAgendaSessions(agendaId: string, agenda: SmartAgenda) {
 function countTotalSessions(agenda: SmartAgenda): number {
   let count = 0;
   for (const daySchedule of Object.values(agenda.days)) {
-    count += daySchedule.sessions.filter(s => s.type === 'session').length;
+    count += (daySchedule as any).sessions?.filter((s: any) => s.type === 'session').length || 0;
   }
   return count;
 }
@@ -291,7 +291,7 @@ function countTotalSessions(agenda: SmartAgenda): number {
 function countFavoriteSessions(agenda: SmartAgenda): number {
   let count = 0;
   for (const daySchedule of Object.values(agenda.days)) {
-    count += daySchedule.sessions.filter(s => s.type === 'session' && s.isFavorite).length;
+    count += (daySchedule as any).sessions?.filter((s: any) => s.type === 'session' && s.isFavorite).length || 0;
   }
   return count;
 }

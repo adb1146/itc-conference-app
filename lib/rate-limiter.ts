@@ -70,7 +70,7 @@ function getClientId(request: NextRequest): string {
   }
 
   // Fallback to request IP (may be localhost in dev)
-  return request.ip || 'unknown';
+  return (request as any).ip || 'unknown';
 }
 
 /**

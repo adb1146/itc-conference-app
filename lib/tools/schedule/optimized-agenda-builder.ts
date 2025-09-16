@@ -218,9 +218,9 @@ export async function generateOptimizedAgenda(
               hour12: true
             }),
             type: 'session',
-            source: favoritedSessionIds.has(session.id) ? 'user-favorite' :
-                   recommendedSessionIds.has(session.id) ? 'ai-recommended' :
-                   'interest-match',
+            source: (favoritedSessionIds.has(session.id) ? 'user-favorite' :
+                   recommendedSessionIds.has(session.id) ? 'ai-suggested' :
+                   'system') as 'ai-suggested' | 'user-favorite' | 'system',
             relevanceScore: session.relevanceScore,
             item: {
               id: session.id,
@@ -232,8 +232,7 @@ export async function generateOptimizedAgenda(
                 company: s.speaker.company,
                 role: s.speaker.role
               })),
-              track: session.track,
-              tags: session.tags || []
+              track: session.track
             }
           });
         }
