@@ -309,13 +309,63 @@ export class LocalRecommendationsAgent {
    */
   static isLocalQuery(query: string): boolean {
     const lowerQuery = query.toLowerCase();
-    const keywords = [
-      'restaurant', 'eat', 'food', 'lunch', 'dinner', 'breakfast',
-      'bar', 'drink', 'cocktail', 'beer',
-      'mandalay', 'nearby', 'around here', 'walking distance',
-      'entertainment', 'show', 'things to do', 'activities',
-      'where can i', 'what restaurants', 'any good'
+
+    // First, check for explicit NON-local queries (negative patterns)
+    // These are conference-specific terms that should NOT trigger local recommendations
+    const notLocalPatterns = [
+      'keynote', 'speaker', 'session', 'presentation', 'talk',
+      'agenda', 'schedule', 'conference', 'track', 'panel',
+      'sponsor', 'exhibitor', 'booth', 'workshop', 'attendee'
     ];
+
+    // If query contains conference-specific terms, it's NOT a local query
+    if (notLocalPatterns.some(pattern => lowerQuery.includes(pattern))) {
+      return false;
+    }
+
+    // Check for local venue keywords
+    const keywords = [
+      'restaurant', 'eat', 'food', 'lunch', 'dinner', 'breakfast', 'hungry',
+      'bar', 'drink', 'cocktail', 'beer', 'wine',
+      'mandalay', 'nearby', 'around here', 'walking distance',
+      'where can i eat', 'where should i eat', 'where to eat',
+      'things to do', 'activities', 'relax', 'spa', 'pool'
+    ];
+
+    // Handle "show" carefully
+    // "shows" (plural) usually means entertainment shows
+    // Special case: "show me available shows" is about entertainment
+    if (lowerQuery.includes('shows')) {
+      // Even if it has "show me", if it's asking about "shows" plural, it's likely entertainment
+      return true;
+    }
+
+    // Other entertainment show patterns
+    if ((lowerQuery.includes('show tonight') ||
+         lowerQuery.includes('any show') ||
+         lowerQuery.includes('entertainment show')) &&
+        !lowerQuery.includes('show me the') &&  // "show me the X" is usually not about entertainment
+        !lowerQuery.includes('show us the')) {
+      return true;
+    }
+
+    // For "entertainment" - be more careful about context
+    // "entertainment options" could be ambiguous, so check for clear local indicators
+    if (lowerQuery.includes('entertainment')) {
+      // If combined with clear local indicators, it's local
+      if (lowerQuery.includes('mandalay') ||
+          lowerQuery.includes('tonight') ||
+          lowerQuery.includes('nearby') ||
+          lowerQuery.includes('venue')) {
+        return true;
+      }
+      // Otherwise, if it has conference terms, it's NOT local
+      if (!lowerQuery.includes('session') &&
+          !lowerQuery.includes('track') &&
+          !lowerQuery.includes('options')) {
+        return true;
+      }
+    }
 
     return keywords.some(keyword => lowerQuery.includes(keyword));
   }

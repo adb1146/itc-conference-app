@@ -367,7 +367,7 @@ export async function POST(request: NextRequest) {
         const waitingForPreferences = shouldAskForPreferences(sessionId);
 
         // Use AI to classify user intent instead of keyword detection
-        let intentClassification: IntentClassification;
+        let intentClassification: IntentClassification | undefined;
         let toolDetection = detectToolIntent(message); // Keep as fallback
 
         try {
