@@ -30,7 +30,14 @@ export async function POST(
     
     // Construct the full URL for internal API calls (matching the running port)
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3011';
-    
+
+    console.log('Fetch Profile API - Environment check:', {
+      baseUrl,
+      hasAnthropicKey: !!process.env.ANTHROPIC_API_KEY,
+      speakerName: speaker.name,
+      company: speaker.company
+    });
+
     // Fetch speaker profile from web with LinkedIn prioritization
     const speakerProfileResponse = await fetch(`${baseUrl}/api/web-search`, {
       method: 'POST',
