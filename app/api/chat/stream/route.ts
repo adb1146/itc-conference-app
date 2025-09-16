@@ -308,13 +308,7 @@ export async function POST(request: NextRequest) {
           await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(helpContent)}}\n\n`));
           await writer.write(encoder.encode(`data: {"type":"done","sessionId":"${sessionId}"}\n\n`));
           await writer.close();
-          return new Response(stream.readable, {
-            headers: {
-              'Content-Type': 'text/event-stream',
-              'Cache-Control': 'no-cache',
-              'Connection': 'keep-alive',
-            },
-          });
+          return; // Just return from the async function, the Response is returned at the end
         }
 
         // Only use conference info handler for VERY specific queries
@@ -339,13 +333,7 @@ export async function POST(request: NextRequest) {
 
             await writer.write(encoder.encode(`data: {"type":"done","sessionId":"${sessionId}"}\n\n`));
             await writer.close();
-            return new Response(stream.readable, {
-              headers: {
-                'Content-Type': 'text/event-stream',
-                'Cache-Control': 'no-cache',
-                'Connection': 'keep-alive',
-              },
-            });
+            return; // Just return from the async function, the Response is returned at the end
           }
         }
 
