@@ -221,7 +221,6 @@ export async function generateOptimizedAgenda(
             source: (favoritedSessionIds.has(session.id) ? 'user-favorite' :
                    recommendedSessionIds.has(session.id) ? 'ai-suggested' :
                    'system') as 'ai-suggested' | 'user-favorite' | 'system',
-            relevanceScore: session.relevanceScore,
             item: {
               id: session.id,
               title: session.title,
@@ -248,7 +247,18 @@ export async function generateOptimizedAgenda(
       days.push({
         date: dateString,
         dayNumber: `Day ${dayNumber}`,
-        schedule
+        schedule,
+        stats: {
+          totalSessions: schedule.length,
+          morningSessionsCount: schedule.filter(s => {
+            const hour = parseInt(s.time.split(':')[0]);
+            return hour < 12;
+          }).length,
+          afternoonSessionsCount: schedule.filter(s => {
+            const hour = parseInt(s.time.split(':')[0]);
+            return hour >= 12;
+          }).length
+        }
       });
 
       dayNumber++;
