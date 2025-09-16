@@ -9,6 +9,7 @@ import ChatWidget from '@/components/ChatWidget'
 import { VegasTimeDisplay } from '@/components/vegas-time-display'
 import { PSAdvisoryCTA } from '@/components/ps-advisory-cta'
 import { AIFooterMessage } from '@/components/AIFooterMessage'
+import { MobileOptimizedLayout } from '@/components/MobileOptimizedLayout'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -35,18 +36,28 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.className} antialiased`} suppressHydrationWarning>
         <AuthProvider>
-          <div className="min-h-screen flex flex-col">
-            <Navigation />
-            <DisclaimerBanner />
-            <main className="flex-1">
-              {children}
-            </main>
-            <AIFooterMessage />
-            <Footer />
-            <ChatWidget />
-            <VegasTimeDisplay />
-            <PSAdvisoryCTA variant="floating" />
-          </div>
+          <MobileOptimizedLayout>
+            <div className="min-h-screen flex flex-col">
+              <Navigation />
+              <DisclaimerBanner />
+              <main className="flex-1">
+                {children}
+              </main>
+              <div className="desktop-only">
+                <AIFooterMessage />
+              </div>
+              <Footer />
+              <div className="floating-element">
+                <ChatWidget />
+              </div>
+              <div className="floating-element">
+                <VegasTimeDisplay />
+              </div>
+              <div className="floating-element">
+                <PSAdvisoryCTA variant="floating" />
+              </div>
+            </div>
+          </MobileOptimizedLayout>
         </AuthProvider>
       </body>
     </html>

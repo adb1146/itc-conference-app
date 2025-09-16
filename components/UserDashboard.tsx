@@ -46,6 +46,20 @@ export default function UserDashboard({ activeTab }: UserDashboardProps) {
   ];
 
   const handleSignOut = async () => {
+    // Clear user-specific data from localStorage
+    if (typeof window !== 'undefined') {
+      // Clear all user-specific smartAgenda keys
+      const keys = Object.keys(localStorage);
+      keys.forEach(key => {
+        if (key.startsWith('smartAgenda_') || key.startsWith('userProfile_')) {
+          localStorage.removeItem(key);
+        }
+      });
+
+      // Also clear generic userProfile if it exists
+      localStorage.removeItem('userProfile');
+      localStorage.removeItem('itc-chat-history');
+    }
     await signOut({ redirect: true, callbackUrl: '/' });
   };
 

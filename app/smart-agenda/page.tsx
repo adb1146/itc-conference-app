@@ -10,12 +10,13 @@ import {
 import Navigation from '@/components/Navigation';
 import UserDashboard from '@/components/UserDashboard';
 import SmartAgendaView from '@/components/agenda/SmartAgendaView';
+import AgendaInsights from '@/components/agenda/AgendaInsights';
 import { SmartAgenda, ScheduleItem } from '@/lib/tools/schedule/types';
 
 export default function SmartAgendaPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [smartAgenda, setSmartAgenda] = useState<SmartAgenda | null>(null);
+  const [smartAgenda, setSmartAgenda] = useState<SmartAgenda & { insights?: any } | null>(null);
   const [loading, setLoading] = useState(true);
   const [generatingAgenda, setGeneratingAgenda] = useState(false);
   const [agendaError, setAgendaError] = useState<string | null>(null);
@@ -23,28 +24,42 @@ export default function SmartAgendaPage() {
   useEffect(() => {
     if (status === 'unauthenticated') {
       setLoading(false);
-    } else if (status === 'authenticated') {
-      // Try to load any existing agenda from localStorage
-      const savedAgenda = localStorage.getItem('smartAgenda');
+    } else if (status === 'authenticated' && session?.user?.email) {
+      // Try to load any existing agenda from localStorage (user-specific key)
+      const userSpecificKey = `smartAgenda_${session.user.email}`;
+      const clearedKey = `smartAgenda_cleared_${session.user.email}`;
+
+      const savedAgenda = localStorage.getItem(userSpecificKey);
+      const wasCleared = localStorage.getItem(clearedKey) === 'true';
+
       if (savedAgenda) {
         try {
           setSmartAgenda(JSON.parse(savedAgenda));
+          // If we have an agenda, remove the cleared flag
+          localStorage.removeItem(clearedKey);
         } catch (error) {
           console.error('Error parsing saved agenda:', error);
         }
       }
       setLoading(false);
 
-      // Auto-generate if no agenda exists
-      if (!savedAgenda) {
+      // Only auto-generate for first-time users (no agenda and not explicitly cleared)
+      if (!savedAgenda && !wasCleared) {
         generateSmartAgenda();
       }
     }
-  }, [status]);
+  }, [status, session]);
 
   const clearAgenda = () => {
     setSmartAgenda(null);
-    localStorage.removeItem('smartAgenda');
+    if (session?.user?.email) {
+      const userSpecificKey = `smartAgenda_${session.user.email}`;
+      const clearedKey = `smartAgenda_cleared_${session.user.email}`;
+
+      // Remove the agenda and mark it as explicitly cleared
+      localStorage.removeItem(userSpecificKey);
+      localStorage.setItem(clearedKey, 'true');
+    }
     setAgendaError(null);
   };
 
@@ -54,7 +69,10 @@ export default function SmartAgendaPage() {
 
     try {
       // Clear localStorage to force fresh generation
-      localStorage.removeItem('smartAgenda');
+      if (session?.user?.email) {
+        const userSpecificKey = `smartAgenda_${session.user.email}`;
+        localStorage.removeItem(userSpecificKey);
+      }
 
       const response = await fetch('/api/tools/agenda-builder', {
         method: 'POST',
@@ -73,10 +91,15 @@ export default function SmartAgendaPage() {
         return;
       }
 
-      if (data.success && data.agenda) {
+      if (data.success && data.agenda && session?.user?.email) {
         setSmartAgenda(data.agenda);
-        // Save to localStorage for persistence
-        localStorage.setItem('smartAgenda', JSON.stringify(data.agenda));
+        // Save to localStorage for persistence (user-specific key)
+        const userSpecificKey = `smartAgenda_${session.user.email}`;
+        const clearedKey = `smartAgenda_cleared_${session.user.email}`;
+
+        localStorage.setItem(userSpecificKey, JSON.stringify(data.agenda));
+        // Remove the cleared flag since we now have a new agenda
+        localStorage.removeItem(clearedKey);
       }
     } catch (error) {
       console.error('Error generating agenda:', error);
@@ -123,7 +146,10 @@ export default function SmartAgendaPage() {
     );
 
     setSmartAgenda(updatedAgenda);
-    localStorage.setItem('smartAgenda', JSON.stringify(updatedAgenda));
+    if (session?.user?.email) {
+      const userSpecificKey = `smartAgenda_${session.user.email}`;
+      localStorage.setItem(userSpecificKey, JSON.stringify(updatedAgenda));
+    }
   };
 
   const handleAgendaItemReplace = async (itemId: string, alternativeId: string) => {
@@ -296,6 +322,10 @@ export default function SmartAgendaPage() {
             </div>
           </div>
         ) : smartAgenda ? (
+          <>
+            {smartAgenda.insights && (
+              <AgendaInsights insights={smartAgenda.insights} />
+            )}
           <SmartAgendaView
             agenda={smartAgenda}
             onItemRemove={handleAgendaItemRemove}
@@ -304,13 +334,14 @@ export default function SmartAgendaPage() {
             onRegenerateDay={handleRegenerateDay}
             onExport={handleExport}
           />
+          </>
         ) : (
           <div className="text-center py-20 bg-white/50 backdrop-blur rounded-2xl border border-purple-100 max-w-2xl mx-auto">
             <div className="bg-gradient-to-br from-purple-100 to-blue-100 rounded-full p-5 w-24 h-24 mx-auto mb-6 flex items-center justify-center shadow-lg">
               <Calendar className="w-12 h-12 text-purple-600" />
             </div>
             <h2 className="text-2xl font-normal mb-3">
-              <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">No Agenda Generated Yet</span>
+              <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">Your Agenda is Empty</span>
             </h2>
             <p className="text-gray-600 mb-8 text-lg">
               Click the button below to generate your personalized conference schedule

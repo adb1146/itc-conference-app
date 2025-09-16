@@ -132,7 +132,7 @@ export default function RegisterPage() {
       });
 
       if (signInResult?.ok) {
-        router.push('/chat');
+        router.push('/profile');
         router.refresh();
       } else {
         router.push('/auth/signin');

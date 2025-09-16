@@ -150,7 +150,7 @@ export default function SmartAgendaView({
       return (
         <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
           <Bot className="w-3 h-3 mr-1" />
-          AI Suggested • {item.aiMetadata?.confidence}% match
+          AI Suggested • {item.matchScore || item.aiMetadata?.confidence || 0}% match
         </span>
       );
     }
@@ -262,7 +262,7 @@ export default function SmartAgendaView({
           </div>
           <div className="bg-orange-50 rounded-lg p-3">
             <div className="text-2xl font-bold text-orange-900">
-              {agenda.conflicts.length}
+              {agenda.conflicts?.length || 0}
             </div>
             <div className="text-xs text-orange-700">Conflicts</div>
           </div>
@@ -286,14 +286,14 @@ export default function SmartAgendaView({
         </div>
 
         {/* Suggestions */}
-        {agenda.suggestions.length > 0 && (
+        {agenda.suggestions?.length > 0 && (
           <div className="mt-4 p-3 bg-blue-50 rounded-lg">
             <div className="flex items-start gap-2">
               <Sparkles className="w-5 h-5 text-blue-600 mt-0.5" />
               <div className="text-sm text-blue-900">
                 <div className="font-medium mb-1">AI Insights:</div>
                 <ul className="space-y-1">
-                  {agenda.suggestions.filter(s => !s.includes('profile') && !s.includes('interests')).map((suggestion, idx) => (
+                  {(agenda.suggestions || []).filter(s => !s.includes('profile') && !s.includes('interests')).map((suggestion, idx) => (
                     <li key={idx}>• {suggestion}</li>
                   ))}
                 </ul>
@@ -303,14 +303,14 @@ export default function SmartAgendaView({
         )}
 
         {/* Conflicts */}
-        {agenda.conflicts.length > 0 && (
+        {agenda.conflicts?.length > 0 && (
           <div className="mt-4 p-3 bg-orange-50 rounded-lg">
             <div className="flex items-start gap-2">
               <AlertCircle className="w-5 h-5 text-orange-600 mt-0.5" />
               <div className="text-sm text-orange-900">
                 <div className="font-medium mb-1">Conflicts Detected:</div>
                 <ul className="space-y-1">
-                  {agenda.conflicts.map((conflict, idx) => (
+                  {(agenda.conflicts || []).map((conflict, idx) => (
                     <li key={idx}>
                       • {conflict.description}
                       {conflict.resolution && (
@@ -444,28 +444,30 @@ export default function SmartAgendaView({
                           )}
 
                           {/* AI Reasoning */}
-                          {item.aiMetadata && (
+                          {(item.matchReasons?.length > 0 || item.aiMetadata) && (
                             <div className="mt-2 p-2 bg-white rounded border border-blue-200">
                               <div className="flex items-start gap-2">
                                 <Sparkles className="w-3 h-3 text-blue-600 mt-0.5 flex-shrink-0" />
                                 <div className="flex-1">
                                   <div className="text-xs text-blue-700">
-                                    {item.aiMetadata.reasoning}
+                                    {item.matchReasons?.join(' • ') || item.aiMetadata?.reasoning}
                                   </div>
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-xs text-gray-500">Match:</span>
-                                    <div className="flex items-center gap-1">
-                                      <div className="w-16 bg-gray-200 rounded-full h-1.5">
-                                        <div
-                                          className="bg-blue-600 h-1.5 rounded-full"
-                                          style={{ width: `${item.aiMetadata.confidence}%` }}
-                                        />
+                                  {(item.matchScore || item.aiMetadata?.confidence) && (
+                                    <div className="flex items-center gap-2 mt-1">
+                                      <span className="text-xs text-gray-500">Match:</span>
+                                      <div className="flex items-center gap-1">
+                                        <div className="w-16 bg-gray-200 rounded-full h-1.5">
+                                          <div
+                                            className="bg-blue-600 h-1.5 rounded-full"
+                                            style={{ width: `${item.matchScore || item.aiMetadata?.confidence || 0}%` }}
+                                          />
+                                        </div>
+                                        <span className="text-xs font-medium text-blue-600">
+                                          {item.matchScore || item.aiMetadata?.confidence || 0}%
+                                        </span>
                                       </div>
-                                      <span className="text-xs font-medium text-blue-600">
-                                        {item.aiMetadata.confidence}%
-                                      </span>
                                     </div>
-                                  </div>
+                                  )}
                                 </div>
                               </div>
                             </div>

@@ -29,7 +29,12 @@ const AGENDA_KEYWORDS = [
   'i want an agenda',
   'i need an agenda',
   'create a personalized schedule',
-  'build my itinerary'
+  'build my itinerary',
+  'help designing my schedule',
+  'help me design my schedule',
+  'help with my schedule',
+  'design my schedule',
+  'need help designing'
 ];
 
 // Only match EXPLICIT requests for agenda building
@@ -38,7 +43,9 @@ const AGENDA_PATTERNS = [
   /(?:please\s+)?create.*(?:my|me|a).*(?:agenda|schedule|itinerary)/i,
   /(?:please\s+)?generate.*(?:my|me|a).*(?:agenda|schedule|itinerary)/i,
   /i\s+(?:want|need|would like).*(?:an?\s+)?(?:agenda|schedule|itinerary)/i,
-  /(?:can|could|will)\s+you.*(?:build|create|make).*(?:agenda|schedule|itinerary)/i
+  /(?:can|could|will)\s+you.*(?:build|create|make).*(?:agenda|schedule|itinerary)/i,
+  /(?:help|assist).*(?:design|designing|plan|planning).*(?:my|me).*schedule/i,
+  /(?:i|I)\s+need\s+help\s+(?:design|designing|with).*(?:my|me).*schedule/i
 ];
 
 // Keywords that indicate session search or questions (not full agenda)

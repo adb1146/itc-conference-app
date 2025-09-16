@@ -9,10 +9,11 @@ export async function generateFastAgenda(
   options: Partial<AgendaOptions> = {}
 ): Promise<{ success: boolean; agenda?: SmartAgenda; error?: string }> {
   try {
-    // Fetch user with favorites
+    // Fetch user with favorites and profile
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
+        profile: true,
         favorites: {
           include: {
             session: {
@@ -374,7 +375,8 @@ function calculateProfileCompleteness(user: any): number {
   if (user.goals && user.goals.length > 0) score += weights.goals;
   if (user.role) score += weights.role;
   if (user.organizationType) score += weights.organizationType;
-  if (user.bio) score += weights.bio;
+  // Fix: bio is in user.profile.bio, not user.bio
+  if (user.profile?.bio) score += weights.bio;
 
   return score;
 }

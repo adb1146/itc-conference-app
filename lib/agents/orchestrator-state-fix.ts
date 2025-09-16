@@ -59,15 +59,22 @@ export function shouldOrchestratorHandle(sessionId: string, message: string): bo
     }
   }
 
+  // DISABLED: We now redirect agenda requests to the Smart Agenda page
   // Check if this is explicitly about creating an agenda
   const isExplicitAgendaRequest =
     lowerMessage.includes('build my agenda') ||
     lowerMessage.includes('create my schedule') ||
     lowerMessage.includes('personalized agenda') ||
-    lowerMessage.includes('build me a schedule');
+    lowerMessage.includes('build me a schedule') ||
+    lowerMessage.includes('help designing my schedule') ||
+    lowerMessage.includes('help me design') ||
+    lowerMessage.includes('design my schedule') ||
+    lowerMessage.includes('help with my schedule') ||
+    lowerMessage.includes('need help designing');
 
   if (isExplicitAgendaRequest) {
-    return true;
+    // Don't let orchestrator handle agenda requests - they will be redirected
+    return false; // Changed from true to false to bypass orchestrator
   }
 
   // Only trigger for messages about introducing oneself

@@ -16,17 +16,23 @@ export interface ScheduleItem {
   time: string; // Formatted time like "9:00 AM"
   endTime: string; // Formatted time like "10:00 AM"
   type: 'session' | 'meal' | 'break' | 'travel';
-  source: 'user-favorite' | 'ai-suggested' | 'system';
+  source: 'user-favorite' | 'ai-suggested' | 'system' | 'schedule';
+  priority?: 'high' | 'medium' | 'low';
+  title?: string; // Direct title for display
+  matchScore?: number; // Session match score (0-100)
+  matchReasons?: string[]; // Why this session was selected
   item: {
     id: string;
     title: string;
     description?: string;
     location?: string;
     track?: string;
+    format?: string;
     speakers?: Array<{
       id: string;
       name: string;
       title?: string;
+      company?: string;
     }>;
   };
   actions?: {

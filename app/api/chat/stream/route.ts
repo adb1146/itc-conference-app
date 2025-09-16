@@ -123,6 +123,38 @@ export async function POST(request: NextRequest) {
         // Check if research agent is already active (continuing conversation) - MUST CHECK BEFORE REGISTRATION
         const conversation = getConversation(sessionId);
 
+        // FIRST: Check if this is an agenda building request - redirect to Smart Agenda page
+        const agendaKeywords = [
+          'build my agenda', 'build my schedule', 'create my schedule', 'personalized agenda',
+          'help designing my schedule', 'help me design', 'design my schedule',
+          'help with my schedule', 'need help designing', 'help with my agenda',
+          'organize these into', 'personal schedule'
+        ];
+
+        const lowerMessage = message.toLowerCase();
+        const isAgendaRequest = agendaKeywords.some(keyword => lowerMessage.includes(keyword));
+
+        if (isAgendaRequest) {
+          console.log('[Stream API] Detected agenda request - redirecting to Smart Agenda page');
+
+          // Get user from database if authenticated
+          let user = null;
+          if (userPreferences?.email) {
+            user = await prisma.user.findUnique({
+              where: { email: userPreferences.email }
+            });
+          }
+
+          // Generate appropriate redirect message
+          const redirectResponse = generateAgendaRedirectMessage(user, userPreferences?.email);
+
+          // Send the redirect message
+          await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(redirectResponse.message)}}\n\n`));
+          await writer.write(encoder.encode(`data: {"type":"done","sessionId":"${sessionId}"}\n\n`));
+          await writer.close();
+          return;
+        }
+
         // Check if orchestrator should handle this message
         const shouldUseOrchestrator = conversation.state.researchAgentActive || shouldOrchestratorHandle(sessionId, message);
 

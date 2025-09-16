@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { getAuthOptions } from '@/lib/auth-config';
-import { generateFastAgenda } from '@/lib/tools/schedule/fast-agenda-builder';
+import { generateIntelligentAgenda } from '@/lib/tools/schedule/intelligent-agenda-builder';
 import { AgendaOptions } from '@/lib/tools/schedule/types';
 import prisma from '@/lib/db';
 
@@ -37,8 +37,8 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const options: Partial<AgendaOptions> = body.options || {};
 
-    // Generate smart agenda using fast algorithm
-    const result = await generateFastAgenda(user.id, options);
+    // Generate smart agenda using intelligent algorithm with insights
+    const result = await generateIntelligentAgenda(user.id, options);
 
     if (!result.success) {
       return NextResponse.json(
