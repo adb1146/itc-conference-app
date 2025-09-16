@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Sparkles, Mic } from 'lucide-react'
+import { Sparkles, Mic, Menu, X } from 'lucide-react'
 
 export default function HomePage() {
   const { data: session } = useSession()
@@ -12,6 +12,7 @@ export default function HomePage() {
   const [query, setQuery] = useState('')
   const [isListening, setIsListening] = useState(false)
   const [placeholder, setPlaceholder] = useState('Ask about sessions, speakers, or get schedule recommendations')
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   // Rotating placeholder suggestions
   useEffect(() => {
@@ -63,26 +64,93 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-white">
-      <div className="flex flex-col items-center justify-center min-h-screen px-4">
+      {/* Mobile-friendly navigation */}
+      <nav className="w-full px-4 py-3 bg-white/80 backdrop-blur-sm border-b border-gray-100 lg:absolute lg:top-0 lg:left-0 lg:right-0 lg:border-none lg:bg-transparent">
+        <div className="flex items-center justify-between">
+          {/* Logo */}
+          <Link href="/" className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors">
+            <span className="text-lg lg:text-xl font-normal">ITC Vegas</span>
+            <span className="text-xs px-2 py-1 bg-gray-100 rounded-full">2025</span>
+          </Link>
+
+          {/* Desktop navigation */}
+          <div className="hidden lg:flex items-center space-x-4">
+            <Link href="/agenda" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+              Conference Agenda
+            </Link>
+            <Link href="/speakers" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+              Speakers
+            </Link>
+            <Link href="/favorites" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
+              My Schedule
+            </Link>
+            {session ? (
+              <span className="text-sm text-gray-600">
+                {session.user?.name || 'User'}
+              </span>
+            ) : (
+              <Link href="/auth/signin" className="text-sm px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                Sign in
+              </Link>
+            )}
+          </div>
+
+          {/* Mobile menu button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="lg:hidden p-2 text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
+
+        {/* Mobile menu */}
+        {mobileMenuOpen && (
+          <div className="lg:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-lg z-50">
+            <div className="flex flex-col p-4 space-y-3">
+              <Link href="/agenda" className="text-sm text-gray-600 hover:text-gray-900 transition-colors py-2">
+                Conference Agenda
+              </Link>
+              <Link href="/speakers" className="text-sm text-gray-600 hover:text-gray-900 transition-colors py-2">
+                Speakers
+              </Link>
+              <Link href="/favorites" className="text-sm text-gray-600 hover:text-gray-900 transition-colors py-2">
+                My Schedule
+              </Link>
+              {session ? (
+                <span className="text-sm text-gray-600 py-2 border-t border-gray-100 pt-3">
+                  {session.user?.name || 'User'}
+                </span>
+              ) : (
+                <Link href="/auth/signin" className="text-sm px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-center">
+                  Sign in
+                </Link>
+              )}
+            </div>
+          </div>
+        )}
+      </nav>
+
+      <div className="flex flex-col items-center justify-center min-h-screen px-4 py-8 lg:py-0">
         {/* Header */}
-        <div className="w-full max-w-4xl mb-8">
-          <h1 className="text-center mb-6">
-            <span className="text-4xl md:text-5xl font-normal bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+        <div className="w-full max-w-4xl mb-6 lg:mb-8 mt-16 lg:mt-0">
+          <h1 className="text-center mb-4 lg:mb-6">
+            <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-normal bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
               Meet ITC Concierge,
             </span>
             <br />
-            <span className="text-4xl md:text-5xl font-normal text-gray-800">
+            <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-normal text-gray-800">
               your personal AI assistant
             </span>
           </h1>
 
           {/* Purpose Statement */}
-          <div className="max-w-2xl mx-auto text-center mb-8">
-            <p className="text-gray-600 text-lg leading-relaxed">
+          <div className="max-w-2xl mx-auto text-center mb-6 lg:mb-8">
+            <p className="text-gray-600 text-base lg:text-lg leading-relaxed">
               Navigate <span className="font-semibold text-purple-600">295+ sessions</span> and <span className="font-semibold text-blue-600">200+ speakers</span> at ITC Vegas 2025 with ease.
-              Our AI understands the conference context, tracks Vegas time, and helps you build the perfect agenda for your insurance tech journey.
+              Our AI understands the conference context and helps you build the perfect agenda.
             </p>
-            <div className="flex items-center justify-center gap-6 mt-4 text-sm text-gray-500">
+            <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 mt-4 text-xs sm:text-sm text-gray-500">
               <span className="flex items-center gap-1">
                 <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                 AI-Powered Search
@@ -100,7 +168,7 @@ export default function HomePage() {
         </div>
 
         {/* Search Box */}
-        <div className="w-full max-w-3xl mb-12">
+        <div className="w-full max-w-3xl mb-8 lg:mb-12">
           <form onSubmit={handleSubmit} className="relative">
             <div className="relative flex items-center">
               <input
@@ -108,24 +176,24 @@ export default function HomePage() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder={placeholder}
-                className="w-full px-6 py-4 pr-24 text-lg bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:border-gray-400 focus:bg-white transition-all"
+                className="w-full px-4 sm:px-6 py-3 sm:py-4 pr-20 sm:pr-24 text-base sm:text-lg bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:border-gray-400 focus:bg-white transition-all"
                 autoFocus
               />
-              <div className="absolute right-2 flex items-center space-x-2">
+              <div className="absolute right-2 flex items-center space-x-1 sm:space-x-2">
                 <button
                   type="button"
                   onClick={() => setIsListening(!isListening)}
-                  className="p-3 text-gray-500 hover:text-gray-700 transition-colors"
+                  className="p-2 sm:p-3 text-gray-500 hover:text-gray-700 transition-colors"
                   aria-label="Voice input"
                 >
-                  <Mic className={`w-5 h-5 ${isListening ? 'text-red-500' : ''}`} />
+                  <Mic className={`w-4 sm:w-5 h-4 sm:h-5 ${isListening ? 'text-red-500' : ''}`} />
                 </button>
                 <button
                   type="submit"
-                  className="p-3 text-gray-500 hover:text-gray-700 transition-colors"
+                  className="p-2 sm:p-3 text-gray-500 hover:text-gray-700 transition-colors"
                   aria-label="Ask ITC Concierge"
                 >
-                  <Sparkles className="w-5 h-5" />
+                  <Sparkles className="w-4 sm:w-5 h-4 sm:h-5" />
                 </button>
               </div>
             </div>
@@ -134,7 +202,7 @@ export default function HomePage() {
 
         {/* Quick Prompts */}
         <div className="w-full max-w-3xl">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {quickPrompts.map((prompt, index) => {
               const colors = [
                 'hover:border-purple-300 hover:bg-purple-50',
@@ -146,7 +214,7 @@ export default function HomePage() {
                 <button
                   key={index}
                   onClick={() => setQuery(`${prompt.text} ${prompt.example}`)}
-                  className={`text-left p-4 bg-white border border-gray-200 rounded-2xl transition-all group ${colors[index]}`}
+                  className={`text-left p-3 sm:p-4 bg-white border border-gray-200 rounded-xl sm:rounded-2xl transition-all group ${colors[index]}`}
                 >
                   <div className="text-sm font-medium text-gray-700 mb-1">
                     {prompt.text}
@@ -160,8 +228,8 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Why We Built This */}
-        <div className="w-full max-w-2xl mt-12 p-6 bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl border border-purple-100">
+        {/* Why We Built This - Hidden on mobile to save space */}
+        <div className="hidden sm:block w-full max-w-2xl mt-8 lg:mt-12 p-4 lg:p-6 bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl border border-purple-100">
           <h3 className="text-sm font-semibold text-purple-700 mb-2">Why we built ITC Concierge</h3>
           <p className="text-xs text-gray-600 leading-relaxed">
             With hundreds of sessions across multiple tracks, finding the right content at ITC Vegas can be overwhelming.
@@ -176,59 +244,17 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Subtle branding */}
-        <div className="absolute top-4 left-4">
-          <Link href="/" className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors">
-            <span className="text-xl font-normal">ITC Vegas</span>
-            <span className="text-xs px-2 py-1 bg-gray-100 rounded-full">2025</span>
-          </Link>
-        </div>
-
-        {/* Top navigation */}
-        <div className="absolute top-4 right-4 flex items-center space-x-4">
-          <Link
-            href="/agenda"
-            className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            Conference Agenda
-          </Link>
-          <Link
-            href="/speakers"
-            className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            Speakers
-          </Link>
-          <Link
-            href="/favorites"
-            className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            My Schedule
-          </Link>
-          {session ? (
-            <span className="text-sm text-gray-600">
-              {session.user?.name || 'User'}
-            </span>
-          ) : (
-            <Link
-              href="/auth/signin"
-              className="text-sm px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Sign in
-            </Link>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="absolute bottom-4 w-full">
-          <div className="flex justify-center items-center space-x-4 text-xs text-gray-500">
+        {/* Footer - Responsive positioning */}
+        <div className="mt-8 lg:absolute lg:bottom-4 w-full px-4">
+          <div className="flex flex-wrap justify-center items-center gap-2 text-xs text-gray-500">
             <Link href="https://www.psadvisory.com" target="_blank" className="hover:underline">
               PS Advisory
             </Link>
-            <span>and the</span>
+            <span className="hidden sm:inline">and the</span>
             <Link href="https://vegas.insuretechconnect.com" target="_blank" className="hover:underline">
               ITC Vegas
             </Link>
-            <span>apply. This is a demo, not affiliated with ITC.</span>
+            <span className="text-center">This is a demo, not affiliated with ITC.</span>
           </div>
         </div>
       </div>
