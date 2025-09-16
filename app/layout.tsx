@@ -8,6 +8,7 @@ import Footer from '@/components/Footer'
 import ChatWidget from '@/components/ChatWidget'
 import { VegasTimeDisplay } from '@/components/vegas-time-display'
 import { PSAdvisoryCTA } from '@/components/ps-advisory-cta'
+import { AIFooterMessage } from '@/components/AIFooterMessage'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -40,6 +41,7 @@ export default function RootLayout({
             <main className="flex-1">
               {children}
             </main>
+            <AIFooterMessage />
             <Footer />
             <ChatWidget />
             <VegasTimeDisplay />

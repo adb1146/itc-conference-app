@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Send, Mic, Image, Plus, MoreVertical, User, Sparkles, MessageCircle, Wand2, Calendar, Users, MapPin, Trash2 } from 'lucide-react'
+import { Send, Mic, Image, Plus, MoreVertical, User, MessageCircle, Wand2, Calendar, Users, MapPin, Trash2, Sparkles } from 'lucide-react'
 import { MessageFormatter } from './message-formatter'
 import { PSAdvisoryLogo } from '../PSAdvisoryLogo'
 import './chat-animations.css'
@@ -358,17 +358,6 @@ export function GeminiStyleChat({
               )}
             </div>
           </form>
-
-          <div className="flex items-center justify-center gap-4 mt-3">
-            <p className="text-xs text-gray-500">
-              ITC Concierge can make mistakes. Double-check important information.
-            </p>
-            <span className="text-xs text-gray-400">•</span>
-            <span className="text-xs text-purple-600 font-medium flex items-center gap-1">
-              <Sparkles className="w-3 h-3" />
-              Powered by AI
-            </span>
-          </div>
         </div>
       </div>
     </div>
