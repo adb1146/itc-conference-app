@@ -48,7 +48,8 @@ export async function saveAgendaToProfile(
         data: {
           userId,
           agendaData: pendingAgenda,
-          isActive: true
+          isActive: true,
+          generatedBy: 'ai_agent'
         }
       });
     }
