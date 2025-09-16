@@ -429,6 +429,7 @@ export async function POST(request: NextRequest) {
               shouldUseTool: false,
               toolType: 'session_search',
               confidence: 0,
+              reason: 'Default to informational response',
               extractedParams: {}
             };
           }
