@@ -378,7 +378,7 @@ export async function POST(request: NextRequest) {
               content: m.content
             })),
             userProfile: userPreferences,
-            lastIntent: (conversation.state as any).lastIntent, // Access via any type assertion on state
+            lastIntent: undefined, // No longer tracking lastIntent
             agendaAlreadyBuilt: conversation.state.agendaBuilt
           };
 
@@ -394,8 +394,8 @@ export async function POST(request: NextRequest) {
 
           // Update conversation state with detected intent
           updateConversationState(sessionId, {
-            lastIntent: intentClassification.primary_intent
-          } as any);
+            lastToolUsed: intentClassification.primary_intent
+          });
 
           // Override toolDetection based on AI classification
           if (intentClassification.primary_intent === 'agenda_building' && intentClassification.confidence > 0.7) {
@@ -498,7 +498,7 @@ export async function POST(request: NextRequest) {
 
           // Update conversation state
           updateConversationState(sessionId, {
-            lastIntent: intentClassification.primary_intent
+            lastToolUsed: 'attendee_assistant'
           });
 
           // Send metadata
