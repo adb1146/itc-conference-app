@@ -35,8 +35,7 @@ export async function aiRouteMessage(
   try {
     // Step 1: Use AI to classify the intent
     const intentClassification = await classifyUserIntent(message, {
-      history: ctx.conversationHistory || [],
-      sessionId: ctx.sessionId
+      history: ctx.conversationHistory || []
     });
 
     console.log('[AI Router] Intent classified:', {
