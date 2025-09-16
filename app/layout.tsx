@@ -3,14 +3,15 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import AuthProvider from '@/components/AuthProvider'
 import Navigation from '@/components/Navigation'
-import DisclaimerBanner from '@/components/DisclaimerBanner'
-import Footer from '@/components/Footer'
+import PWADisclaimerBanner from '@/components/PWADisclaimerBanner'
+import PWAFooter from '@/components/PWAFooter'
 import ChatWidget from '@/components/ChatWidget'
 import { VegasTimeDisplay } from '@/components/vegas-time-display'
 import { PSAdvisoryCTA } from '@/components/ps-advisory-cta'
 import { AIFooterMessage } from '@/components/AIFooterMessage'
 import { MobileOptimizedLayout } from '@/components/MobileOptimizedLayout'
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt'
+import { PWALayout } from '@/components/PWALayout'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -67,16 +68,16 @@ export default function RootLayout({
       <body className={`${inter.className} antialiased`} suppressHydrationWarning>
         <AuthProvider>
           <MobileOptimizedLayout>
-            <div className="min-h-screen flex flex-col">
+            <PWALayout>
               <Navigation />
-              <DisclaimerBanner />
+              <PWADisclaimerBanner />
               <main className="flex-1">
                 {children}
               </main>
               <div className="desktop-only">
                 <AIFooterMessage />
               </div>
-              <Footer />
+              <PWAFooter />
               <div className="floating-element">
                 <ChatWidget />
               </div>
@@ -87,7 +88,7 @@ export default function RootLayout({
                 <PSAdvisoryCTA variant="floating" />
               </div>
               <PWAInstallPrompt />
-            </div>
+            </PWALayout>
           </MobileOptimizedLayout>
         </AuthProvider>
       </body>
