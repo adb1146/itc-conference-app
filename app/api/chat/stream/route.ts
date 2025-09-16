@@ -378,7 +378,7 @@ export async function POST(request: NextRequest) {
               content: m.content
             })),
             userProfile: userPreferences,
-            lastIntent: conversation.state.lastIntent,
+            lastIntent: conversation.state.lastIntent as any, // Type assertion since state is flexible
             agendaAlreadyBuilt: conversation.state.agendaBuilt
           };
 
