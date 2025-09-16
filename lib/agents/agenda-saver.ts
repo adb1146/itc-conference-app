@@ -27,7 +27,7 @@ export async function saveAgendaToProfile(
     const existingAgenda = await prisma.personalizedAgenda.findFirst({
       where: {
         userId,
-        status: 'active'
+        isActive: true
       }
     });
 
@@ -48,7 +48,7 @@ export async function saveAgendaToProfile(
         data: {
           userId,
           agendaData: pendingAgenda,
-          status: 'active'
+          isActive: true
         }
       });
     }
@@ -85,7 +85,7 @@ export async function getUserSavedAgenda(userId: string) {
     const agenda = await prisma.personalizedAgenda.findFirst({
       where: {
         userId,
-        status: 'active'
+        isActive: true
       },
       orderBy: {
         createdAt: 'desc'
