@@ -8,6 +8,7 @@ import { LRUCache } from 'lru-cache';
 export interface ConversationContext {
   sessionId: string;
   userId?: string;
+  ownerUserId?: string; // The actual owner of this session for validation
   messages: Array<{
     role: 'user' | 'assistant' | 'system';
     content: string;
@@ -40,6 +41,8 @@ export interface ConversationContext {
     // Research agent state
     researchAgentActive?: boolean;
     researchPhase?: string;
+    // Orchestrator-local state (namespaced to avoid conflicts)
+    orchestrator?: any;
   };
   createdAt: Date;
   lastActivity: Date;
@@ -55,6 +58,7 @@ const conversationCache = new LRUCache<string, ConversationContext>({
 
 /**
  * Get or create a conversation context
+ * SECURITY: Validates session ownership for authenticated users
  */
 export function getConversation(sessionId: string, userId?: string): ConversationContext {
   let conversation = conversationCache.get(sessionId);
@@ -63,6 +67,7 @@ export function getConversation(sessionId: string, userId?: string): Conversatio
     conversation = {
       sessionId,
       userId,
+      ownerUserId: userId, // Set owner on creation
       messages: [],
       state: {},
       createdAt: new Date(),
@@ -70,7 +75,29 @@ export function getConversation(sessionId: string, userId?: string): Conversatio
     };
     conversationCache.set(sessionId, conversation);
   } else {
-    conversation.lastActivity = new Date();
+    // Security check: Verify session ownership for authenticated users
+    if (userId && conversation.ownerUserId && conversation.ownerUserId !== userId) {
+      console.warn(`[SECURITY] User ${userId} attempted to access session ${sessionId} owned by ${conversation.ownerUserId}`);
+      // Create a new session for this user instead of allowing access
+      const newSessionId = generateSessionId();
+      conversation = {
+        sessionId: newSessionId,
+        userId,
+        ownerUserId: userId,
+        messages: [],
+        state: {},
+        createdAt: new Date(),
+        lastActivity: new Date(),
+      };
+      conversationCache.set(newSessionId, conversation);
+    } else {
+      conversation.lastActivity = new Date();
+      // Update userId if it was previously anonymous
+      if (!conversation.ownerUserId && userId) {
+        conversation.ownerUserId = userId;
+        conversation.userId = userId;
+      }
+    }
   }
 
   return conversation;

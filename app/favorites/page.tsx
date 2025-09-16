@@ -299,7 +299,11 @@ export default function FavoritesPage() {
           // Open HTML in new window for printing/saving as PDF
           const printWindow = window.open('', '_blank');
           if (printWindow) {
-            printWindow.document.write(data.html);
+            // Safely set HTML content using innerHTML after sanitization
+            // Import DOMPurify at the top of the file
+            const DOMPurify = (await import('isomorphic-dompurify')).default;
+            const sanitizedHTML = DOMPurify.sanitize(data.html);
+            printWindow.document.body.innerHTML = sanitizedHTML;
             printWindow.document.close();
             printWindow.print();
           }

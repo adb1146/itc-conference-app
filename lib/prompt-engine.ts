@@ -3,6 +3,8 @@
  * Enhances AI responses to match Claude Code-level sophistication
  */
 
+import { getPSAdvisoryStrictFacts } from './ps-advisory-facts';
+
 export interface QueryContext {
   userMessage: string;
   conversationHistory?: Array<{ role: string; content: string }>;
@@ -121,15 +123,36 @@ THINKING PROCESS (Internal - Structure your reasoning):
  * Enhances the user's message with context and clarity
  */
 export function enhanceUserMessage(context: QueryContext): string {
-  const { userMessage, userProfile, sessionData } = context;
-  
-  let enhanced = `User Query: "${userMessage}"`;
-  
+  const { userMessage, userProfile, sessionData, conversationHistory } = context;
+
+  let enhanced = '';
+
+  // Add conversation history if available - CRITICAL for maintaining context
+  if (conversationHistory && conversationHistory.length > 0) {
+    enhanced += `Previous conversation context:\n`;
+    enhanced += `================================\n`;
+    conversationHistory.forEach((msg: any) => {
+      if (msg.role === 'user') {
+        enhanced += `User: ${msg.content}\n`;
+      } else if (msg.role === 'assistant') {
+        // Truncate long assistant responses for context
+        const content = msg.content.length > 200
+          ? msg.content.substring(0, 200) + '...'
+          : msg.content;
+        enhanced += `Assistant: ${content}\n`;
+      }
+    });
+    enhanced += `================================\n\n`;
+    enhanced += `Current User Query (in context of above conversation): "${userMessage}"`;
+  } else {
+    enhanced += `User Query: "${userMessage}"`;
+  }
+
   // Add context about what kind of response would be most helpful
   enhanced += `\n\nPlease provide a response that:`;
-  
+
   const complexity = context.complexity || analyzeQueryComplexity(userMessage);
-  
+
   if (complexity === 'simple') {
     enhanced += `
 - Directly answers the question
@@ -149,7 +172,12 @@ export function enhanceUserMessage(context: QueryContext): string {
 - Includes specific action items and implementation guidance
 - Addresses potential challenges and solutions`;
   }
-  
+
+  // Add important instruction about context
+  if (conversationHistory && conversationHistory.length > 0) {
+    enhanced += `\n\nIMPORTANT: Maintain context from the previous conversation. If the user is referring to something mentioned earlier (like "today", "that", "it", "first day"), understand it in the context of the previous messages.`;
+  }
+
   // Add user context if available
   if (userProfile) {
     enhanced += `\n\nConsider the user's context:
@@ -157,7 +185,7 @@ export function enhanceUserMessage(context: QueryContext): string {
 - Interests: ${userProfile.interests?.join(', ') || 'Not specified'}
 - Goals: ${userProfile.goals?.join(', ') || 'Not specified'}`;
   }
-  
+
   return enhanced;
 }
 
@@ -237,6 +265,33 @@ export function createEnhancedPrompt(
   const enhancedUserMessage = enhanceUserMessage(context);
   const responseGuidelines = generateResponseGuidelines(context);
   
+  // Add PS Advisory facts if the query mentions PS Advisory or team members
+  const psAdvisoryConstraints = (context.userMessage.toLowerCase().includes('nancy paul') ||
+                                  context.userMessage.toLowerCase().includes('ps advisory') ||
+                                  context.userMessage.toLowerCase().includes('agim emruli'))
+    ? `
+
+CRITICAL PS ADVISORY CONSTRAINTS:
+=====================================
+${getPSAdvisoryStrictFacts()}
+
+DO NOT say:
+- Nancy Paul is the founder (she is NOT - Andrew Bartels is)
+- PS Advisory has a booth (they do NOT)
+- PS Advisory team members are speaking (they are NOT)
+- Agim Emruli is with PS Advisory (he is NOT)
+- Any conference sessions feature PS Advisory speakers (they do NOT)
+
+ONLY say:
+- Andrew Bartels is the Founder & CEO
+- Nancy Paul is the Senior Delivery Manager
+- PS Advisory built this conference app
+- PS Advisory provides Salesforce consulting services
+- Contact PS Advisory through their website, not at the conference
+=====================================
+`
+    : '';
+
   // Combine into master system prompt
   const systemPrompt = `
 ${baseSystemPrompt}
@@ -247,6 +302,7 @@ MASTER ENHANCEMENT INSTRUCTIONS:
 ${thinkingInstructions}
 
 ${responseGuidelines}
+${psAdvisoryConstraints}
 
 REASONING FRAMEWORK:
 - For simple queries: Provide clear, direct answers with relevant context

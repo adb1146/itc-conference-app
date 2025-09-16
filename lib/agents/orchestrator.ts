@@ -13,6 +13,9 @@ import {
   updatePersonalizedAgenda
 } from '@/lib/services/agenda-storage-service';
 import prisma from '@/lib/db';
+import { AI_CONFIG } from '@/lib/ai-config';
+import { getConversation, updateConversationState as updateConvState } from '@/lib/conversation-state';
+import { Agent } from './agent-types';
 
 export type ConversationPhase =
   | 'greeting'
@@ -49,10 +52,10 @@ export interface OrchestratorResponse {
 /**
  * Agent Orchestrator - Coordinates the entire user journey
  */
-export class AgentOrchestrator {
+type OrchestratorInput = { sessionId: string; message: string; userId?: string };
+
+export class AgentOrchestrator implements Agent<OrchestratorInput, OrchestratorResponse> {
   private researchAgent: UserProfileResearchAgent;
-  private conversationStates: Map<string, ConversationState> = new Map();
-  private currentSessionId: string = '';
 
   constructor() {
     this.researchAgent = new UserProfileResearchAgent({
@@ -60,6 +63,30 @@ export class AgentOrchestrator {
       includeLinkedIn: true,
       includeCompanyNews: true
     });
+  }
+
+  describe(): string {
+    return 'Agent Orchestrator: guides user through research → confirmation → agenda building.';
+  }
+
+  async invoke(input: OrchestratorInput): Promise<OrchestratorResponse> {
+    return this.processMessage(input.sessionId, input.message, input.userId);
+  }
+
+  /**
+   * Retrieve orchestrator state from central conversation state
+   */
+  private getState(sessionId: string): ConversationState {
+    const conversation = getConversation(sessionId);
+    const state = (conversation.state.orchestrator as ConversationState | undefined);
+    return state || this.createNewState();
+  }
+
+  /**
+   * Persist orchestrator state into central conversation state
+   */
+  private setState(sessionId: string, state: ConversationState): void {
+    updateConvState(sessionId, { orchestrator: state });
   }
 
   /**
@@ -70,11 +97,37 @@ export class AgentOrchestrator {
     message: string,
     userId?: string
   ): Promise<OrchestratorResponse> {
-    // Store current session for context
-    this.currentSessionId = sessionId;
+    // Get or create conversation state (from central store)
+    let state = this.getState(sessionId);
 
-    // Get or create conversation state
-    let state = this.conversationStates.get(sessionId) || this.createNewState();
+    // If userId is provided and we haven't fetched user info yet, get it from database
+    if (userId && state.phase === 'greeting' && Object.keys(state.userInfo).length === 0) {
+      try {
+        const user = await prisma.user.findUnique({
+          where: { email: userId },
+          select: {
+            name: true,
+            email: true,
+            company: true,
+            role: true,
+            interests: true,
+            goals: true
+          }
+        });
+
+        if (user && user.name) {
+          // Pre-populate user info from database
+          state.userInfo = {
+            name: user.name,
+            company: user.company || '',
+            title: user.role || ''
+          };
+          console.log(`[Orchestrator] Loaded existing user profile for ${user.name}`);
+        }
+      } catch (error) {
+        console.error('[Orchestrator] Error fetching user profile:', error);
+      }
+    }
 
     // Check for existing agenda if userId provided and not yet checked
     if (userId && state.phase === 'greeting' && !state.hasExistingAgenda) {
@@ -85,51 +138,34 @@ export class AgentOrchestrator {
       }
     }
 
-    // Add message to history
+    // Add message to orchestrator-local history (optional; central store also tracks full convo)
     state.messages.push({ role: 'user', content: message });
 
     // Process based on current phase
+    const handlers: Record<ConversationPhase, () => Promise<OrchestratorResponse>> = {
+      greeting: () => this.handleGreeting(state, message),
+      checking_existing: () => this.handleExistingAgenda(state, message, userId),
+      collecting_info: () => this.handleInfoCollection(state, message),
+      researching: () => this.handleResearching(state),
+      confirming_profile: () => this.handleProfileConfirmation(state, message),
+      building_agenda: () => this.handleAgendaBuilding(state, userId),
+      complete: () => this.handleComplete(state, message)
+    };
+
     let response: OrchestratorResponse;
-
-    switch (state.phase) {
-      case 'greeting':
-        response = await this.handleGreeting(state, message);
-        break;
-
-      case 'checking_existing':
-        response = await this.handleExistingAgenda(state, message, userId);
-        break;
-
-      case 'collecting_info':
-        response = await this.handleInfoCollection(state, message);
-        break;
-
-      case 'researching':
-        response = await this.handleResearching(state);
-        break;
-
-      case 'confirming_profile':
-        response = await this.handleProfileConfirmation(state, message);
-        break;
-
-      case 'building_agenda':
-        response = await this.handleAgendaBuilding(state, userId);
-        break;
-
-      case 'complete':
-        response = await this.handleComplete(state, message);
-        break;
-
-      default:
-        response = {
-          message: "I'm not sure how to help with that. Would you like me to build you a personalized agenda?",
-          nextAction: 'collect_info'
-        };
+    const handler = handlers[state.phase];
+    if (handler) {
+      response = await handler();
+    } else {
+      response = {
+        message: "I'm not sure how to help with that. Would you like me to build you a personalized agenda?",
+        nextAction: 'collect_info'
+      };
     }
 
     // Update state
     state.messages.push({ role: 'assistant', content: response.message });
-    this.conversationStates.set(sessionId, state);
+    this.setState(sessionId, state);
 
     return response;
   }
@@ -249,20 +285,44 @@ export class AgentOrchestrator {
       state.phase = 'collecting_info';
 
       // Check if message already contains info
-      const extractedInfo = await this.extractUserInfo(message);
+      const extractedInfo = await this.extractUserInfo(message, state.userInfo);
       if (Object.keys(extractedInfo).length > 0) {
         state.userInfo = { ...state.userInfo, ...extractedInfo };
       }
 
+      // Check what information we have
+      const hasName = !!state.userInfo.name;
+      const hasCompany = !!state.userInfo.company;
+      const hasTitle = !!state.userInfo.title;
+
+      // If we have all info (logged-in user), skip to research
+      if (hasName && hasCompany && hasTitle) {
+        state.phase = 'researching';
+        return {
+          message: `Great! I see you're **${state.userInfo.name}** from **${state.userInfo.company}**${state.userInfo.title ? `, ${state.userInfo.title}` : ''}.\n\nLet me research your background and the conference sessions to build you a personalized agenda. This will just take a moment...`,
+          nextAction: 'research',
+          metadata: {
+            phase: 'researching',
+            confidence: 1.0,
+            dataCompleteness: 100
+          }
+        };
+      }
+
       // Ask for what's missing
       const missing: string[] = [];
-      if (!state.userInfo.name) missing.push('your full name');
-      if (!state.userInfo.company) missing.push('your company');
-      if (!state.userInfo.title) missing.push('your role/title');
+      if (!hasName) missing.push('your full name');
+      if (!hasCompany) missing.push('your company');
+      if (!hasTitle) missing.push('your role/title');
 
       if (missing.length > 0) {
+        // Customize message based on whether user is logged in
+        const prefix = hasName ?
+          `Hi ${state.userInfo.name}! I'd love to create a personalized agenda for you.` :
+          `I'd love to create a personalized agenda for you! I can research your background to make intelligent recommendations.`;
+
         return {
-          message: `I'd love to create a personalized agenda for you! I can research your background to make intelligent recommendations.\n\nTo get started, could you tell me ${missing.join(', ')}?\n\nFor example: "I'm John Smith, VP of Innovation at Acme Insurance"`,
+          message: `${prefix}\n\nTo get started, could you tell me ${missing.join(', ')}?\n\nFor example: "I'm John Smith, VP of Innovation at Acme Insurance"`,
           nextAction: 'collect_info',
           metadata: {
             phase: 'collecting_info',
@@ -292,8 +352,8 @@ export class AgentOrchestrator {
     state: ConversationState,
     message: string
   ): Promise<OrchestratorResponse> {
-    // Parse user information from message
-    const extractedInfo = await this.extractUserInfo(message);
+    // Parse user information from message (only if we don't have it already)
+    const extractedInfo = await this.extractUserInfo(message, state.userInfo);
 
     // Update user info
     state.userInfo = { ...state.userInfo, ...extractedInfo };
@@ -306,8 +366,12 @@ export class AgentOrchestrator {
 
     if (missing.length > 0) {
       // Ask for missing information
+      const messagePrefix = state.userInfo.name ?
+        `Thanks ${state.userInfo.name}!` :
+        `Thanks!`;
+
       return {
-        message: `Thanks! I still need your ${missing.join(' and ')}. Could you provide ${missing.length > 1 ? 'these' : 'this'}?`,
+        message: `${messagePrefix} I still need your ${missing.join(' and ')}. Could you provide ${missing.length > 1 ? 'these' : 'this'}?`,
         nextAction: 'collect_info',
         metadata: {
           phase: 'collecting_info',
@@ -319,8 +383,18 @@ export class AgentOrchestrator {
 
     // We have all basic info, move to research phase
     state.phase = 'researching';
+
+    // Check if this is a logged-in user who already had complete info
+    const wasPrePopulated = Object.keys(extractedInfo).length === 0 &&
+                           state.userInfo.name &&
+                           state.userInfo.company;
+
+    const confirmationMessage = wasPrePopulated ?
+      `Great! I have your profile information:\n\n👤 **${state.userInfo.name}**\n🏢 **${state.userInfo.company}**\n💼 **${state.userInfo.title || 'Professional'}**\n\nLet me research current conference sessions that match your interests...` :
+      `Perfect! I have your information:\n\n👤 **${state.userInfo.name}**\n🏢 **${state.userInfo.company}**\n💼 **${state.userInfo.title}**\n\nLet me research your background to personalize your conference experience. This will take just a moment...`;
+
     return {
-      message: `Perfect! I have your information:\n\n👤 **${state.userInfo.name}**\n🏢 **${state.userInfo.company}**\n💼 **${state.userInfo.title}**\n\nLet me research your background to personalize your conference experience. This will take just a moment...`,
+      message: confirmationMessage,
       nextAction: 'research',
       metadata: {
         phase: 'researching',
@@ -549,9 +623,14 @@ export class AgentOrchestrator {
   /**
    * Extract user information from message using AI
    */
-  private async extractUserInfo(message: string): Promise<Partial<BasicUserInfo>> {
+  private async extractUserInfo(
+    message: string,
+    previousInfo?: Partial<BasicUserInfo>
+  ): Promise<Partial<BasicUserInfo>> {
     try {
       // Use Claude to intelligently extract information
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
@@ -560,7 +639,10 @@ export class AgentOrchestrator {
           'anthropic-version': '2023-06-01'
         },
         body: JSON.stringify({
-          model: 'claude-3-5-sonnet-20241022',
+          // Use fast, cost-efficient model for extraction
+          model: AI_CONFIG.validateModel('claude-3-haiku-20240307')
+            ? 'claude-3-haiku-20240307'
+            : AI_CONFIG.FALLBACK_MODEL,
           max_tokens: 200,
           temperature: 0,
           messages: [{
@@ -570,9 +652,9 @@ export class AgentOrchestrator {
 Message: "${message}"
 
 Previous context from conversation:
-- Name: ${this.conversationStates.get(this.currentSessionId)?.userInfo?.name || 'not yet provided'}
-- Company: ${this.conversationStates.get(this.currentSessionId)?.userInfo?.company || 'not yet provided'}
-- Title: ${this.conversationStates.get(this.currentSessionId)?.userInfo?.title || 'not yet provided'}
+- Name: ${previousInfo?.name || 'not yet provided'}
+- Company: ${previousInfo?.company || 'not yet provided'}
+- Title: ${previousInfo?.title || 'not yet provided'}
 
 Examples:
 "I'm Nancy Paul from PS Advisory" → {"name": "Nancy Paul", "company": "PS Advisory", "title": null}
@@ -582,8 +664,10 @@ Examples:
 
 Return ONLY the JSON object, no other text.`
           }]
-        })
+        }),
+        signal: controller.signal
       });
+      clearTimeout(timeout);
 
       if (!response.ok) {
         console.error('[Orchestrator] AI extraction failed, falling back to regex');
@@ -782,6 +866,6 @@ Return ONLY the JSON object, no other text.`
    * Clear conversation state for a session
    */
   clearSession(sessionId: string): void {
-    this.conversationStates.delete(sessionId);
+    updateConvState(sessionId, { orchestrator: undefined, researchAgentActive: false, researchPhase: undefined });
   }
 }

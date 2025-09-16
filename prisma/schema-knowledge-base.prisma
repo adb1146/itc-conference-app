@@ -1,0 +1,78 @@
+// Proposed schema additions for properly storing non-session vector content
+
+model KnowledgeBase {
+  id              String   @id @default(cuid())
+  title           String
+  content         String   @db.Text
+  contentType     String   // "company_info", "methodology", "expertise", "faq", "sponsor", etc.
+  category        String?  // Sub-category within content type
+  source          String   // "ps_advisory", "conference_info", "sponsor", etc.
+  keywords        String[] @default([])
+  metadata        Json?    // Flexible field for additional structured data
+  embedding       Float[]  // Vector embedding for semantic search
+  isActive        Boolean  @default(true)
+  priority        Int      @default(0) // For ranking in search results
+  relatedLinks    String[] @default([])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  entities        KnowledgeEntity[]
+
+  @@index([contentType, source])
+  @@index([isActive, priority])
+}
+
+model KnowledgeEntity {
+  id              String   @id @default(cuid())
+  knowledgeId     String
+  entityType      String   // "person", "company", "product", "methodology", etc.
+  entityName      String
+  entityData      Json     // Structured data about the entity
+  role            String?  // For people: their role/position
+  company         String?  // For people: their company
+  embedding       Float[]? // Optional separate embedding for the entity
+  createdAt       DateTime @default(now())
+
+  knowledge       KnowledgeBase @relation(fields: [knowledgeId], references: [id], onDelete: Cascade)
+
+  @@index([entityType, entityName])
+  @@index([knowledgeId])
+}
+
+// Alternative approach: Multiple specialized tables
+model CompanyInfo {
+  id              String   @id @default(cuid())
+  companyName     String   @unique
+  description     String   @db.Text
+  website         String?
+  industry        String
+  specializations String[] @default([])
+  leadership      Json[]   // Array of leadership team info
+  methodologies   Json[]   // Company-specific methodologies
+  services        String[] @default([])
+  contactInfo     Json?
+  embedding       Float[]  // Vector embedding
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([companyName])
+  @@index([isActive])
+}
+
+model ConferenceInfo {
+  id              String   @id @default(cuid())
+  title           String
+  content         String   @db.Text
+  infoType        String   // "venue", "logistics", "networking", "schedule", etc.
+  category        String?
+  keywords        String[] @default([])
+  embedding       Float[]  // Vector embedding
+  priority        Int      @default(0)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([infoType, isActive])
+}

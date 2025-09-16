@@ -109,8 +109,11 @@ export enum SessionPriority {
 export async function generateIntelligentAgenda(
   context: AgendaReasoningContext
 ): Promise<AgendaReasoningResult> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  console.log('[AI Reasoning] Anthropic API key:', apiKey ? `${apiKey.substring(0, 15)}...` : 'NO KEY');
+
   const anthropic = new Anthropic({
-    apiKey: process.env.ANTHROPIC_API_KEY
+    apiKey: apiKey || ''
   });
 
   // Calculate profile completeness

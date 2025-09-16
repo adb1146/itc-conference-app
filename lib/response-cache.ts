@@ -18,11 +18,14 @@ class ResponseCache {
 
   /**
    * Generate cache key from query and user preferences
+   * SECURITY: Include userId to prevent cache sharing between users
    */
-  generateKey(query: string, userPreferences?: any): string {
+  generateKey(query: string, userPreferences?: any, userId?: string): string {
     const normalizedQuery = query.toLowerCase().trim();
     const interests = userPreferences?.interests?.sort().join(',') || '';
-    return `${normalizedQuery}:${interests}`;
+    const userKey = userId || 'anonymous';
+    // Include userId in key to ensure user isolation
+    return `user:${userKey}:${normalizedQuery}:${interests}`;
   }
 
   /**

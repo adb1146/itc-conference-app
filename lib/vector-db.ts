@@ -24,12 +24,16 @@ export function getPineconeClient(): Pinecone | null {
 // Lazy initialization of OpenAI for embeddings
 let openaiClient: OpenAI | null = null;
 export function getOpenAIClient(): OpenAI | null {
-  if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY.includes('<your')) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  console.log('[Vector DB] OpenAI API key check:', apiKey ? `${apiKey.substring(0, 15)}...` : 'NO KEY');
+
+  if (!apiKey || apiKey.includes('<your')) {
+    console.log('[Vector DB] Invalid OpenAI API key, returning null');
     return null;
   }
   if (!openaiClient) {
     openaiClient = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
+      apiKey: apiKey,
     });
   }
   return openaiClient;

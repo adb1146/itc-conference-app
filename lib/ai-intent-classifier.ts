@@ -54,15 +54,15 @@ export interface ConversationContext {
 const INTENT_CLASSIFICATION_PROMPT = `You are an intent classifier for an AI conference assistant chatbot for ITC Vegas 2025.
 
 CRITICAL RULES:
-1. Be VERY conservative with 'agenda_building' - only use when user EXPLICITLY asks for an agenda/schedule to be created
+1. Recognize 'agenda_building' for both explicit creation requests AND help/assistance requests with schedules
 2. Be VERY conservative with 'profile_research' - only use when user EXPLICITLY asks for profile research or LinkedIn lookup
 3. Default to 'information_seeking' when user is asking questions or seeking information
 4. Introductions without explicit requests should be 'greeting' not 'profile_research'
 5. Questions like "what's happening" or "what sessions" are 'information_seeking' not 'agenda_building'
 
 Intent Definitions:
-- information_seeking: Questions about sessions, speakers, topics, schedules (but not building one)
-- agenda_building: EXPLICIT requests to BUILD/CREATE a personalized agenda
+- information_seeking: Questions about sessions, speakers, topics, schedules (but not building/helping with one)
+- agenda_building: Requests to BUILD/CREATE a personalized agenda OR asking for HELP with their schedule/agenda
 - profile_research: EXPLICIT requests to research their background or LinkedIn
 - local_recommendations: Questions about restaurants, bars, venues, things to do in Vegas
 - greeting: Introductions, hellos, stating who they are (without asking for anything specific)
@@ -78,8 +78,13 @@ Examples:
 "What's happening this morning?" → information_seeking (asking for info, not building agenda)
 "I'm John Smith, CEO of Acme" → greeting (just introduction, no request)
 "Build me an agenda" → agenda_building (explicit request)
+"Help me with my schedule" → agenda_building (asking for help with schedule)
+"Can you help me with my agenda?" → agenda_building (asking for assistance)
+"I need help planning my schedule" → agenda_building (needs help with planning)
+"Could you assist me with my conference schedule?" → agenda_building (assistance request)
+"Help me figure out what sessions to attend" → agenda_building (help organizing sessions)
 "Research my LinkedIn profile" → profile_research (explicit request)
-"What sessions should I attend?" → information_seeking (asking for recommendations, not building)
+"What sessions should I attend?" → information_seeking (asking for recommendations only)
 "Create my personalized schedule" → agenda_building (explicit creation request)
 "Any good restaurants nearby?" → local_recommendations
 "I'm interested in AI and cybersecurity" → preference_setting (providing preferences)
@@ -102,9 +107,12 @@ class AIIntentClassifier {
 
   private initialize() {
     const apiKey = process.env.OPENAI_API_KEY;
-    if (apiKey) {
+    console.log('[AIIntentClassifier] Initializing with API key:', apiKey ? `${apiKey.substring(0, 10)}...` : 'NO KEY');
+    if (apiKey && !apiKey.includes('<your')) {
       this.openai = new OpenAI({ apiKey });
       this.initialized = true;
+    } else {
+      console.log('[AIIntentClassifier] Invalid or missing API key, using fallback');
     }
   }
 
@@ -254,17 +262,21 @@ class AIIntentClassifier {
   private fallbackClassification(message: string): IntentClassification {
     const lowerMessage = message.toLowerCase();
 
-    // Check for explicit agenda building requests
+    // Check for agenda building requests (including help requests)
     if (
       lowerMessage.includes('build') && lowerMessage.includes('agenda') ||
       lowerMessage.includes('create') && lowerMessage.includes('schedule') ||
-      lowerMessage.includes('make') && lowerMessage.includes('itinerary')
+      lowerMessage.includes('make') && lowerMessage.includes('itinerary') ||
+      lowerMessage.includes('help') && (lowerMessage.includes('schedule') || lowerMessage.includes('agenda')) ||
+      lowerMessage.includes('assist') && (lowerMessage.includes('schedule') || lowerMessage.includes('agenda')) ||
+      lowerMessage.includes('plan') && lowerMessage.includes('schedule') ||
+      lowerMessage.includes('figure out') && lowerMessage.includes('sessions')
     ) {
       return {
         primary_intent: 'agenda_building',
         confidence: 0.9,
         suggested_action: 'build_agenda',
-        reasoning: 'Explicit agenda building request detected'
+        reasoning: 'Agenda building or schedule assistance request detected'
       };
     }
 

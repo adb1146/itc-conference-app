@@ -28,12 +28,21 @@ import {
 } from '@/lib/conversation-state';
 import { InChatRegistrationHandler, type RegistrationState } from '@/lib/chat/registration-handler';
 import { getTemporalContextForAI, parseRelativeTime, getTimeContext } from '@/lib/timezone-context';
-import { shouldSuggestMeeting, formatMeetingSuggestion, getPSAdvisoryFooter } from '@/lib/ps-advisory-context';
+import {
+  shouldSuggestMeeting,
+  formatMeetingSuggestion,
+  getPSAdvisoryFooter,
+  isAskingAboutPSAdvisory,
+  getPSAdvisoryInfo,
+  relatesToPSAdvisoryExpertise
+} from '@/lib/ps-advisory-context';
+import { validatePSAdvisoryResponse } from '@/lib/ps-advisory-validation';
 import { LocalRecommendationsAgent } from '@/lib/agents/local-recommendations-agent';
 import { getAttendeeNeedResponse, getTimeAwareActivities, getPracticalInfo } from '@/lib/attendee-experience';
 import { getHelpContent, getQuickHelpResponse } from '@/lib/help-content';
 import { getConferenceInfoResponse } from '@/lib/conference-info-handler';
 import { interpretQuery, generateEnhancedSearchQuery, generateAIGuidance } from '@/lib/intelligent-query-interpreter';
+import { routeMessage } from '@/lib/agents/agent-router';
 import { detectScheduleOfferOpportunity, generateContextualScheduleOffer, isAcceptingScheduleOffer, generateScheduleBuilderPrompt, shouldUseResearchAgent } from '@/lib/schedule-offer-detector';
 
 /**
@@ -262,6 +271,8 @@ export async function POST(request: NextRequest) {
           }
         }
 
+        // No longer hard-coding PS Advisory responses - let the AI handle it naturally through vector search
+
         // Check if user is asking for help about app capabilities
         const isAskingForHelp = message.toLowerCase().includes('what can you') ||
                                 message.toLowerCase().includes('help me with') ||
@@ -320,6 +331,32 @@ export async function POST(request: NextRequest) {
               },
             });
           }
+        }
+
+        // Centralized agent routing (local recommendations, orchestrator agenda/research)
+        try {
+          const routed = await routeMessage(message, { sessionId, userId });
+
+          if (routed && routed.metadata && routed.metadata.toolUsed && routed.metadata.toolUsed !== 'none') {
+            await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(routed.message)}}\n\n`));
+
+            if ((routed.data as any)?.agenda) {
+              const agenda = (routed.data as any).agenda;
+              storePendingAgenda(sessionId, agenda);
+              updateConversationState(sessionId, {
+                agendaBuilt: true,
+                researchAgentActive: false
+              });
+            }
+
+            await writer.write(encoder.encode(`data: {"type":"metadata","content":${JSON.stringify(routed.metadata)}}\n\n`));
+
+            await writer.write(encoder.encode(`data: {"type":"done","sessionId":"${sessionId}"}\n\n`));
+            await writer.close();
+            return;
+          }
+        } catch (routerError) {
+          console.error('[Stream API] Agent router error, continuing with fallback logic:', routerError);
         }
 
         // Check if we're waiting for preferences from a previous question
@@ -393,43 +430,27 @@ export async function POST(request: NextRequest) {
           // Continue with original keyword-based toolDetection
         }
 
-        // Handle local recommendations queries (restaurants, bars, activities)
+        // Handle local recommendations via centralized agent router
         if (toolDetection.shouldUseTool && toolDetection.toolType === 'local_recommendations') {
           console.log('[Stream API] Detected local recommendations request with confidence:', toolDetection.confidence);
 
-          await writer.write(encoder.encode(`data: {"type":"status","content":"Finding Mandalay Bay recommendations..."}\n\n`));
-
-          // Create local recommendations agent
-          const localAgent = new LocalRecommendationsAgent();
-
           try {
-            // Get recommendations (fast, cached response)
-            const recommendations = await localAgent.getRecommendations(message);
+            const routed = await routeMessage(message, { sessionId, userId });
 
-            // Send the recommendations
-            await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(recommendations)}}\n\n`));
+            if (routed && routed.metadata?.toolUsed === 'local_recommendations') {
+              await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(routed.message)}}\n\n`));
 
-            // Add conversation tracking
-            addMessage(sessionId, 'assistant', recommendations);
+              // Track and update state
+              addMessage(sessionId, 'assistant', routed.message);
+              updateConversationState(sessionId, { lastToolUsed: 'local_recommendations' });
 
-            // Update conversation state
-            updateConversationState(sessionId, {
-              lastToolUsed: 'local_recommendations'
-            });
-
-            // Send metadata about the tool used
-            await writer.write(encoder.encode(`data: {"type":"metadata","content":${JSON.stringify({
-              toolUsed: 'local_recommendations',
-              responseTime: 'instant',
-              cached: true
-            })}}\n\n`));
-
-            await writer.write(encoder.encode(`data: {"type":"done","sessionId":"${sessionId}"}\n\n`));
-            await writer.close();
-            return;
-          } catch (error) {
-            console.error('[Stream API] Error getting local recommendations:', error);
-            // Fall through to regular chat if agent fails
+              await writer.write(encoder.encode(`data: {"type":"metadata","content":${JSON.stringify(routed.metadata)}}\n\n`));
+              await writer.write(encoder.encode(`data: {"type":"done","sessionId":"${sessionId}"}\n\n`));
+              await writer.close();
+              return;
+            }
+          } catch (routerError) {
+            console.error('[Stream API] Agent router error for local recommendations:', routerError);
             await writer.write(encoder.encode(`data: {"type":"status","content":"Switching to regular chat mode..."}\n\n`));
           }
         }
@@ -485,36 +506,33 @@ export async function POST(request: NextRequest) {
         }
 
         // Check if user is requesting research-based personalization based on AI classification
-        const isResearchRequest = !userPreferences?.email &&
-          toolDetection.toolType === 'profile_research' &&
+        const isResearchRequest = toolDetection.toolType === 'profile_research' &&
           toolDetection.shouldUseTool;
 
         if (isResearchRequest) {
-          console.log('[Stream API] Detected research request from guest user');
+          const isLoggedIn = !!userPreferences?.email;
+          console.log(`[Stream API] Detected research request from ${isLoggedIn ? 'logged-in' : 'guest'} user (AI classification)`);
+          try {
+            const routed = await routeMessage(message, { sessionId, userId: userPreferences?.email || undefined });
 
-          // Get the singleton orchestrator instance
-          const { getOrchestrator } = await import('@/lib/agents/orchestrator-singleton');
-          const orchestrator = getOrchestrator();
+            if (routed && routed.metadata?.toolUsed === 'orchestrator') {
+              await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(routed.message)}}\n\n`));
 
-          // Process the initial message
-          const response = await orchestrator.processMessage(sessionId, message, undefined);
+              // Update conversation state for research agent flow
+              updateConversationState(sessionId, {
+                researchAgentActive: true,
+                researchPhase: routed.metadata?.phase
+              });
 
-          // Send the response
-          await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(response.message)}}\n\n`));
-
-          if (response.metadata) {
-            await writer.write(encoder.encode(`data: {"type":"metadata","content":${JSON.stringify(response.metadata)}}\n\n`));
+              await writer.write(encoder.encode(`data: {"type":"metadata","content":${JSON.stringify(routed.metadata)}}\n\n`));
+              await writer.write(encoder.encode(`data: {"type":"done","sessionId":"${sessionId}"}\n\n`));
+              await writer.close();
+              return;
+            }
+          } catch (routerError) {
+            console.error('[Stream API] Agent router error for research request:', routerError);
+            // Fall through to regular chat if router fails
           }
-
-          // Store orchestrator state for next interaction
-          updateConversationState(sessionId, {
-            researchAgentActive: true,
-            researchPhase: response.metadata?.phase
-          });
-
-          await writer.write(encoder.encode(`data: {"type":"done","sessionId":"${sessionId}"}\n\n`));
-          await writer.close();
-          return;
         }
 
 
@@ -949,6 +967,9 @@ export async function POST(request: NextRequest) {
           }
         }
 
+        // Validate PS Advisory information to prevent hallucination
+        fullResponse = await validatePSAdvisoryResponse(fullResponse);
+
         // Clear the timeout since streaming completed successfully
         clearTimeout(timeout);
 
@@ -1088,6 +1109,8 @@ function createSystemPrompt(
   }
 
   return `You are an expert conference concierge AI for ITC Vegas 2025 (October 14-16, 2025 at Mandalay Bay, Las Vegas).
+
+This application is powered by PS Advisory (psadvisory.com), a specialized insurance technology consulting firm founded by Nancy Paul. PS Advisory helps insurance organizations with Salesforce implementations, digital transformation, AI/automation solutions, and custom insurtech development.
 
 ## CRITICAL INSTRUCTION: ALWAYS CONNECT TO CONFERENCE CONTENT
 For EVERY query, you MUST:

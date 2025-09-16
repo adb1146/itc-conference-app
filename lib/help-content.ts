@@ -41,6 +41,15 @@ Try asking:
 • "Build me an agenda focused on innovation"
 • "What's the dress code for tonight's party?"
 
+## 🏢 **About This App**
+This intelligent conference assistant is powered by **PS Advisory** (psadvisory.com), a specialized insurance technology consulting firm that helps carriers, MGAs, and brokers transform their operations through innovative technology solutions.
+
+Ask me about PS Advisory's expertise in:
+• Salesforce Insurance Cloud implementations
+• AI and automation for underwriting & claims
+• Digital transformation strategies
+• Custom insurtech solutions
+
 **Pro tip:** The more specific you are, the better I can help! Tell me about your role, interests, and goals.`;
 }
 

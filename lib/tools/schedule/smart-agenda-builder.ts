@@ -473,6 +473,19 @@ async function buildDaySchedule(
     }
   }
 
+  // FALLBACK: If schedule is still empty, add some default sessions
+  if (schedule.length === 0 && daySessions.length > 0) {
+    console.log('Schedule empty, adding fallback sessions');
+    // Add top 5 sessions from the day
+    const topSessions = daySessions
+      .filter(s => !isMealSession(s))
+      .slice(0, 5);
+
+    for (const session of topSessions) {
+      schedule.push(createSessionItem(session, 'ai-suggested', false));
+    }
+  }
+
   // Final sort
   schedule.sort((a, b) => {
     const timeA = new Date(`${date} ${a.time}`).getTime();

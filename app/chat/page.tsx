@@ -148,6 +148,8 @@ function ChatContent() {
   } | null>(null);
   const [dynamicSuggestions, setDynamicSuggestions] = useState<string[]>([]);
   const [conversationContext, setConversationContext] = useState<any>({});
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showProfileForm, setShowProfileForm] = useState(false);
 
   // Generate unique message IDs
   const generateMessageId = () => {
@@ -432,12 +434,52 @@ function ChatContent() {
       if (response.ok) {
         setShowAuthForm(null);
         setProfileIncomplete(false);
+
+        // Create a rich, proactive follow-up message
+        const interests = authData.interests || [];
+        const role = authData.role || '';
+        const company = authData.company || '';
+
+        let followUpMessage = "✅ **Excellent! Your profile is now complete.**\n\n";
+        followUpMessage += `I've saved your information:\n`;
+        followUpMessage += `• **Role:** ${role}\n`;
+        followUpMessage += `• **Company:** ${company}\n`;
+        followUpMessage += `• **Interests:** ${interests.join(', ')}\n\n`;
+        followUpMessage += `You can update these anytime from your [Profile](/profile) page.\n\n`;
+        followUpMessage += `---\n\n`;
+        followUpMessage += `**🚀 Now let's make the most of ITC Vegas 2025!**\n\n`;
+        followUpMessage += `Based on your ${role} role and interests in ${interests.slice(0, 2).join(' and ')}, here's what I recommend:\n\n`;
+
+        // Add personalized recommendations based on role and interests
+        followUpMessage += `**1. 📅 Build Your Personalized Agenda**\n`;
+        followUpMessage += `   I can create a custom schedule optimized for ${interests.includes('AI & Automation') ? 'AI innovations' : interests[0] || 'your interests'}.\n\n`;
+
+        followUpMessage += `**2. 🎯 Must-See Sessions**\n`;
+        followUpMessage += `   View the top-rated sessions matching your profile.\n\n`;
+
+        followUpMessage += `**3. 🤝 Strategic Networking**\n`;
+        followUpMessage += `   Connect with ${role.includes('Sales') ? 'potential clients and partners' : 'industry leaders'} in your areas of interest.\n\n`;
+
+        followUpMessage += `**4. 🍸 Evening Events**\n`;
+        followUpMessage += `   Discover the best happy hours and parties for networking.\n\n`;
+
+        followUpMessage += `**What would you like to start with?** Just type a number (1-4) or tell me what you're looking for!`;
+
         setMessages(prev => [...prev, {
           id: generateMessageId(),
           role: 'assistant',
-          content: "✅ **Profile updated successfully!** Now I can provide you with more personalized recommendations based on your interests.\n\nWhat would you like to explore first?",
+          content: followUpMessage,
           timestamp: new Date()
         }]);
+
+        // Add quick action suggestions
+        setSuggestions([
+          "Build my personalized agenda",
+          "Show me must-see AI sessions",
+          "Find networking opportunities",
+          "What are the best evening events?"
+        ]);
+
         router.refresh();
       } else {
         setAuthError('Failed to update profile. Please try again.');
@@ -491,13 +533,45 @@ function ChatContent() {
           });
 
           if (result?.ok) {
-            setShowAuthForm(null);
-            setMessages(prev => [...prev, {
-              id: generateMessageId(),
-              role: 'assistant',
-              content: "🎉 **Welcome to ITC Vegas 2025!** I'm preparing your personalized conference experience...",
-              timestamp: new Date()
-            }]);
+            // Check if user was building an agenda before registration
+            const pendingMetadata = sessionStorage.getItem('pendingAgendaMetadata');
+
+            if (pendingMetadata) {
+              // User was building an agenda - prompt for profile completion
+              sessionStorage.removeItem('pendingAgendaMetadata');
+              const metadata = JSON.parse(pendingMetadata);
+
+              setShowAuthForm(null);
+              setMessages(prev => [...prev, {
+                id: generateMessageId(),
+                role: 'assistant',
+                content: `🎉 **Welcome to ITC Vegas 2025!** Your account has been created successfully.\n\n` +
+                        `Great news - I've saved your personalized agenda with ${metadata.sessionCount || 'your selected'} sessions!\n\n` +
+                        `**To get the most from your conference experience, let's complete your profile.**\n\n` +
+                        `This will help me:\n` +
+                        `• Refine your agenda based on your interests\n` +
+                        `• Suggest relevant networking opportunities\n` +
+                        `• Send you personalized recommendations\n\n` +
+                        `Let's complete your profile now to unlock these features:`,
+                timestamp: new Date()
+              }, {
+                id: generateMessageId(),
+                role: 'system',
+                content: 'profile_prompt',
+                actionType: 'profile',
+                timestamp: new Date()
+              }]);
+              setShowProfileForm(true);
+            } else {
+              // Normal registration flow
+              setShowAuthForm(null);
+              setMessages(prev => [...prev, {
+                id: generateMessageId(),
+                role: 'assistant',
+                content: "🎉 **Welcome to ITC Vegas 2025!** I'm preparing your personalized conference experience...",
+                timestamp: new Date()
+              }]);
+            }
             router.refresh();
           }
         } else {
@@ -643,6 +717,23 @@ function ChatContent() {
                       ? { ...msg, content: streamedContent }
                       : msg
                   ));
+                } else if (parsed.type === 'action') {
+                  // Handle special actions from the server
+                  if (parsed.action === 'show_registration') {
+                    // Automatically show registration form for guest users who built an agenda
+                    console.log('[Chat] Received show_registration action, triggering registration form');
+                    setShowAuthForm('register');
+
+                    // Store agenda metadata for after registration
+                    if (parsed.metadata) {
+                      // Store in session storage to persist through registration
+                      sessionStorage.setItem('pendingAgendaMetadata', JSON.stringify(parsed.metadata));
+                    }
+                  } else if (parsed.action === 'show_profile') {
+                    // Automatically show profile form after registration
+                    console.log('[Chat] Received show_profile action, triggering profile form');
+                    setShowProfileForm(true);
+                  }
                 } else if (parsed.type === 'done') {
                   // Capture session ID from the done event
                   if (parsed.sessionId) {
@@ -1277,7 +1368,22 @@ function ChatContent() {
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => setShowAuthForm(null)}
+                onClick={() => {
+                  setShowAuthForm(null);
+                  // Add a helpful message when user skips
+                  setMessages(prev => [...prev, {
+                    id: generateMessageId(),
+                    role: 'assistant',
+                    content: "No problem! You can complete your profile anytime from the [Profile](/profile) page.\n\n**In the meantime, here's what I can help you with:**\n\n• 🔍 **Search sessions** - Find talks on any topic\n• 👥 **Discover speakers** - Learn about presenters and their expertise\n• 📍 **Explore venues** - Get familiar with conference locations\n• 🍸 **Evening events** - Find the best networking opportunities\n• ❓ **Answer questions** - About logistics, schedule, or anything ITC Vegas\n\n**What would you like to explore?**",
+                    timestamp: new Date()
+                  }]);
+                  setSuggestions([
+                    "Show me AI sessions",
+                    "Who are the keynote speakers?",
+                    "Where are the best happy hours?",
+                    "What's happening on Day 1?"
+                  ]);
+                }}
                 className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
               >
                 Skip for now

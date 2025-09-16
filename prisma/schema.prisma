@@ -26,6 +26,17 @@ model Session {
   lastUpdated       DateTime @default(now())
   createdAt         DateTime @default(now())
 
+  // PS Advisory content flags
+  isPSAdvisoryContent Boolean @default(false)
+  category          String?  // company_info, methodology, expertise, etc.
+  keywords          String[] @default([])
+  format            String?  // Session, Knowledge Article, etc.
+  day               String?
+  sessionType       String?
+  targetAudience    String[] @default([])
+  learningObjectives String[] @default([])
+  embedding         Float[]  // Vector embedding for semantic search
+
   speakers    SessionSpeaker[]
   favorites   Favorite[]
   agendaSessions AgendaSession[]
@@ -47,6 +58,10 @@ model Speaker {
   achievements    String[] @default([])
   lastProfileSync DateTime?
   createdAt       DateTime @default(now())
+
+  // PS Advisory flag
+  isPSAdvisory    Boolean  @default(false)
+  title           String?
 
   sessions  SessionSpeaker[]
   favorites Favorite[]
@@ -186,4 +201,25 @@ model AgendaVersion {
 
   @@unique([agendaId, version])
   @@index([agendaId, createdAt])
+}
+
+// Knowledge Base for non-session vector content
+model KnowledgeBase {
+  id              String   @id @default(cuid())
+  title           String
+  content         String   @db.Text
+  contentType     String   // "company_info", "methodology", "expertise", "faq", "sponsor", etc.
+  category        String?  // Sub-category within content type
+  source          String   // "ps_advisory", "conference_info", "sponsor", etc.
+  keywords        String[] @default([])
+  metadata        Json?    // Flexible field for additional structured data
+  embedding       Float[]  // Vector embedding for semantic search
+  isActive        Boolean  @default(true)
+  priority        Int      @default(0) // For ranking in search results
+  relatedLinks    String[] @default([])
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([contentType, source])
+  @@index([isActive, priority])
 }
