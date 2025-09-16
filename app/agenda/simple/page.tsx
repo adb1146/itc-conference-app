@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Calendar, Clock, MapPin, Search, Filter, ChevronRight, Sparkles, Star } from 'lucide-react';
 import Link from 'next/link';
-import Navigation from '@/components/Navigation';
 import { useSession } from 'next-auth/react';
 
 interface Session {
@@ -347,7 +346,7 @@ export default function SimpleAgendaPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navigation />
+      
 
       {/* Clean Header */}
       <div className="bg-white border-b border-gray-200 sticky top-16 z-30">

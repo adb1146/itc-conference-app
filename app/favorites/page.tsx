@@ -9,7 +9,6 @@ import {
   Trash2, StickyNote, Filter, Search,
   LogIn, UserPlus, Sparkles, Loader2, X, AlertCircle
 } from 'lucide-react';
-import Navigation from '@/components/Navigation';
 import UserDashboard from '@/components/UserDashboard';
 import SmartAgendaView from '@/components/agenda/SmartAgendaView';
 import { SmartAgenda } from '@/lib/tools/schedule/types';
@@ -324,7 +323,7 @@ export default function FavoritesPage() {
   if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navigation />
+        
         <div className="h-16"></div>
         <div className="max-w-6xl mx-auto px-4 py-8">
           <div className="animate-pulse">
@@ -343,7 +342,7 @@ export default function FavoritesPage() {
   if (status === 'unauthenticated') {
     return (
       <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-white">
-        <Navigation />
+        
         <div className="h-16"></div>
         <div className="max-w-4xl mx-auto px-4 py-16">
           <div className="bg-white/80 backdrop-blur rounded-2xl shadow-xl border border-purple-100 p-10 text-center">
@@ -387,7 +386,7 @@ export default function FavoritesPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-white">
-      <Navigation />
+      
 
       <div className="h-16"></div>
 

@@ -9,7 +9,6 @@ import {
   Star, Sparkles, MessageSquare, Settings, LogOut,
   CheckCircle, X, Loader2
 } from 'lucide-react';
-import Navigation from '@/components/Navigation';
 import UserDashboard from '@/components/UserDashboard';
 import { signOut } from 'next-auth/react';
 
@@ -179,7 +178,7 @@ export default function ProfilePage() {
   if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navigation />
+        
         <div className="h-16"></div>
         <div className="max-w-6xl mx-auto px-4 py-8">
           <div className="animate-pulse">
@@ -197,7 +196,7 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navigation />
+      
       <div className="h-16"></div>
 
       {/* User Dashboard Navigation */}

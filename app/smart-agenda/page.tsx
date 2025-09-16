@@ -7,7 +7,6 @@ import {
   Sparkles, Loader2, Calendar, Clock, MapPin, Users,
   LogIn, UserPlus, Star, AlertCircle, Trash2
 } from 'lucide-react';
-import Navigation from '@/components/Navigation';
 import UserDashboard from '@/components/UserDashboard';
 import SmartAgendaView from '@/components/agenda/SmartAgendaView';
 import AgendaInsights from '@/components/agenda/AgendaInsights';
@@ -195,7 +194,7 @@ export default function SmartAgendaPage() {
   if (status === 'unauthenticated') {
     return (
       <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-white">
-        <Navigation />
+        
         <UserDashboard activeTab="agenda" />
 
         <div className="min-h-[60vh] flex items-center justify-center">
@@ -233,7 +232,7 @@ export default function SmartAgendaPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-white">
-      <Navigation />
+      
       <UserDashboard activeTab="agenda" />
 
       <div className="bg-white/80 backdrop-blur border-b border-purple-100">

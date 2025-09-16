@@ -7,7 +7,6 @@ import {
   User, Building, ExternalLink, Mail, Share2, AlertCircle, MessageCircle, Sparkles
 } from 'lucide-react';
 import Link from 'next/link';
-import Navigation from '@/components/Navigation';
 import FavoriteButton from '@/components/FavoriteButton';
 
 interface Speaker {
@@ -238,7 +237,7 @@ export default function SessionDetailPage() {
   if (loading) {
     return (
       <>
-        <Navigation />
+        
         <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-white flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
@@ -252,7 +251,7 @@ export default function SessionDetailPage() {
   if (error || !session) {
     return (
       <>
-        <Navigation />
+        
         <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-white flex items-center justify-center">
           <div className="text-center max-w-md bg-white/80 backdrop-blur rounded-2xl p-10 border border-purple-100 shadow-xl">
             <div className="p-3 bg-gradient-to-br from-red-100 to-pink-100 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center">
@@ -276,7 +275,7 @@ export default function SessionDetailPage() {
 
   return (
     <>
-      <Navigation />
+      
       <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-white">
         <div className="container mx-auto px-4 py-8 max-w-4xl">
           {/* Back Button */}

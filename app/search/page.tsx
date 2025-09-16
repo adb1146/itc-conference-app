@@ -4,7 +4,6 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Search, Users, Calendar, Map, Star, ArrowLeft } from 'lucide-react';
-import Navigation from '@/components/Navigation';
 
 function SearchContent() {
   const searchParams = useSearchParams();
@@ -77,7 +76,7 @@ function SearchContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navigation />
+      
 
       <div className="h-16"></div>
 

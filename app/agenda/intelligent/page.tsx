@@ -9,7 +9,6 @@ import {
   ThumbsUp, ThumbsDown, RefreshCw, Wand2, Info
 } from 'lucide-react';
 import Link from 'next/link';
-import Navigation from '@/components/Navigation';
 import { PSAdvisoryCTA } from '@/components/ps-advisory-cta';
 
 interface Speaker {
@@ -666,7 +665,7 @@ function IntelligentAgendaContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navigation />
+      
       
       {/* Spacer for fixed navigation */}
       <div className="h-16"></div>

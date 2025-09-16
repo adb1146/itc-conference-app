@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { User, Briefcase, Search, Building, Award, Users, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
-import Navigation from '@/components/Navigation';
 
 interface Speaker {
   id: string;
@@ -185,7 +184,7 @@ export default function SpeakersPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-white">
-      <Navigation />
+      
 
       {/* Spacer for fixed navigation */}
       <div className="h-16"></div>
