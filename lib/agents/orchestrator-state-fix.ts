@@ -27,12 +27,21 @@ export function shouldOrchestratorHandle(sessionId: string, message: string): bo
       lowerMessage.includes('about ai sessions') ||
       lowerMessage.includes('about sessions') ||
       lowerMessage.includes('ai sessions') ||
-      lowerMessage.includes('what can you tell me') ||
+      lowerMessage.includes('what can you tell me about') ||
+      lowerMessage.includes('tell me about') ||
       lowerMessage.includes('who should i meet') ||
       lowerMessage.includes('export my schedule') ||
       lowerMessage.includes('trending in') ||
       lowerMessage.includes('speakers') ||
-      lowerMessage.includes('keynote')) {
+      lowerMessage.includes('keynote') ||
+      lowerMessage.includes('about claims') ||
+      lowerMessage.includes('about underwriting') ||
+      lowerMessage.includes('about cyber') ||
+      lowerMessage.includes('about insurance') ||
+      lowerMessage.includes('about insurtech') ||
+      lowerMessage.includes('about automation') ||
+      lowerMessage.includes('about data') ||
+      lowerMessage.includes('about analytics')) {
     return false;
   }
 

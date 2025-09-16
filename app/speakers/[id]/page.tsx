@@ -272,14 +272,14 @@ export default function SpeakerDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-4">
+      <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-white p-4">
         <div className="max-w-6xl mx-auto pt-8">
           <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
-            <div className="h-32 bg-gray-200 rounded mb-4"></div>
+            <div className="h-8 bg-purple-200 rounded-xl w-1/3 mb-4"></div>
+            <div className="h-32 bg-purple-100 rounded-xl mb-4"></div>
             <div className="space-y-4">
               {[1, 2, 3].map(i => (
-                <div key={i} className="h-24 bg-gray-200 rounded"></div>
+                <div key={i} className="h-24 bg-purple-100 rounded-xl"></div>
               ))}
             </div>
           </div>
@@ -290,12 +290,12 @@ export default function SpeakerDetailPage() {
 
   if (!speaker) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-4">
+      <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-white p-4">
         <div className="max-w-6xl mx-auto pt-8 text-center">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">Speaker not found</h2>
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-4">Speaker not found</h2>
           <button
             onClick={() => router.push('/speakers')}
-            className="text-blue-600 hover:text-blue-700 flex items-center gap-2 mx-auto"
+            className="text-purple-600 hover:text-purple-700 flex items-center gap-2 mx-auto transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Speakers
@@ -306,12 +306,12 @@ export default function SpeakerDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-4">
+    <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-white p-4">
       <div className="max-w-6xl mx-auto pt-8">
         {/* Back Button */}
         <button
           onClick={() => router.push('/speakers')}
-          className="mb-6 text-blue-600 hover:text-blue-700 flex items-center gap-2 transition-colors"
+          className="mb-6 text-purple-600 hover:text-purple-700 flex items-center gap-2 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Speakers
@@ -358,7 +358,7 @@ export default function SpeakerDetailPage() {
         )}
 
         {/* Speaker Info Card */}
-        <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
+        <div className="bg-white/80 backdrop-blur rounded-2xl shadow-xl border border-purple-100 p-8 mb-8">
           <div className="flex items-start gap-6">
             {/* Avatar */}
             <div className="relative w-24 h-24 flex-shrink-0">
@@ -375,7 +375,7 @@ export default function SpeakerDetailPage() {
                     }}
                   />
                 ) : null}
-                <div className={`w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center ${speaker.imageUrl ? 'hidden' : ''}`}>
+                <div className={`w-full h-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center ${speaker.imageUrl ? 'hidden' : ''}`}>
                   <span className="text-white text-3xl font-bold">
                     {speaker.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
                   </span>
@@ -401,7 +401,7 @@ export default function SpeakerDetailPage() {
             {/* Info */}
             <div className="flex-1">
               <div className="flex items-start justify-between mb-2">
-                <h1 className="text-3xl font-bold text-gray-900">{speaker.name}</h1>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">{speaker.name}</h1>
                 <FavoriteButton
                   itemId={speaker.id}
                   type="speaker"
@@ -423,7 +423,7 @@ export default function SpeakerDetailPage() {
                 <p className="text-gray-700 mb-4">{speaker.bio}</p>
               )}
               <div className="flex items-center gap-4 flex-wrap">
-                <div className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
+                <div className="px-3 py-1 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 rounded-full text-sm font-medium">
                   {speaker.sessions.length} Session{speaker.sessions.length !== 1 ? 's' : ''}
                 </div>
                 {speaker.linkedinUrl && (
@@ -462,7 +462,7 @@ export default function SpeakerDetailPage() {
                 <button
                   onClick={fetchLatestProfile}
                   disabled={fetchingProfile}
-                  className="flex items-center gap-2 px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-full text-sm transition-colors disabled:opacity-50"
+                  className="flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-gray-100 to-purple-50 hover:from-gray-200 hover:to-purple-100 text-gray-700 rounded-full text-sm transition-all disabled:opacity-50"
                 >
                   <RefreshCw className={`w-4 h-4 ${fetchingProfile ? 'animate-spin' : ''}`} />
                   {fetchingProfile ? (
@@ -477,7 +477,7 @@ export default function SpeakerDetailPage() {
                 </button>
                 <button
                   onClick={askAIAboutSpeaker}
-                  className="flex items-center gap-2 px-3 py-1 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-full text-sm transition-colors"
+                  className="flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-purple-100 to-blue-100 hover:from-purple-200 hover:to-blue-200 text-purple-700 rounded-full text-sm transition-all"
                 >
                   <MessageCircle className="w-4 h-4" />
                   Ask AI about this speaker
@@ -729,7 +729,7 @@ export default function SpeakerDetailPage() {
               {speaker.sessions.map((session) => (
                 <div
                   key={session.id}
-                  className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all p-6"
+                  className="bg-white/80 backdrop-blur rounded-2xl shadow-md hover:shadow-xl border border-purple-100 hover:border-purple-200 transition-all p-6"
                 >
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex-1">

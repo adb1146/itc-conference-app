@@ -780,7 +780,7 @@ Return ONLY the JSON object, no other text.`
     message += `\n`;
 
     // Format each day
-    const dayNames = ['Day 1 - Tuesday, Oct 15', 'Day 2 - Wednesday, Oct 16', 'Day 3 - Thursday, Oct 17'];
+    const dayNames = ['Day 1 - Tuesday, Oct 14', 'Day 2 - Wednesday, Oct 15', 'Day 3 - Thursday, Oct 16'];
 
     for (const [dayKey, daySchedule] of Object.entries(agenda.days)) {
       const dayNum = parseInt(dayKey.replace('day', '')) - 1;

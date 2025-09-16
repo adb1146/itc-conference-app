@@ -53,7 +53,7 @@ function IntelligentAgendaContent() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [filteredSessions, setFilteredSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedDay, setSelectedDay] = useState('2025-10-15');
+  const [selectedDay, setSelectedDay] = useState('2025-10-14');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTrack, setSelectedTrack] = useState('all');
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
@@ -93,9 +93,9 @@ function IntelligentAgendaContent() {
     // Handle day parameter (convert from day number to date)
     if (dayParam) {
       const dayMap = {
-        '1': '2025-10-15',
-        '2': '2025-10-16',
-        '3': '2025-10-17'
+        '1': '2025-10-14',
+        '2': '2025-10-15',
+        '3': '2025-10-16'
       };
       const targetDate = dayMap[dayParam as keyof typeof dayMap];
       if (targetDate && targetDate !== selectedDay) {
@@ -127,13 +127,13 @@ function IntelligentAgendaContent() {
 
       // Update insights for the new day
       const day1Count = allAiSearchResults.filter(s =>
-        new Date(s.startTime).toISOString().split('T')[0] === '2025-10-15'
+        new Date(s.startTime).toISOString().split('T')[0] === '2025-10-14'
       ).length;
       const day2Count = allAiSearchResults.filter(s =>
-        new Date(s.startTime).toISOString().split('T')[0] === '2025-10-16'
+        new Date(s.startTime).toISOString().split('T')[0] === '2025-10-15'
       ).length;
       const day3Count = allAiSearchResults.filter(s =>
-        new Date(s.startTime).toISOString().split('T')[0] === '2025-10-17'
+        new Date(s.startTime).toISOString().split('T')[0] === '2025-10-16'
       ).length;
 
       setAiInsights([{
@@ -499,13 +499,13 @@ function IntelligentAgendaContent() {
 
         // Count sessions for each day to give better feedback
         const day1Count = allAiSessions.filter((s: Session) =>
-          new Date(s.startTime).toISOString().split('T')[0] === '2025-10-15'
+          new Date(s.startTime).toISOString().split('T')[0] === '2025-10-14'
         ).length;
         const day2Count = allAiSessions.filter((s: Session) =>
-          new Date(s.startTime).toISOString().split('T')[0] === '2025-10-16'
+          new Date(s.startTime).toISOString().split('T')[0] === '2025-10-15'
         ).length;
         const day3Count = allAiSessions.filter((s: Session) =>
-          new Date(s.startTime).toISOString().split('T')[0] === '2025-10-17'
+          new Date(s.startTime).toISOString().split('T')[0] === '2025-10-16'
         ).length;
 
         // Add comprehensive insight about the search with performance info
@@ -704,9 +704,9 @@ function IntelligentAgendaContent() {
         {/* Day Selector */}
         <div className="flex gap-2 px-4 py-3 border-t border-gray-100">
           {[
-            { date: '2025-10-15', label: 'Day 1', subLabel: 'Oct 15' },
-            { date: '2025-10-16', label: 'Day 2', subLabel: 'Oct 16' },
-            { date: '2025-10-17', label: 'Day 3', subLabel: 'Oct 17' },
+            { date: '2025-10-14', label: 'Day 1', subLabel: 'Oct 14' },
+            { date: '2025-10-15', label: 'Day 2', subLabel: 'Oct 15' },
+            { date: '2025-10-16', label: 'Day 3', subLabel: 'Oct 16' },
           ].map((day) => (
             <button
               key={day.date}

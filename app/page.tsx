@@ -2,153 +2,234 @@
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import HomeChatInput from '@/components/HomeChatInput'
-import { PSAdvisoryHomepage } from '@/components/ps-advisory-homepage'
-import { Calendar, Brain, Clock, Sparkles, ArrowRight } from 'lucide-react'
+import { Sparkles, Mic } from 'lucide-react'
 
 export default function HomePage() {
   const { data: session } = useSession()
-  const [daysUntil, setDaysUntil] = useState(0)
+  const router = useRouter()
+  const [query, setQuery] = useState('')
+  const [isListening, setIsListening] = useState(false)
+  const [placeholder, setPlaceholder] = useState('Ask about sessions, speakers, or get schedule recommendations')
 
+  // Rotating placeholder suggestions
   useEffect(() => {
-    const conferenceDate = new Date('2025-10-15') // Conference starts Oct 15
-    const today = new Date()
-    const diffTime = Math.abs(conferenceDate.getTime() - today.getTime())
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-    setDaysUntil(diffDays)
+    const suggestions = [
+      'Ask about ITC Vegas sessions, speakers, or networking events',
+      'Which sessions cover AI in underwriting?',
+      'Who are the keynote speakers this year?',
+      'Find networking opportunities for CTOs',
+      'What\'s new in claims automation?',
+      'Show me sessions about cyber insurance',
+      'Build my personalized 3-day agenda',
+      'When is the opening reception?'
+    ]
+
+    let index = 0
+    const interval = setInterval(() => {
+      index = (index + 1) % suggestions.length
+      setPlaceholder(suggestions[index])
+    }, 4000)
+
+    return () => clearInterval(interval)
   }, [])
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (query.trim()) {
+      router.push(`/chat?message=${encodeURIComponent(query)}`)
+    }
+  }
+
+  const quickPrompts = [
+    {
+      text: 'Find AI sessions',
+      example: 'on underwriting automation'
+    },
+    {
+      text: 'Who\'s speaking about',
+      example: 'claims technology'
+    },
+    {
+      text: 'Build my schedule for',
+      example: 'Day 2 (Oct 15)'
+    },
+    {
+      text: 'What\'s trending in',
+      example: 'cyber insurance'
+    }
+  ]
+
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center">
-      <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Countdown Badge */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center space-x-2 px-4 py-2 bg-gray-50 rounded-full mb-6">
-            <Clock className="w-4 h-4 text-gray-600" />
-            <span className="text-sm font-medium text-gray-700">
-              {daysUntil} days until ITC Vegas 2025
+    <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-white">
+      <div className="flex flex-col items-center justify-center min-h-screen px-4">
+        {/* Header */}
+        <div className="w-full max-w-4xl mb-8">
+          <h1 className="text-center mb-6">
+            <span className="text-4xl md:text-5xl font-normal bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+              Meet ITC Concierge,
             </span>
-          </div>
+            <br />
+            <span className="text-4xl md:text-5xl font-normal text-gray-800">
+              your personal AI assistant
+            </span>
+          </h1>
 
-          {/* PS Advisory Badge */}
-          <div className="inline-flex items-center space-x-2 px-4 py-2 bg-purple-50 rounded-full mb-8">
-            <Sparkles className="w-4 h-4 text-purple-600" />
-            <span className="text-sm font-medium text-purple-700">Powered by PS Advisory</span>
-            <span className="text-xs text-purple-600">• AI + Salesforce for Insurance</span>
-          </div>
-        </div>
-
-        {/* Main Heading */}
-        <h1 className="text-center mb-6">
-          <span className="block text-5xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-600 mb-2">
-            Your AI Conference
-          </span>
-          <span className="block text-5xl md:text-6xl font-bold text-gray-900">
-            Concierge is Ready
-          </span>
-        </h1>
-
-        <p className="text-center text-lg md:text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-          Experience ITC Vegas 2025 (Oct 14-16) with an AI assistant that understands context, tracks time, and creates your perfect 3-day journey through 100+ sessions.
-        </p>
-
-        {/* Demo Site Notice */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center space-x-2 px-3 py-1.5 bg-orange-50 rounded-full mb-4">
-            <span className="text-sm text-orange-700">📍 Demo Site - Not affiliated with ITC</span>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-center gap-4 text-sm">
-            <a
-              href="https://www.psadvisory.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center space-x-1 text-purple-600 hover:text-purple-700 font-medium transition-colors"
-            >
-              <span>Visit PS Advisory</span>
-              <ArrowRight className="w-3 h-3" />
-            </a>
-            <span className="text-gray-400">•</span>
-            <a
-              href="https://vegas.insuretechconnect.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center space-x-1 text-orange-600 hover:text-orange-700 font-medium transition-colors"
-            >
-              <span>Official ITC Vegas Site</span>
-              <ArrowRight className="w-3 h-3" />
-            </a>
+          {/* Purpose Statement */}
+          <div className="max-w-2xl mx-auto text-center mb-8">
+            <p className="text-gray-600 text-lg leading-relaxed">
+              Navigate <span className="font-semibold text-purple-600">295+ sessions</span> and <span className="font-semibold text-blue-600">200+ speakers</span> at ITC Vegas 2025 with ease.
+              Our AI understands the conference context, tracks Vegas time, and helps you build the perfect agenda for your insurance tech journey.
+            </p>
+            <div className="flex items-center justify-center gap-6 mt-4 text-sm text-gray-500">
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                AI-Powered Search
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                Smart Scheduling
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></span>
+                Personalized Insights
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Chat Input */}
-        <div className="mb-8">
-          <HomeChatInput />
+        {/* Search Box */}
+        <div className="w-full max-w-3xl mb-12">
+          <form onSubmit={handleSubmit} className="relative">
+            <div className="relative flex items-center">
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={placeholder}
+                className="w-full px-6 py-4 pr-24 text-lg bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:border-gray-400 focus:bg-white transition-all"
+                autoFocus
+              />
+              <div className="absolute right-2 flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setIsListening(!isListening)}
+                  className="p-3 text-gray-500 hover:text-gray-700 transition-colors"
+                  aria-label="Voice input"
+                >
+                  <Mic className={`w-5 h-5 ${isListening ? 'text-red-500' : ''}`} />
+                </button>
+                <button
+                  type="submit"
+                  className="p-3 text-gray-500 hover:text-gray-700 transition-colors"
+                  aria-label="Ask ITC Concierge"
+                >
+                  <Sparkles className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </form>
         </div>
 
-        {/* Welcome Message */}
-        <p className="text-center text-sm text-gray-600 mb-8">
-          Ask your AI Concierge about sessions, speakers, or schedule recommendations
-        </p>
-
-        {/* PS Advisory CTA */}
-        <div className="mb-12">
-          <PSAdvisoryHomepage />
+        {/* Quick Prompts */}
+        <div className="w-full max-w-3xl">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {quickPrompts.map((prompt, index) => {
+              const colors = [
+                'hover:border-purple-300 hover:bg-purple-50',
+                'hover:border-blue-300 hover:bg-blue-50',
+                'hover:border-green-300 hover:bg-green-50',
+                'hover:border-orange-300 hover:bg-orange-50'
+              ]
+              return (
+                <button
+                  key={index}
+                  onClick={() => setQuery(`${prompt.text} ${prompt.example}`)}
+                  className={`text-left p-4 bg-white border border-gray-200 rounded-2xl transition-all group ${colors[index]}`}
+                >
+                  <div className="text-sm font-medium text-gray-700 mb-1">
+                    {prompt.text}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {prompt.example}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link
-            href="/chat"
-            className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium text-white bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all"
-          >
-            <Brain className="w-5 h-5 mr-2" />
-            Start with AI Concierge
-            <Sparkles className="w-4 h-4 ml-2" />
+        {/* Why We Built This */}
+        <div className="w-full max-w-2xl mt-12 p-6 bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl border border-purple-100">
+          <h3 className="text-sm font-semibold text-purple-700 mb-2">Why we built ITC Concierge</h3>
+          <p className="text-xs text-gray-600 leading-relaxed">
+            With hundreds of sessions across multiple tracks, finding the right content at ITC Vegas can be overwhelming.
+            We created this AI assistant to help you discover hidden gems, avoid scheduling conflicts, and maximize your
+            conference ROI. Whether you're a CTO exploring innovation or an underwriter seeking automation insights,
+            our AI understands your needs and guides you to the most relevant sessions.
+          </p>
+          <div className="flex items-center gap-4 mt-3">
+            <span className="text-xs text-purple-600 font-medium">Built by PS Advisory</span>
+            <span className="text-xs text-gray-400">•</span>
+            <span className="text-xs text-gray-500">Powered by Claude AI</span>
+          </div>
+        </div>
+
+        {/* Subtle branding */}
+        <div className="absolute top-4 left-4">
+          <Link href="/" className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors">
+            <span className="text-xl font-normal">ITC Vegas</span>
+            <span className="text-xs px-2 py-1 bg-gray-100 rounded-full">2025</span>
           </Link>
+        </div>
 
+        {/* Top navigation */}
+        <div className="absolute top-4 right-4 flex items-center space-x-4">
           <Link
             href="/agenda"
-            className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium text-purple-700 bg-purple-50 border-2 border-purple-200 rounded-xl hover:bg-purple-100 hover:border-purple-300 transition-all"
+            className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
           >
-            <Calendar className="w-5 h-5 mr-2" />
-            Browse Agenda
-            <ArrowRight className="w-4 h-4 ml-2" />
+            Conference Agenda
           </Link>
-        </div>
-
-        {/* User Welcome */}
-        <div className="mt-8 text-center">
+          <Link
+            href="/speakers"
+            className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            Speakers
+          </Link>
+          <Link
+            href="/favorites"
+            className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            My Schedule
+          </Link>
           {session ? (
-            <p className="text-sm text-gray-600">
-              Welcome back, <span className="font-medium">{session.user?.name || 'Test User'}</span>!
-            </p>
+            <span className="text-sm text-gray-600">
+              {session.user?.name || 'User'}
+            </span>
           ) : (
-            <p className="text-sm text-gray-600">
-              Welcome back, Test User!
-            </p>
+            <Link
+              href="/auth/signin"
+              className="text-sm px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Sign in
+            </Link>
           )}
         </div>
 
-        {/* Footer Info */}
-        <div className="mt-12 pt-8 border-t border-gray-200">
-          <div className="flex flex-wrap justify-center items-center gap-6 text-xs text-gray-500">
-            <span>Las Vegas, NV</span>
-            <span>{new Date().toLocaleDateString('en-US', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-              timeZone: 'America/Los_Angeles',
-              timeZoneName: 'short'
-            })}</span>
+        {/* Footer */}
+        <div className="absolute bottom-4 w-full">
+          <div className="flex justify-center items-center space-x-4 text-xs text-gray-500">
+            <Link href="https://www.psadvisory.com" target="_blank" className="hover:underline">
+              PS Advisory
+            </Link>
+            <span>and the</span>
+            <Link href="https://vegas.insuretechconnect.com" target="_blank" className="hover:underline">
+              ITC Vegas
+            </Link>
+            <span>apply. This is a demo, not affiliated with ITC.</span>
           </div>
-          <p className="text-center text-xs text-gray-400 mt-2">
-            {daysUntil} days until conference
-          </p>
         </div>
       </div>
     </div>

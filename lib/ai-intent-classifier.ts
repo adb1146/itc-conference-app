@@ -87,6 +87,10 @@ Examples:
 "What sessions should I attend?" → information_seeking (asking for recommendations only)
 "Create my personalized schedule" → agenda_building (explicit creation request)
 "Any good restaurants nearby?" → local_recommendations
+"What can you tell me about claims?" → information_seeking (asking about a topic)
+"Tell me about AI sessions" → information_seeking (asking about sessions on a topic)
+"What's available on cybersecurity?" → information_seeking (asking about a topic)
+"Show me underwriting sessions" → information_seeking (asking for specific sessions)
 "I'm interested in AI and cybersecurity" → preference_setting (providing preferences)
 "I'm exhausted" → practical_need (expressing tiredness)
 "Where can I get coffee?" → practical_need (need for coffee)

@@ -23,7 +23,9 @@ export async function POST(
     // Construct search queries - more specific for better results
     const searchQueries = {
       speaker: `${speaker.name} ${speaker.company} ${speaker.role} insurtech linkedin profile background`,
-      company: `${speaker.company} insurance technology insurtech company services products`
+      company: speaker.company ?
+        `"${speaker.company}" company overview insurance technology insurtech fintech startup services products` :
+        null
     };
     
     // Construct the full URL for internal API calls (matching the running port)
@@ -40,19 +42,44 @@ export async function POST(
       })
     });
     
-    // Fetch company profile from web
-    const companyProfileResponse = await fetch(`${baseUrl}/api/web-search`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        query: searchQueries.company,
-        context: 'Extract company overview, insurance technology services, products, market position, recent news, and innovations in insurtech.',
-        blockedDomains: ['wikipedia.org'] // Avoid generic wiki content
-      })
-    });
-    
+    // Fetch company profile from web (only if company exists)
+    let companyProfileResponse = null;
+    let companyProfile = { content: null };
+
+    if (searchQueries.company && speaker.company) {
+      companyProfileResponse = await fetch(`${baseUrl}/api/web-search`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: searchQueries.company,
+          context: 'Extract company overview, insurance technology services, products, market position, recent news, and innovations in insurtech. If this is a startup or smaller company, provide any available information about their mission, founding, and focus areas.',
+          blockedDomains: ['wikipedia.org'] // Avoid generic wiki content
+        })
+      });
+
+      companyProfile = await companyProfileResponse.json();
+
+      // If we didn't get good company data, try a broader search
+      if (!companyProfile.content || companyProfile.content.includes('Mock profile') || companyProfile.content.length < 100) {
+        console.log(`Limited data for ${speaker.company}, trying broader search...`);
+
+        const broaderSearchResponse = await fetch(`${baseUrl}/api/web-search`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: `${speaker.name} ${speaker.company} company background mission`,
+            context: `Find information about the company ${speaker.company} where ${speaker.name} works as ${speaker.role}. Look for company description, mission, services, or any mentions in industry news.`
+          })
+        });
+
+        const broaderResults = await broaderSearchResponse.json();
+        if (broaderResults.content && broaderResults.content.length > companyProfile.content?.length) {
+          companyProfile = broaderResults;
+        }
+      }
+    }
+
     const speakerProfile = await speakerProfileResponse.json();
-    const companyProfile = await companyProfileResponse.json();
     
     // Parse LinkedIn URL if found
     const linkedinPattern = /linkedin\.com\/in\/([a-zA-Z0-9-]+)/;
@@ -201,7 +228,14 @@ export async function POST(
     };
 
     const cleanedSpeakerProfile = formatProfileContent(speakerProfile.content);
-    const cleanedCompanyProfile = formatProfileContent(companyProfile.content);
+
+    // Handle company profile - provide context if no data found
+    let cleanedCompanyProfile = formatProfileContent(companyProfile.content);
+
+    // If still no company profile after all attempts, provide a contextual message
+    if (!cleanedCompanyProfile && speaker.company) {
+      cleanedCompanyProfile = `${speaker.company} is operating in the insurtech space. While detailed public information about the company is limited, they are represented at ITC Vegas 2025 by ${speaker.name}, who serves as ${speaker.role || 'a key member of the team'}.`;
+    }
 
     // Update speaker profile in database
     const updatedSpeaker = await prisma.speaker.update({

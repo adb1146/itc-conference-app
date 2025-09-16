@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import { SmartAgenda, ScheduleItem, DaySchedule } from '@/lib/tools/schedule/types';
 import {
   Calendar, Clock, MapPin, Star, Bot, Coffee,
@@ -18,6 +19,7 @@ interface SmartAgendaViewProps {
   onItemReplace?: (itemId: string, alternativeId: string) => void;
   onRegenerateDay?: (dayNumber: number) => void;
   onExport?: (format: 'ics' | 'pdf' | 'email') => void;
+  onItemFavorite?: (sessionId: string) => void;
   editable?: boolean;
 }
 
@@ -27,12 +29,78 @@ export default function SmartAgendaView({
   onItemReplace,
   onRegenerateDay,
   onExport,
+  onItemFavorite,
   editable = true
 }: SmartAgendaViewProps) {
+  const { data: session, status } = useSession();
   const [expandedDays, setExpandedDays] = useState<Set<number>>(new Set([1]));
   const [showAlternatives, setShowAlternatives] = useState<Set<string>>(new Set());
   const [editMode, setEditMode] = useState(false);
   const [searchingDay, setSearchingDay] = useState<{dayNumber: number, date: string} | null>(null);
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [favoriteLoading, setFavoriteLoading] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (status === 'authenticated') {
+      fetchFavorites();
+    }
+  }, [status]);
+
+  const fetchFavorites = async () => {
+    try {
+      const response = await fetch('/api/favorites');
+      if (response.ok) {
+        const data = await response.json();
+        setFavorites(data.favorites?.filter((f: any) => f.type === 'session').map((f: any) => f.sessionId) || []);
+      }
+    } catch (error) {
+      console.error('Error fetching favorites:', error);
+    }
+  };
+
+  const toggleFavorite = async (e: React.MouseEvent, sessionId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (status !== 'authenticated') {
+      return;
+    }
+
+    setFavoriteLoading(sessionId);
+    const isFavorited = favorites.includes(sessionId);
+
+    try {
+      let response;
+      if (isFavorited) {
+        response = await fetch(`/api/favorites?type=session&sessionId=${sessionId}`, {
+          method: 'DELETE'
+        });
+      } else {
+        response = await fetch('/api/favorites', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId,
+            type: 'session'
+          })
+        });
+      }
+
+      if (response.ok) {
+        if (isFavorited) {
+          setFavorites(favorites.filter(id => id !== sessionId));
+        } else {
+          setFavorites([...favorites, sessionId]);
+        }
+        // Call parent handler if provided
+        onItemFavorite?.(sessionId);
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+    } finally {
+      setFavoriteLoading(null);
+    }
+  };
 
   const toggleDay = (dayNumber: number) => {
     const newExpanded = new Set(expandedDays);
@@ -67,11 +135,14 @@ export default function SmartAgendaView({
   };
 
   const getSourceBadge = (item: ScheduleItem) => {
-    if (item.source === 'user-favorite') {
+    const sessionId = item.id.replace('session-', '');
+    const isNowFavorited = favorites.includes(sessionId);
+
+    if (item.source === 'user-favorite' || (item.source === 'ai-suggested' && isNowFavorited)) {
       return (
         <span className="inline-flex items-center px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">
           <Star className="w-3 h-3 mr-1" />
-          Your Favorite
+          {item.source === 'user-favorite' ? 'Your Favorite' : 'Now Favorited'}
         </span>
       );
     }
@@ -267,7 +338,7 @@ export default function SmartAgendaView({
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-3">
                 <div className="text-lg font-semibold text-gray-900">
-                  Day {day.dayNumber} - {new Date(day.date).toLocaleDateString('en-US', {
+                  Day {day.dayNumber} - {new Date(day.date + 'T12:00:00').toLocaleDateString('en-US', {
                     weekday: 'long',
                     month: 'long',
                     day: 'numeric'
@@ -455,18 +526,49 @@ export default function SmartAgendaView({
                       </div>
 
                       {/* Actions */}
-                      {editMode && (
-                        <div className="flex gap-2 ml-3">
-                          {false && (
-                            <button
-                              onClick={() => toggleAlternatives(item.id)}
-                              className="p-2 text-gray-600 hover:bg-white rounded-lg transition-colors"
-                              title="Show alternatives"
-                            >
-                              <RefreshCw className="w-4 h-4" />
-                            </button>
-                          )}
-                          {editMode && (
+                      <div className="flex gap-2 ml-3">
+                        {/* Show favorite button for AI-suggested sessions when authenticated */}
+                        {status === 'authenticated' && isSession && item.source === 'ai-suggested' && (
+                          <button
+                            onClick={(e) => {
+                              const sessionId = item.id.replace('session-', '');
+                              toggleFavorite(e, sessionId);
+                            }}
+                            className={`p-2 rounded-lg transition-colors ${
+                              favorites.includes(item.id.replace('session-', ''))
+                                ? 'bg-purple-100 text-purple-600 hover:bg-purple-200'
+                                : 'bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600'
+                            } ${
+                              favoriteLoading === item.id.replace('session-', '') ? 'opacity-50 cursor-wait' : ''
+                            }`}
+                            disabled={favoriteLoading === item.id.replace('session-', '')}
+                            title={
+                              favorites.includes(item.id.replace('session-', ''))
+                                ? 'Remove from favorites'
+                                : 'Add to favorites'
+                            }
+                          >
+                            <Star
+                              className="w-4 h-4"
+                              fill={
+                                favorites.includes(item.id.replace('session-', ''))
+                                  ? 'currentColor'
+                                  : 'none'
+                              }
+                            />
+                          </button>
+                        )}
+                        {editMode && (
+                          <>
+                            {false && (
+                              <button
+                                onClick={() => toggleAlternatives(item.id)}
+                                className="p-2 text-gray-600 hover:bg-white rounded-lg transition-colors"
+                                title="Show alternatives"
+                              >
+                                <RefreshCw className="w-4 h-4" />
+                              </button>
+                            )}
                             <button
                               onClick={() => onItemRemove?.(item.id)}
                               className="p-2 text-red-600 hover:bg-white rounded-lg transition-colors"
@@ -474,9 +576,9 @@ export default function SmartAgendaView({
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
-                          )}
-                        </div>
-                      )}
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );

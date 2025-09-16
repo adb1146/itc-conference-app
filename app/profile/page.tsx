@@ -204,19 +204,23 @@ export default function ProfilePage() {
       <UserDashboard activeTab="profile" />
 
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-xl shadow-sm p-8">
+        <div className="bg-white/80 backdrop-blur rounded-2xl shadow-xl border border-purple-100 p-8">
           <div className="flex items-center justify-between mb-8">
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <User className="w-6 h-6" />
-              My Profile
-            </h1>
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-gradient-to-br from-purple-100 to-blue-100 rounded-xl shadow-md">
+                <User className="w-7 h-7 text-purple-600" />
+              </div>
+              <h1 className="text-3xl font-normal">
+                <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">My Profile</span>
+              </h1>
+            </div>
             <button
               onClick={handleSave}
               disabled={saving}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all shadow-md hover:shadow-lg ${
                 saving
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700'
               }`}
             >
               {saving ? (
@@ -234,7 +238,7 @@ export default function ProfilePage() {
           </div>
 
           {successMessage && (
-            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-green-800">
+            <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-teal-50 border border-green-200 rounded-xl flex items-center gap-2 text-green-800">
               <CheckCircle className="w-5 h-5" />
               {successMessage}
             </div>
@@ -242,8 +246,8 @@ export default function ProfilePage() {
 
           {/* Basic Information */}
           <div className="space-y-6 mb-8">
-            <h2 className="text-lg font-semibold text-gray-900 border-b pb-2">
-              Basic Information
+            <h2 className="text-xl font-normal border-b border-purple-200 pb-3">
+              <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent font-medium">Basic Information</span>
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -255,7 +259,7 @@ export default function ProfilePage() {
                   type="text"
                   value={profileData.name}
                   onChange={(e) => setProfileData(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white/50"
                   placeholder="John Doe"
                 />
               </div>
@@ -268,20 +272,20 @@ export default function ProfilePage() {
                   type="email"
                   value={profileData.email}
                   disabled
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 text-gray-500"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <Building className="w-4 h-4 inline mr-1" />
+                  <Building className="w-4 h-4 inline mr-1 text-purple-600" />
                   Company
                 </label>
                 <input
                   type="text"
                   value={profileData.company}
                   onChange={(e) => setProfileData(prev => ({ ...prev, company: e.target.value }))}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white/50"
                   placeholder="Acme Insurance Co."
                 />
               </div>

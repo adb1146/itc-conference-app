@@ -239,9 +239,9 @@ export default function SessionDetailPage() {
     return (
       <>
         <Navigation />
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+        <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-white flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
             <p className="mt-4 text-gray-600">Loading session details...</p>
           </div>
         </div>
@@ -253,14 +253,18 @@ export default function SessionDetailPage() {
     return (
       <>
         <Navigation />
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
-          <div className="text-center max-w-md">
-            <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Session Not Found</h1>
-            <p className="text-gray-600 mb-6">{error || 'The session you are looking for could not be found.'}</p>
+        <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-white flex items-center justify-center">
+          <div className="text-center max-w-md bg-white/80 backdrop-blur rounded-2xl p-10 border border-purple-100 shadow-xl">
+            <div className="p-3 bg-gradient-to-br from-red-100 to-pink-100 rounded-full w-20 h-20 mx-auto mb-6 flex items-center justify-center">
+              <AlertCircle className="w-10 h-10 text-red-500" />
+            </div>
+            <h1 className="text-2xl font-normal mb-3">
+              <span className="bg-gradient-to-r from-red-600 to-pink-600 bg-clip-text text-transparent">Session Not Found</span>
+            </h1>
+            <p className="text-gray-600 mb-8">{error || 'The session you are looking for could not be found.'}</p>
             <button
-              onClick={() => router.push('/agenda/intelligent')}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+              onClick={() => router.push('/agenda/simple')}
+              className="px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:to-blue-700 transition-all shadow-md hover:shadow-lg"
             >
               View All Sessions
             </button>
@@ -273,22 +277,24 @@ export default function SessionDetailPage() {
   return (
     <>
       <Navigation />
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-white">
         <div className="container mx-auto px-4 py-8 max-w-4xl">
           {/* Back Button */}
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-6 transition"
+            className="flex items-center gap-2 text-purple-600 hover:text-purple-700 mb-6 transition-all group"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
             <span>Back</span>
           </button>
 
           {/* Session Header */}
-          <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
+          <div className="bg-white/80 backdrop-blur rounded-2xl shadow-xl border border-purple-100 p-8 mb-6">
             <div className="flex justify-between items-start mb-6">
               <div className="flex-1">
-                <h1 className="text-3xl font-bold text-gray-900 mb-4">{session.title}</h1>
+                <h1 className="text-3xl font-normal mb-4">
+                  <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">{session.title}</span>
+                </h1>
 
                 {/* Tags */}
                 {session.tags && session.tags.length > 0 && (
@@ -296,7 +302,7 @@ export default function SessionDetailPage() {
                     {session.tags.map((tag, index) => (
                       <span
                         key={index}
-                        className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm"
+                        className="px-4 py-1.5 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 rounded-xl text-sm font-medium"
                       >
                         {tag}
                       </span>
@@ -314,14 +320,14 @@ export default function SessionDetailPage() {
                 />
                 <button
                   onClick={askAIAboutSession}
-                  className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                  className="p-2.5 text-purple-400 hover:text-purple-600 hover:bg-purple-50 rounded-xl transition-all"
                   title="Ask AI about this session"
                 >
                   <MessageCircle className="h-6 w-6" />
                 </button>
                 <button
                   onClick={shareSession}
-                  className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                  className="p-2.5 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
                   title="Share session"
                 >
                   <Share2 className="h-6 w-6" />

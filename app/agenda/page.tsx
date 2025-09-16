@@ -8,9 +8,9 @@ function AgendaRedirect() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    // Preserve query parameters when redirecting to the intelligent agenda page
+    // Preserve query parameters when redirecting to the simple agenda page
     const params = searchParams.toString();
-    const redirectUrl = params ? `/agenda/intelligent?${params}` : '/agenda/intelligent';
+    const redirectUrl = params ? `/agenda/simple?${params}` : '/agenda/simple';
     router.replace(redirectUrl);
   }, [router, searchParams]);
 

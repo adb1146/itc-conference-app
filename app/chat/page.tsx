@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { useChatPersistence } from '@/hooks/useChatPersistence';
 import { PreferenceSelector, type PreferenceOption } from '@/components/chat/preference-selector';
 import { MessageFormatter } from '@/components/chat/message-formatter';
+import { GeminiStyleChat } from '@/components/chat/GeminiStyleChat';
 
 interface Message {
   id: string;
@@ -1404,284 +1405,28 @@ function ChatContent() {
     }
   };
 
+  // Transform messages for GeminiStyleChat
+  const geminiMessages = messages
+    .filter(msg => msg.role !== 'system')
+    .map(msg => ({
+      id: msg.id,
+      role: msg.role as 'user' | 'assistant',
+      content: msg.content,
+      timestamp: msg.timestamp
+    }));
+
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col pt-20">
-      <div className="flex-1 flex items-center justify-center px-4 pb-4 min-h-0">
-        <div className="w-full max-w-6xl h-full flex flex-col">
-          <div className="bg-white rounded-2xl shadow-xl flex flex-col flex-1 min-h-0">
-            {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-white/20 rounded-lg flex items-center justify-center">
-                  <Bot className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold text-white">AI Conference Concierge</h1>
-                  <p className="text-blue-100 text-sm">
-                    {session?.user 
-                      ? `Welcome back, ${(session.user as any).name?.split(' ')[0] || 'Attendee'}` 
-                      : 'Your intelligent guide to ITC Vegas 2025'}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                {messages.length > 1 && (
-                  <button
-                    onClick={() => {
-                      clearHistory();
-                      setHasGreeted(false);
-                    }}
-                    className="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white text-sm rounded-lg transition-colors flex items-center gap-2"
-                    title="Clear chat history"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                    Clear
-                  </button>
-                )}
-                <div className="flex items-center gap-2 text-blue-100">
-                  <Calendar className="w-4 h-4" />
-                  <span className="text-sm">Oct 14-16, 2025</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Messages Container */}
-          <div ref={messagesContainerRef} className="flex-1 overflow-y-auto bg-gray-50 p-6 min-h-0">
-            <div className="space-y-4">
-              {messages.map((message) => {
-                if (message.role === 'system') {
-                  if (message.actionType === 'auth') {
-                    return (
-                      <div key={message.id} className="flex justify-center my-6">
-                        {!showAuthForm ? (
-                          <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl p-6 max-w-md border border-purple-200">
-                            <div className="flex flex-col sm:flex-row gap-3">
-                              <button
-                                onClick={() => setShowAuthForm('signin')}
-                                className="flex-1 bg-white text-purple-700 py-3 px-4 rounded-xl hover:shadow-md transition-all flex items-center justify-center gap-2 border border-purple-200"
-                              >
-                                <LogIn className="w-5 h-5" />
-                                Sign In
-                              </button>
-                              <button
-                                onClick={() => setShowAuthForm('register')}
-                                className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 px-4 rounded-xl hover:shadow-md transition-all flex items-center justify-center gap-2"
-                              >
-                                <UserPlus className="w-5 h-5" />
-                                Create Account
-                              </button>
-                            </div>
-                            <p className="text-xs text-gray-600 text-center mt-4">
-                              Or continue exploring without an account
-                            </p>
-                          </div>
-                        ) : (
-                          renderAuthForm(showAuthForm)
-                        )}
-                      </div>
-                    );
-                  }
-                  
-                  if (message.actionType === 'profile') {
-                    return (
-                      <div key={message.id} className="flex justify-center my-6">
-                        {!showAuthForm ? (
-                          <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl p-6 max-w-md border border-purple-200">
-                            <div className="flex flex-col gap-3">
-                              <button
-                                onClick={() => setShowAuthForm('profile')}
-                                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 px-4 rounded-xl hover:shadow-md transition-all flex items-center justify-center gap-2"
-                              >
-                                <User className="w-5 h-5" />
-                                Complete My Profile
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setMessages(prev => [...prev, {
-                                    id: generateMessageId(),
-                                    role: 'assistant',
-                                    content: "No problem! You can complete your profile anytime. Just let me know when you're ready.\n\nWhat would you like to explore about the conference?",
-                                    timestamp: new Date()
-                                  }]);
-                                }}
-                                className="w-full text-sm text-gray-600 hover:text-gray-800"
-                              >
-                                Maybe later
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          renderAuthForm(showAuthForm)
-                        )}
-                      </div>
-                    );
-                  }
-                  
-                  return null;
-                }
-
-                return (
-                  <div
-                    key={message.id}
-                    className={`flex gap-3 ${
-                      message.role === 'user' ? 'justify-end' : 'justify-start'
-                    }`}
-                  >
-                    {message.role === 'assistant' && (
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                        <Bot className="w-5 h-5 text-white" />
-                      </div>
-                    )}
-                    <div
-                      className={`max-w-[70%] rounded-lg px-4 py-3 ${
-                        message.role === 'user'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-white border border-gray-200'
-                      }`}
-                    >
-                      <div className={`text-sm ${message.role === 'assistant' ? 'text-gray-800 space-y-2' : 'text-white'}`}>
-                        {message.role === 'user' ? (
-                          // Simple rendering for user messages to preserve white text
-                          <p className="text-white">{message.content}</p>
-                        ) : (
-                          <>
-                            {/* Rich formatting for assistant messages with clickable content */}
-                            {typeof message.content === 'string'
-                              ? <MessageFormatter
-                                  content={message.content}
-                                  onSuggestionClick={(suggestion) => {
-                                    setInput(suggestion);
-                                    // Auto-submit after a brief delay
-                                    setTimeout(() => {
-                                      const submitButton = document.querySelector('[data-testid="send-button"]') as HTMLButtonElement;
-                                      submitButton?.click();
-                                    }, 100);
-                                  }}
-                                />
-                              : message.content
-                            }
-                            {/* Render interactive preference selector if present */}
-                            {message.interactiveContent?.type === 'preference_collection' && message.interactiveContent.options && (
-                              <PreferenceSelector
-                                options={message.interactiveContent.options}
-                                onSelectionChange={(selected) => {
-                                  // This could be used to track selections
-                                  console.log('Selected preferences:', selected);
-                                }}
-                                onSubmit={(prompt) => {
-                                  // Send the generated prompt as a new message
-                                  setInput(prompt);
-                                  // Auto-submit after a brief delay to allow user to see the prompt
-                                  setTimeout(() => {
-                                    const submitButton = document.querySelector('[data-testid="send-button"]') as HTMLButtonElement;
-                                    submitButton?.click();
-                                  }, 100);
-                                }}
-                              />
-                            )}
-                          </>
-                        )}
-                      </div>
-                      <p className={`text-xs mt-2 ${
-                        message.role === 'user' ? 'text-blue-100' : 'text-gray-400'
-                      }`}>
-                        {new Date(message.timestamp).toLocaleTimeString('en-US', {
-                          hour: 'numeric',
-                          minute: '2-digit',
-                          hour12: true
-                        })}
-                      </p>
-                    </div>
-                    {message.role === 'user' && (
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center">
-                        <User className="w-5 h-5 text-white" />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-              {isLoading && (
-                <div className="flex gap-3 justify-start">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                    <Bot className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="bg-white rounded-lg px-4 py-3 border border-gray-200">
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
-                      <span className="text-sm text-gray-600">Thinking...</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-          </div>
-
-          {/* Quick Actions - Show suggestions after responses */}
-          {!isLoading && !showAuthForm && (
-            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
-              <p className="text-sm font-medium text-gray-700 mb-3">
-                {messages.filter(m => m.role === 'user').length === 0
-                  ? '👋 Get started:'
-                  : messages.length > 2 && dynamicSuggestions.length > 0 && dynamicSuggestions[0].includes('What can')
-                    ? '💡 Discover features:'
-                    : messages.length > 2 && dynamicSuggestions.length > 0
-                      ? '🎯 Follow up:'
-                      : messages.length > 2
-                        ? 'Continue with:'
-                        : session?.user && (session.user as any).interests?.length > 0
-                          ? '✨ Quick actions:'
-                          : 'Try asking:'}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {getPersonalizedQuestions().map((question, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleSampleQuestion(question)}
-                    className="text-sm px-3 py-2 bg-white text-blue-700 rounded-lg hover:bg-blue-50 transition-colors border border-gray-300"
-                  >
-                    {question}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Input Form */}
-          <div className="p-6 bg-white border-t border-gray-200">
-            <form onSubmit={handleSubmit} className="flex gap-3">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder={
-                  session?.user 
-                    ? "Ask me anything about ITC Vegas..." 
-                    : "Ask about sessions, speakers, or sign in for personalized recommendations"
-                }
-                className="flex-1 px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                disabled={isLoading || showAuthForm !== null}
-              />
-              <button
-                type="submit"
-                data-testid="send-button"
-                disabled={!input.trim() || isLoading || showAuthForm !== null}
-                className="px-5 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
-              >
-                <Send className="w-4 h-4" />
-                <span className="hidden sm:inline">Send</span>
-              </button>
-            </form>
-            <p className="text-xs text-gray-500 text-center mt-3">
-              Powered by AI • ITC Vegas 2025 Conference Assistant
-            </p>
-            </div>
-          </div>
-        </div>
+    <div className="fixed inset-0 bg-white flex flex-col pt-20">
+      <div className="flex-1 min-h-0">
+        <GeminiStyleChat
+          messages={geminiMessages}
+          input={input}
+          isLoading={isLoading}
+          onInputChange={setInput}
+          onSubmit={() => sendMessage(input)}
+          suggestions={getPersonalizedQuestions()}
+          onClearChat={clearHistory}
+        />
       </div>
     </div>
   );

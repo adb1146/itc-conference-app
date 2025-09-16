@@ -342,39 +342,39 @@ export default function FavoritesPage() {
 
   if (status === 'unauthenticated') {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-white">
         <Navigation />
         <div className="h-16"></div>
         <div className="max-w-4xl mx-auto px-4 py-16">
-          <div className="bg-white rounded-xl shadow-lg p-8 text-center">
-            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Star className="w-8 h-8 text-blue-600" />
+          <div className="bg-white/80 backdrop-blur rounded-2xl shadow-xl border border-purple-100 p-10 text-center">
+            <div className="w-20 h-20 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+              <Star className="w-10 h-10 text-orange-500" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">
-              Sign In to View Your Favorites
+            <h1 className="text-3xl font-normal mb-4">
+              <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">Save Your Favorites</span>
             </h1>
-            <p className="text-gray-600 mb-8 max-w-md mx-auto">
+            <p className="text-gray-600 mb-8 max-w-md mx-auto text-lg leading-relaxed">
               Create an account or sign in to save your favorite sessions and speakers,
               build your personalized schedule, and get the most out of ITC Vegas 2025.
             </p>
             <div className="space-y-4 max-w-sm mx-auto">
               <Link
                 href="/auth/signin"
-                className="flex items-center justify-center gap-2 w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="flex items-center justify-center gap-2 w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:to-blue-700 transition-all shadow-md hover:shadow-lg"
               >
                 <LogIn className="w-5 h-5" />
                 Sign In
               </Link>
               <Link
                 href="/auth/register"
-                className="flex items-center justify-center gap-2 w-full px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                className="flex items-center justify-center gap-2 w-full px-6 py-3 bg-white border-2 border-purple-200 text-purple-700 rounded-xl hover:bg-purple-50 transition-all"
               >
                 <UserPlus className="w-5 h-5" />
                 Create Account
               </Link>
               <Link
                 href="/"
-                className="text-sm text-gray-500 hover:text-gray-700"
+                className="text-sm text-gray-500 hover:text-purple-600 transition-colors"
               >
                 Continue browsing without signing in
               </Link>
@@ -386,7 +386,7 @@ export default function FavoritesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-white">
       <Navigation />
 
       <div className="h-16"></div>
@@ -395,16 +395,18 @@ export default function FavoritesPage() {
       <UserDashboard activeTab="favorites" />
 
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white/80 backdrop-blur border-b border-purple-100">
         <div className="max-w-6xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                <Star className="w-6 h-6 text-yellow-500 fill-current" />
-                My Favorites
+              <h1 className="text-3xl font-normal flex items-center gap-3">
+                <div className="p-2.5 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-xl shadow-md">
+                  <Star className="w-7 h-7 text-orange-500 fill-current" />
+                </div>
+                <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">My Favorites</span>
               </h1>
-              <p className="text-sm text-gray-600 mt-1">
-                {favorites.length} saved {favorites.length === 1 ? 'item' : 'items'}
+              <p className="text-base text-gray-600 mt-2 ml-14">
+                <span className="font-medium text-purple-600">{favorites.length}</span> saved {favorites.length === 1 ? 'item' : 'items'}
               </p>
             </div>
 
@@ -413,10 +415,10 @@ export default function FavoritesPage() {
               <button
                 onClick={generateSmartAgenda}
                 disabled={generatingAgenda}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all shadow-md hover:shadow-lg ${
                   generatingAgenda
                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 shadow-md hover:shadow-lg'
+                    : 'bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700'
                 }`}
               >
                 {generatingAgenda ? (
@@ -439,46 +441,46 @@ export default function FavoritesPage() {
             <div className="flex gap-2">
               <button
                 onClick={() => setFilterType('all')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   filterType === 'all'
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'bg-white text-gray-600 border border-gray-200'
+                    ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-md'
+                    : 'bg-white text-gray-600 border border-purple-200 hover:bg-purple-50'
                 }`}
               >
                 All ({favorites.length})
               </button>
               <button
                 onClick={() => setFilterType('session')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
                   filterType === 'session'
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'bg-white text-gray-600 border border-gray-200'
+                    ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-md'
+                    : 'bg-white text-gray-600 border border-purple-200 hover:bg-purple-50'
                 }`}
               >
-                <Calendar className="w-4 h-4 inline mr-1" />
+                <Calendar className="w-4 h-4" />
                 Sessions ({favorites.filter(f => f.type === 'session').length})
               </button>
               <button
                 onClick={() => setFilterType('speaker')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
                   filterType === 'speaker'
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'bg-white text-gray-600 border border-gray-200'
+                    ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-md'
+                    : 'bg-white text-gray-600 border border-purple-200 hover:bg-purple-50'
                 }`}
               >
-                <Users className="w-4 h-4 inline mr-1" />
+                <Users className="w-4 h-4" />
                 Speakers ({favorites.filter(f => f.type === 'speaker').length})
               </button>
             </div>
 
             <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-purple-400" />
               <input
                 type="text"
                 placeholder="Search favorites..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className="w-full pl-10 pr-4 py-2.5 bg-white/50 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm placeholder-gray-400"
               />
             </div>
           </div>
@@ -488,9 +490,11 @@ export default function FavoritesPage() {
       {/* Content */}
       <div className="max-w-6xl mx-auto px-4 py-8">
         {filteredFavorites.length === 0 ? (
-          <div className="text-center py-12">
-            <Star className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-            <p className="text-gray-500">
+          <div className="text-center py-16 bg-white/50 backdrop-blur rounded-2xl border border-purple-100">
+            <div className="p-3 bg-gradient-to-br from-gray-100 to-purple-100 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+              <Star className="w-8 h-8 text-purple-400" />
+            </div>
+            <p className="text-gray-600 text-lg">
               {searchQuery
                 ? 'No favorites match your search'
                 : filterType === 'all'
@@ -498,7 +502,7 @@ export default function FavoritesPage() {
                 : `No ${filterType} favorites yet`}
             </p>
             {favorites.length === 0 && (
-              <p className="text-sm text-gray-400 mt-2">
+              <p className="text-sm text-gray-500 mt-2">
                 Start exploring sessions and speakers to build your collection
               </p>
             )}
@@ -508,7 +512,7 @@ export default function FavoritesPage() {
             {filteredFavorites.map(favorite => (
               <div
                 key={favorite.id}
-                className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow"
+                className="bg-white/80 backdrop-blur rounded-xl shadow-sm border border-purple-100 p-5 hover:shadow-lg transition-all hover:border-purple-200"
               >
                 {favorite.type === 'session' && favorite.session ? (
                   <div>

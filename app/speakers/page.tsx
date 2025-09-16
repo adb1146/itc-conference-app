@@ -184,33 +184,35 @@ export default function SpeakersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-white">
       <Navigation />
-      
+
       {/* Spacer for fixed navigation */}
       <div className="h-16"></div>
-      
+
       {/* Header */}
-      <div className="sticky top-16 z-30 bg-white shadow-sm">
-        <div className="px-4 py-3">
+      <div className="sticky top-16 z-30 bg-white/80 backdrop-blur border-b border-purple-100">
+        <div className="px-4 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                <Users className="w-6 h-6" />
-                Speakers
+              <h1 className="text-3xl font-normal flex items-center gap-3">
+                <div className="p-2.5 bg-gradient-to-br from-purple-100 to-blue-100 rounded-xl shadow-md">
+                  <Users className="w-7 h-7 text-purple-600" />
+                </div>
+                <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">Speakers</span>
               </h1>
-              <p className="text-sm text-gray-600 mt-1">
-                {loading ? 'Loading...' : `${speakers.length} industry leaders and experts`}
+              <p className="text-base text-gray-600 mt-2 ml-14">
+                {loading ? 'Loading...' : <><span className="font-medium text-purple-600">{speakers.length}</span> industry leaders and experts</>}
               </p>
             </div>
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-purple-600 font-medium">
               ITC Vegas 2025
             </div>
           </div>
         </div>
 
         {/* Search Bar */}
-        <div className="px-4 py-3 border-t border-gray-100">
+        <div className="px-4 py-3 border-t border-purple-100">
           <div className="relative">
             <button
               onClick={() => {
@@ -223,7 +225,7 @@ export default function SpeakersPage() {
                   setTimeout(() => setSearchQuery(currentQuery), 10);
                 }
               }}
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 hover:text-purple-600 transition-colors cursor-pointer"
               aria-label="Search"
             >
               <Search className="h-5 w-5" />
@@ -242,7 +244,7 @@ export default function SpeakersPage() {
                   setTimeout(() => setSearchQuery(currentQuery), 10);
                 }
               }}
-              className="w-full pl-10 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 pr-12 py-3 bg-white/50 border border-purple-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent placeholder-gray-400"
             />
             {searching && (
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -282,10 +284,10 @@ export default function SpeakersPage() {
           <div className="flex gap-2 overflow-x-auto pb-2">
             <button
               onClick={() => setSelectedCompany('all')}
-              className={`px-4 py-2 rounded-lg whitespace-nowrap text-sm font-medium transition-all ${
+              className={`px-5 py-2.5 rounded-xl whitespace-nowrap text-sm font-medium transition-all ${
                 selectedCompany === 'all'
-                  ? 'bg-blue-100 text-blue-700'
-                  : 'bg-white text-gray-600 border border-gray-200'
+                  ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-md'
+                  : 'bg-white text-gray-600 border border-purple-200 hover:bg-purple-50'
               }`}
             >
               All Companies
@@ -294,10 +296,10 @@ export default function SpeakersPage() {
               <button
                 key={company}
                 onClick={() => setSelectedCompany(company)}
-                className={`px-4 py-2 rounded-lg whitespace-nowrap text-sm font-medium transition-all ${
+                className={`px-5 py-2.5 rounded-xl whitespace-nowrap text-sm font-medium transition-all ${
                   selectedCompany === company
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'bg-white text-gray-600 border border-gray-200'
+                    ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-md'
+                    : 'bg-white text-gray-600 border border-purple-200 hover:bg-purple-50'
                 }`}
               >
                 {company}
@@ -308,24 +310,26 @@ export default function SpeakersPage() {
       </div>
 
       {/* Speaker Grid */}
-      <div className="px-4 py-4 pb-20">
+      <div className="px-4 py-6 pb-20">
         {loading ? (
           <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
           </div>
         ) : filteredSpeakers.length === 0 ? (
-          <div className="text-center py-12">
-            <User className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-            <p className="text-gray-500">No speakers found</p>
+          <div className="text-center py-16 bg-white/50 backdrop-blur rounded-2xl border border-purple-100 max-w-md mx-auto">
+            <div className="p-3 bg-gradient-to-br from-gray-100 to-purple-100 rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+              <User className="w-10 h-10 text-purple-400" />
+            </div>
+            <p className="text-gray-600 text-lg">No speakers found</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {filteredSpeakers.map(speaker => {
               const typeLabel = getSpeakerTypeLabel(speaker);
               return (
                 <div
                   key={speaker.id}
-                  className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow"
+                  className="bg-white/80 backdrop-blur rounded-2xl shadow-sm border border-purple-100 overflow-hidden hover:shadow-lg hover:border-purple-200 transition-all group"
                 >
                   <div className="p-4">
                     {/* Speaker Header */}
@@ -341,8 +345,8 @@ export default function SpeakersPage() {
                           }}
                         />
                       ) : null}
-                      <div 
-                        className={`${speaker.imageUrl ? 'hidden' : ''} h-16 w-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0`}
+                      <div
+                        className={`${speaker.imageUrl ? 'hidden' : ''} h-16 w-16 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center flex-shrink-0 group-hover:from-purple-600 group-hover:to-blue-600 transition-all`}
                       >
                         <span className="text-white font-bold text-lg">
                           {getInitials(speaker.name)}
@@ -353,7 +357,7 @@ export default function SpeakersPage() {
                           href={`/speakers/${speaker.id}`}
                           className="group"
                         >
-                          <h3 className="text-lg font-semibold text-gray-900 line-clamp-1 group-hover:text-blue-600 transition-colors">
+                          <h3 className="text-lg font-semibold text-gray-900 line-clamp-1 group-hover:text-purple-600 transition-colors">
                             {speaker.name}
                           </h3>
                         </Link>
@@ -364,7 +368,7 @@ export default function SpeakersPage() {
                         )}
                         {speaker.company && (
                           <div className="flex items-center gap-1 mt-1">
-                            <Building className="w-3 h-3 text-gray-400" />
+                            <Building className="w-3 h-3 text-purple-400" />
                             <p className="text-xs text-gray-500 line-clamp-1">
                               {speaker.company}
                             </p>

@@ -48,14 +48,27 @@ export async function generateFastAgenda(
       }
     });
 
+    // Define conference dates
+    const conferenceDates = [
+      '2025-10-14', // Tuesday
+      '2025-10-15', // Wednesday
+      '2025-10-16'  // Thursday
+    ];
+
     // Group sessions by day
     const sessionsByDay = new Map<string, any[]>();
+
+    // Initialize map with conference dates in order
+    conferenceDates.forEach(date => {
+      sessionsByDay.set(date, []);
+    });
+
+    // Add sessions to their respective days
     allSessions.forEach(session => {
-      const day = new Date(session.startTime).toDateString();
-      if (!sessionsByDay.has(day)) {
-        sessionsByDay.set(day, []);
+      const dateStr = new Date(session.startTime).toISOString().split('T')[0];
+      if (sessionsByDay.has(dateStr)) {
+        sessionsByDay.get(dateStr)!.push(session);
       }
-      sessionsByDay.get(day)!.push(session);
     });
 
     // Get favorited sessions
@@ -67,9 +80,17 @@ export async function generateFastAgenda(
 
     // Build agenda for each day
     const days = [];
-    let dayNumber = 1;
+
+    // Map specific dates to day numbers
+    const dayNumberMap: Record<string, number> = {
+      '2025-10-14': 1,  // Tuesday
+      '2025-10-15': 2,  // Wednesday
+      '2025-10-16': 3   // Thursday
+    };
 
     for (const [dateString, daySessions] of sessionsByDay) {
+      const dayNumber = dayNumberMap[dateString];
+      if (!dayNumber) continue;  // Skip non-conference dates
       const schedule: ScheduleItem[] = [];
       const usedTimeSlots = new Set<string>();
 
@@ -110,70 +131,134 @@ export async function generateFastAgenda(
         }
       }
 
-      // Then, add high-priority sessions based on user interests
-      if (user.interests && user.interests.length > 0) {
-        const interestKeywords = user.interests.map(i => i.toLowerCase());
+      // Then, add high-priority sessions based on user profile
+      // Build profile keywords from all available fields
+      const profileKeywords: string[] = [];
 
-        for (const session of daySessions) {
+      // Add interests
+      if (user.interests && user.interests.length > 0) {
+        profileKeywords.push(...user.interests.map(i => i.toLowerCase()));
+      }
+
+      // Add role-based keywords
+      if (user.role) {
+        const roleKeywords = user.role.toLowerCase();
+        profileKeywords.push(roleKeywords);
+        // Add related keywords based on role
+        if (roleKeywords.includes('executive')) {
+          profileKeywords.push('leadership', 'strategy', 'transformation');
+        }
+        if (roleKeywords.includes('product')) {
+          profileKeywords.push('product', 'innovation', 'roadmap');
+        }
+        if (roleKeywords.includes('developer') || roleKeywords.includes('engineer')) {
+          profileKeywords.push('technical', 'api', 'integration', 'architecture');
+        }
+        if (roleKeywords.includes('sales') || roleKeywords.includes('bd')) {
+          profileKeywords.push('distribution', 'partnerships', 'growth');
+        }
+      }
+
+      // Add organization type keywords
+      if (user.organizationType) {
+        const orgType = user.organizationType.toLowerCase();
+        profileKeywords.push(orgType);
+        if (orgType.includes('carrier')) {
+          profileKeywords.push('carrier', 'underwriting', 'claims');
+        }
+        if (orgType.includes('broker') || orgType.includes('mga')) {
+          profileKeywords.push('distribution', 'broker', 'agency');
+        }
+        if (orgType.includes('vendor') || orgType.includes('technology')) {
+          profileKeywords.push('insurtech', 'technology', 'platform');
+        }
+      }
+
+      // Add goals if available
+      if (user.goals && Array.isArray(user.goals)) {
+        profileKeywords.push(...user.goals.map((g: string) => g.toLowerCase()));
+      }
+
+      // Log profile keywords for debugging
+      console.log('[Smart Agenda] Building agenda with profile keywords:', {
+        interests: user.interests,
+        role: user.role,
+        organizationType: user.organizationType,
+        goals: user.goals,
+        totalKeywords: profileKeywords.length,
+        keywords: profileKeywords
+      });
+
+      if (profileKeywords.length > 0) {
+        // Create a session scoring system
+        const scoredSessions = daySessions
+          .filter(session => {
+            const timeSlot = `${session.startTime}-${session.endTime}`;
+            return !usedTimeSlots.has(timeSlot) && !favoritedSessionIds.has(session.id);
+          })
+          .map(session => {
+            const sessionText = `${session.title} ${session.description} ${session.track} ${session.tags?.join(' ') || ''}`.toLowerCase();
+            let matchScore = 0;
+            const matchedKeywords: string[] = [];
+
+            for (const keyword of profileKeywords) {
+              if (sessionText.includes(keyword)) {
+                matchScore++;
+                matchedKeywords.push(keyword);
+              }
+            }
+
+            return { session, matchScore, matchedKeywords };
+          })
+          .filter(item => item.matchScore > 0)
+          .sort((a, b) => b.matchScore - a.matchScore);
+
+        // Add top matching sessions
+        for (const { session, matchScore, matchedKeywords } of scoredSessions) {
           if (schedule.length >= 8) break; // Max 8 sessions per day
 
           const timeSlot = `${session.startTime}-${session.endTime}`;
           if (usedTimeSlots.has(timeSlot)) continue;
 
-          // Score session based on interests
-          const sessionText = `${session.title} ${session.description} ${session.track}`.toLowerCase();
-          let matchScore = 0;
-
-          for (const keyword of interestKeywords) {
-            if (sessionText.includes(keyword)) {
-              matchScore++;
+          schedule.push({
+            id: `session-${session.id}`,
+            time: new Date(session.startTime).toLocaleTimeString('en-US', {
+              hour: 'numeric',
+              minute: '2-digit',
+              hour12: true
+            }),
+            endTime: new Date(session.endTime).toLocaleTimeString('en-US', {
+              hour: 'numeric',
+              minute: '2-digit',
+              hour12: true
+            }),
+            type: 'session',
+            source: 'ai-suggested',
+            item: {
+              id: session.id,
+              title: session.title,
+              description: session.description || '',
+              location: session.location || '',
+              speakers: session.speakers.map((s: any) => ({
+                id: s.speaker.id,
+                name: s.speaker.name,
+                title: s.speaker.title
+              })),
+              track: session.track || ''
+            },
+            aiMetadata: {
+              score: matchScore,
+              reasoning: `Matches your profile: ${matchedKeywords.slice(0, 5).join(', ')}${matchedKeywords.length > 5 ? '...' : ''}`,
+              confidence: Math.min(matchScore * 20, 95)
             }
-          }
-
-          // Add session if it matches interests
-          if (matchScore > 0) {
-            schedule.push({
-              id: `session-${session.id}`,
-              time: new Date(session.startTime).toLocaleTimeString('en-US', {
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true
-              }),
-              endTime: new Date(session.endTime).toLocaleTimeString('en-US', {
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true
-              }),
-              type: 'session',
-              source: 'ai-suggested',
-              item: {
-                id: session.id,
-                title: session.title,
-                description: session.description || '',
-                location: session.location || '',
-                speakers: session.speakers.map((s: any) => ({
-                  id: s.speaker.id,
-                  name: s.speaker.name,
-                  title: s.speaker.title
-                })),
-                track: session.track || ''
-              },
-              aiMetadata: {
-                score: matchScore,
-                reasoning: `Matches your interests: ${interestKeywords.filter(k => sessionText.includes(k)).join(', ')}`,
-                confidence: Math.min(matchScore * 30, 90)
-              }
-            });
-            usedTimeSlots.add(timeSlot);
-          }
+          });
+          usedTimeSlots.add(timeSlot);
         }
       }
 
       // Add meal breaks
-      const lunchTime = new Date(dateString);
-      lunchTime.setHours(12, 0, 0, 0);
-      const lunchEndTime = new Date(lunchTime);
-      lunchEndTime.setHours(13, 0, 0, 0);
+      const lunchTime = new Date(dateString + 'T12:00:00');
+      const lunchEndTime = new Date(dateString + 'T13:00:00');
 
       schedule.push({
         id: `meal-lunch-${dayNumber}`,
@@ -205,7 +290,7 @@ export async function generateFastAgenda(
       });
 
       days.push({
-        date: dateString,
+        date: dateString, // This will now be in YYYY-MM-DD format
         dayNumber,
         schedule,
         stats: {
@@ -217,10 +302,10 @@ export async function generateFastAgenda(
           mealsCovered: schedule.some(i => i.type === 'meal')
         }
       });
-
-      dayNumber++;
-      if (dayNumber > 3) break; // Max 3 days
     }
+
+    // Sort days by dayNumber to ensure correct order
+    days.sort((a, b) => a.dayNumber - b.dayNumber);
 
     // Calculate metrics
     const totalFavorites = favoritedSessionIds.size;

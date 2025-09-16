@@ -115,6 +115,16 @@ export default function Navigation() {
     }
   };
 
+  // Function to handle sign out and clear chat history
+  const handleSignOut = () => {
+    // Clear chat history from localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('itc-chat-history');
+    }
+    // Sign out
+    signOut({ callbackUrl: '/' });
+  };
+
   return (
     <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
       scrolled ? 'bg-white/95 backdrop-blur-md shadow-lg' : 'bg-white'
@@ -370,7 +380,7 @@ export default function Navigation() {
                       <button
                         onClick={() => {
                           setUserMenuOpen(false);
-                          signOut({ callbackUrl: '/' });
+                          handleSignOut();
                         }}
                         className="flex items-center space-x-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left"
                       >
@@ -594,7 +604,7 @@ export default function Navigation() {
                   <button
                     onClick={() => {
                       setIsOpen(false);
-                      signOut({ callbackUrl: '/' });
+                      handleSignOut();
                     }}
                     className="flex items-center space-x-3 px-3 py-3 w-full text-left text-red-600 hover:bg-red-50 rounded-lg transition-colors min-h-[44px]"
                   >

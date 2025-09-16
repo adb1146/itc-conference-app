@@ -42,13 +42,6 @@ export default function UserDashboard({ activeTab }: UserDashboardProps) {
       href: '/profile',
       icon: User,
       description: 'Preferences & settings'
-    },
-    {
-      id: 'chat',
-      label: 'AI Assistant',
-      href: '/chat',
-      icon: MessageSquare,
-      description: 'Get help & recommendations'
     }
   ];
 
