@@ -174,7 +174,7 @@ export function extractAndPersistUserInfo(sessionId: string, message: string): v
     updateConversationState(sessionId, {
       userInfo,
       researchAgentActive: true // Activate orchestrator
-    });
+    } as any);
   }
 }
 
