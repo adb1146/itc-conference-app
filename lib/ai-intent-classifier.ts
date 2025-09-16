@@ -100,19 +100,33 @@ Examples:
 class AIIntentClassifier {
   private openai: OpenAI | null = null;
   private initialized = false;
+  private initAttempted = false;
 
   constructor() {
-    this.initialize();
+    // Don't initialize in constructor - do it lazily
   }
 
   private initialize() {
+    if (this.initAttempted) return;
+    this.initAttempted = true;
+
     const apiKey = process.env.OPENAI_API_KEY;
-    console.log('[AIIntentClassifier] Initializing with API key:', apiKey ? `${apiKey.substring(0, 10)}...` : 'NO KEY');
-    if (apiKey && !apiKey.includes('<your')) {
-      this.openai = new OpenAI({ apiKey });
-      this.initialized = true;
+    console.log('[AIIntentClassifier] Initializing with API key:', apiKey ? `${apiKey.substring(0, 20)}...` : 'NO KEY');
+
+    // Check if it's a real key (not a placeholder)
+    if (apiKey && apiKey.startsWith('sk-') && apiKey.length > 40 && !apiKey.includes('<')) {
+      try {
+        this.openai = new OpenAI({ apiKey });
+        this.initialized = true;
+        console.log('[AIIntentClassifier] OpenAI client initialized successfully');
+      } catch (error) {
+        console.log('[AIIntentClassifier] Failed to initialize OpenAI client:', error);
+      }
     } else {
       console.log('[AIIntentClassifier] Invalid or missing API key, using fallback');
+      if (apiKey) {
+        console.log(`[AIIntentClassifier] Key check failed: starts=${apiKey.startsWith('sk-')}, length=${apiKey.length}, no-placeholder=${!apiKey.includes('<')}`);
+      }
     }
   }
 
@@ -123,6 +137,11 @@ class AIIntentClassifier {
     message: string,
     context?: ConversationContext
   ): Promise<IntentClassification> {
+    // Initialize on first use
+    if (!this.initAttempted) {
+      this.initialize();
+    }
+
     // Fallback to simple classification if OpenAI is not available
     if (!this.initialized || !this.openai) {
       return this.fallbackClassification(message);
@@ -373,7 +392,11 @@ class AIIntentClassifier {
       lowerMessage.includes('bar') ||
       lowerMessage.includes('food') ||
       lowerMessage.includes('eat') ||
+      lowerMessage.includes('lunch') ||
+      lowerMessage.includes('dinner') ||
+      lowerMessage.includes('breakfast') ||
       lowerMessage.includes('drink') ||
+      lowerMessage.includes('entertainment') && (lowerMessage.includes('options') || lowerMessage.includes('show')) ||
       lowerMessage.includes('coffee') && (lowerMessage.includes('where') || lowerMessage.includes('good'))
     ) {
       return {

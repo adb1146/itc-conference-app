@@ -37,13 +37,21 @@ import {
   relatesToPSAdvisoryExpertise
 } from '@/lib/ps-advisory-context';
 import { validatePSAdvisoryResponse } from '@/lib/ps-advisory-validation';
+import { filterOutPSAdvisoryFakeSessions, cleanPSAdvisoryFromResponse, responseHasPSAdvisoryAsSession } from '@/lib/ps-advisory-response-filter';
 import { LocalRecommendationsAgent } from '@/lib/agents/local-recommendations-agent';
 import { getAttendeeNeedResponse, getTimeAwareActivities, getPracticalInfo } from '@/lib/attendee-experience';
 import { getHelpContent, getQuickHelpResponse } from '@/lib/help-content';
 import { getConferenceInfoResponse } from '@/lib/conference-info-handler';
 import { interpretQuery, generateEnhancedSearchQuery, generateAIGuidance } from '@/lib/intelligent-query-interpreter';
-import { routeMessage } from '@/lib/agents/agent-router';
+// Using smart router with AI classification to fix "keynote speakers" routing issue
+import { smartRouteMessage as routeMessage } from '@/lib/agents/smart-router-wrapper';
 import { detectScheduleOfferOpportunity, generateContextualScheduleOffer, isAcceptingScheduleOffer, generateScheduleBuilderPrompt, shouldUseResearchAgent } from '@/lib/schedule-offer-detector';
+import { validateOnStartup } from '@/lib/startup-validation';
+import { shouldOrchestratorHandle, extractAndPersistUserInfo, activateOrchestrator } from '@/lib/agents/orchestrator-state-fix';
+import { processSimpleOrchestration, getOrCreateState } from '@/lib/agents/orchestrator-fix';
+
+// Validate environment on startup
+validateOnStartup();
 
 /**
  * Streaming Vector-based Chat API
@@ -113,36 +121,44 @@ export async function POST(request: NextRequest) {
 
         // Check if research agent is already active (continuing conversation) - MUST CHECK BEFORE REGISTRATION
         const conversation = getConversation(sessionId);
-        if (conversation.state.researchAgentActive) {
-          console.log('[Stream API] Continuing research agent conversation');
 
-          // Get the singleton orchestrator instance
-          const { getOrchestrator } = await import('@/lib/agents/orchestrator-singleton');
-          const orchestrator = getOrchestrator();
+        // Check if orchestrator should handle this message
+        const shouldUseOrchestrator = conversation.state.researchAgentActive || shouldOrchestratorHandle(sessionId, message);
 
-          // Continue the conversation
-          const response = await orchestrator.processMessage(sessionId, message, undefined);
+        if (!shouldUseOrchestrator) {
+          // Clear any existing orchestrator state if not using orchestrator
+          const { clearOrchestratorState } = await import('@/lib/agents/orchestrator-fix');
+          clearOrchestratorState(sessionId);
+        }
 
-          // Handle different response types
-          if (response.nextAction === 'research') {
-            await writer.write(encoder.encode(`data: {"type":"status","content":"Researching your background..."}\n\n`));
-            // The orchestrator will handle the actual research
-          }
+        if (shouldUseOrchestrator) {
+          console.log('[Stream API] Using simplified orchestrator flow');
 
-          await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(response.message)}}\n\n`));
+          // Only extract user info when orchestrator is handling the message
+          extractAndPersistUserInfo(sessionId, message);
 
-          if (response.agenda) {
+          // Use the simplified orchestrator
+          const result = await processSimpleOrchestration(sessionId, message, undefined);
+
+          // Write the response
+          await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(result.response)}}\n\n`));
+
+          if (result.agenda) {
             // Store the agenda for potential saving
-            storePendingAgenda(sessionId, response.agenda);
+            storePendingAgenda(sessionId, result.agenda);
             updateConversationState(sessionId, {
               agendaBuilt: true,
-              researchAgentActive: false
+              researchAgentActive: result.shouldContinue
+            });
+          } else if (result.shouldContinue) {
+            // Keep orchestrator active
+            updateConversationState(sessionId, {
+              researchAgentActive: true
             });
           }
 
-          if (response.metadata) {
-            await writer.write(encoder.encode(`data: {"type":"metadata","content":${JSON.stringify(response.metadata)}}\n\n`));
-          }
+          // Don't show the duplicate preference selector UI
+          await writer.write(encoder.encode(`data: {"type":"hidePreferenceUI","content":true}\n\n`));
 
           await writer.write(encoder.encode(`data: {"type":"done","sessionId":"${sessionId}"}\n\n`));
           await writer.close();
@@ -824,10 +840,13 @@ export async function POST(request: NextRequest) {
         }
 
         // Wait for search results
-        const [vectorResults, webSearchResults] = await Promise.all([
+        let [vectorResults, webSearchResults] = await Promise.all([
           vectorSearchPromise,
           webSearchPromise
         ]);
+
+        // Filter out PS Advisory fake sessions
+        vectorResults = filterOutPSAdvisoryFakeSessions(vectorResults);
 
         await writer.write(encoder.encode(`data: {"type":"status","content":"Found ${vectorResults.length} relevant sessions. Generating response..."}\n\n`));
 
@@ -969,6 +988,11 @@ export async function POST(request: NextRequest) {
 
         // Validate PS Advisory information to prevent hallucination
         fullResponse = await validatePSAdvisoryResponse(fullResponse);
+
+        // Additional check: clean any PS Advisory listed as sessions
+        if (responseHasPSAdvisoryAsSession(fullResponse)) {
+          fullResponse = cleanPSAdvisoryFromResponse(fullResponse);
+        }
 
         // Clear the timeout since streaming completed successfully
         clearTimeout(timeout);

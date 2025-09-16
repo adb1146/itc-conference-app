@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useChatPersistence } from '@/hooks/useChatPersistence';
 import { PreferenceSelector, type PreferenceOption } from '@/components/chat/preference-selector';
+import { MessageFormatter } from '@/components/chat/message-formatter';
 
 interface Message {
   id: string;
@@ -1548,9 +1549,19 @@ function ChatContent() {
                           <p className="text-white">{message.content}</p>
                         ) : (
                           <>
-                            {/* Rich formatting for assistant messages */}
+                            {/* Rich formatting for assistant messages with clickable content */}
                             {typeof message.content === 'string'
-                              ? formatContent(message.content)
+                              ? <MessageFormatter
+                                  content={message.content}
+                                  onSuggestionClick={(suggestion) => {
+                                    setInput(suggestion);
+                                    // Auto-submit after a brief delay
+                                    setTimeout(() => {
+                                      const submitButton = document.querySelector('[data-testid="send-button"]') as HTMLButtonElement;
+                                      submitButton?.click();
+                                    }, 100);
+                                  }}
+                                />
                               : message.content
                             }
                             {/* Render interactive preference selector if present */}
