@@ -94,7 +94,7 @@ export function extractAndPersistUserInfo(sessionId: string, message: string): v
     /(CEO|CTO|CFO|VP|Vice President|Director|Manager|Consultant|Advisor)\s+(?:of|at)/i
   ];
 
-  let userInfo = conversation.state.userInfo || {};
+  let userInfo = (conversation.state as any).userInfo || {};
   let updated = false;
 
   // Try to extract name
