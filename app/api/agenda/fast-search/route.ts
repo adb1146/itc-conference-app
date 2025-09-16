@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
 
     // Enhanced keyword search with scoring
     const searchLower = query.toLowerCase();
-    const searchTerms = searchLower.split(/\s+/).filter(term => term.length > 2);
+    const searchTerms = searchLower.split(/\s+/).filter((term: string) => term.length > 2);
 
     // Score each session based on relevance
     const scoredSessions = cachedSessions.map((session: any) => {
