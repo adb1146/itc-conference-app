@@ -28,61 +28,115 @@ export async function POST(
         null
     };
     
-    // Don't use fetch for internal API calls - call the function directly
     console.log('Fetch Profile API - Environment check:', {
       hasAnthropicKey: !!process.env.ANTHROPIC_API_KEY,
       speakerName: speaker.name,
       company: speaker.company
     });
 
-    // Import the web search handler directly to avoid internal fetch issues
-    const { POST: webSearchHandler } = await import('../../web-search/route');
+    // Call Anthropic API directly for web search
+    const performWebSearch = async (query: string, context: string, options?: any) => {
+      const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
 
-    // Create mock request objects for internal API call
-    const createMockRequest = (body: any) => new Request('http://localhost', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
+      if (!anthropicApiKey) {
+        console.warn('ANTHROPIC_API_KEY not configured, returning mock data');
+        return {
+          query,
+          content: `Mock profile data for: ${query}`,
+          sources: [],
+          timestamp: new Date().toISOString()
+        };
+      }
 
-    // Fetch speaker profile from web with LinkedIn prioritization
-    const speakerProfileResponse = await webSearchHandler(
-      createMockRequest({
-        query: searchQueries.speaker,
-        context: 'Extract professional background, expertise, achievements, notable work, and current role. Look for LinkedIn profile information.',
-        allowedDomains: ['linkedin.com', 'insuretechconnect.com', 'insurancejournal.com']
-      })
+      const webSearchTool = {
+        type: 'web_search_20250305',
+        name: 'web_search',
+        max_uses: 3,
+        ...(options?.allowedDomains && { allowed_domains: options.allowedDomains }),
+        ...(options?.blockedDomains && { blocked_domains: options.blockedDomains })
+      };
+
+      try {
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': anthropicApiKey,
+            'anthropic-version': '2023-06-01'
+          },
+          body: JSON.stringify({
+            model: 'claude-3-5-sonnet-20241022',
+            max_tokens: 1500,
+            messages: [
+              {
+                role: 'user',
+                content: `Please search the web for the following information and provide a comprehensive summary:
+
+Query: ${query}
+Context: ${context}
+
+Please provide:
+1. A comprehensive summary of findings
+2. Key facts and details
+3. Relevant URLs if found
+4. Focus on professional/business information for people and company overviews for organizations`
+              }
+            ],
+            tools: [webSearchTool],
+            tool_choice: { type: 'auto' }
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('Anthropic API error:', errorData);
+          return { query, content: `Error fetching data for: ${query}`, sources: [] };
+        }
+
+        const data = await response.json();
+        let content = '';
+
+        if (data.content && Array.isArray(data.content)) {
+          for (const block of data.content) {
+            if (block.type === 'text') {
+              content += block.text;
+            }
+          }
+        }
+
+        return { query, content: content || 'No data found', sources: [] };
+      } catch (error) {
+        console.error('Web search error:', error);
+        return { query, content: `Error: ${error}`, sources: [] };
+      }
+    };
+
+    // Fetch speaker profile
+    const speakerProfile = await performWebSearch(
+      searchQueries.speaker,
+      'Extract professional background, expertise, achievements, notable work, and current role. Look for LinkedIn profile information.',
+      { allowedDomains: ['linkedin.com', 'insuretechconnect.com', 'insurancejournal.com'] }
     );
 
-    const speakerProfile = await speakerProfileResponse.json();
-
-    // Fetch company profile from web (only if company exists)
+    // Fetch company profile
     let companyProfile = { content: null };
 
     if (searchQueries.company && speaker.company) {
-      const companyProfileResponse = await webSearchHandler(
-        createMockRequest({
-          query: searchQueries.company,
-          context: 'Extract company overview, insurance technology services, products, market position, recent news, and innovations in insurtech. If this is a startup or smaller company, provide any available information about their mission, founding, and focus areas.',
-          blockedDomains: ['wikipedia.org']
-        })
+      companyProfile = await performWebSearch(
+        searchQueries.company,
+        'Extract company overview, insurance technology services, products, market position, recent news, and innovations in insurtech.',
+        { blockedDomains: ['wikipedia.org'] }
       );
 
-      companyProfile = await companyProfileResponse.json();
-
-      // If we didn't get good company data, try a broader search
-      if (!companyProfile.content || companyProfile.content.includes('Mock profile') || companyProfile.content.length < 100) {
+      // Try broader search if limited data
+      if (!companyProfile.content || companyProfile.content.length < 100) {
         console.log(`Limited data for ${speaker.company}, trying broader search...`);
-
-        const broaderSearchResponse = await webSearchHandler(
-          createMockRequest({
-            query: `${speaker.name} ${speaker.company} company background mission`,
-            context: `Find information about the company ${speaker.company} where ${speaker.name} works as ${speaker.role}. Look for company description, mission, services, or any mentions in industry news.`
-          })
+        const broaderResults = await performWebSearch(
+          `${speaker.name} ${speaker.company} company background mission`,
+          `Find information about the company ${speaker.company} where ${speaker.name} works as ${speaker.role}.`
         );
 
-        const broaderResults = await broaderSearchResponse.json();
-        if (broaderResults.content && broaderResults.content.length > companyProfile.content?.length) {
+        if (broaderResults.content && broaderResults.content.length > (companyProfile.content?.length || 0)) {
           companyProfile = broaderResults;
         }
       }
