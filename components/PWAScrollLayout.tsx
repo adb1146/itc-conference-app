@@ -13,10 +13,9 @@ export function PWAScrollLayout({ children, className = '' }: PWAScrollLayoutPro
       {children}
 
       <style jsx global>{`
-        /* Reset body scrolling */
+        /* Allow normal scrolling while maintaining PWA structure */
         html, body {
-          overflow: hidden;
-          position: fixed;
+          overflow-x: hidden;
           width: 100%;
           height: 100%;
         }
@@ -25,20 +24,17 @@ export function PWAScrollLayout({ children, className = '' }: PWAScrollLayoutPro
         .pwa-scroll-container {
           display: flex;
           flex-direction: column;
-          height: 100dvh; /* Dynamic viewport height - adjusts to browser chrome */
+          min-height: 100dvh; /* Dynamic viewport height - adjusts to browser chrome */
           width: 100%;
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
+          position: relative;
           background: white;
         }
 
-        /* Header - fixed at top */
+        /* Header - sticky at top */
         .pwa-header {
           flex-shrink: 0;
-          position: relative;
+          position: sticky;
+          top: 0;
           z-index: 50;
           padding-top: env(safe-area-inset-top);
           background: white;
@@ -48,10 +44,7 @@ export function PWAScrollLayout({ children, className = '' }: PWAScrollLayoutPro
         /* Main scrollable content area */
         .pwa-content {
           flex: 1;
-          overflow-y: auto;
-          overflow-x: hidden;
-          -webkit-overflow-scrolling: touch; /* Momentum scrolling on iOS */
-          overscroll-behavior-y: contain; /* Prevent pull-to-refresh */
+          overflow: visible;
           position: relative;
         }
 
@@ -78,10 +71,9 @@ export function PWAScrollLayout({ children, className = '' }: PWAScrollLayoutPro
           border-radius: 3px;
         }
 
-        /* Prevent rubber-band scrolling on iOS */
+        /* Allow natural scrolling */
         .pwa-scroll-container {
           -webkit-overflow-scrolling: touch;
-          overscroll-behavior: none;
         }
 
         /* Ensure main element doesn't have conflicting styles */
@@ -92,17 +84,17 @@ export function PWAScrollLayout({ children, className = '' }: PWAScrollLayoutPro
         }
 
         /* Fix for mobile browsers address bar */
-        @supports (height: 100dvh) {
+        @supports (min-height: 100dvh) {
           .pwa-scroll-container {
-            height: 100dvh;
+            min-height: 100dvh;
           }
         }
 
         /* Fallback for older browsers */
-        @supports not (height: 100dvh) {
+        @supports not (min-height: 100dvh) {
           .pwa-scroll-container {
-            height: 100vh;
-            height: calc(var(--vh, 1vh) * 100);
+            min-height: 100vh;
+            min-height: calc(var(--vh, 1vh) * 100);
           }
         }
 

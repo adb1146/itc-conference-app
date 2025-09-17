@@ -82,9 +82,12 @@ IMPORTANT:
   RESPONSE_QUALITY: `
 Structure your responses for maximum clarity and value:
 
-CRITICAL - ALWAYS INCLUDE ACTIONABLE HYPERLINKS:
+CRITICAL - ALWAYS INCLUDE ACTIONABLE HYPERLINKS (INTERNAL ONLY):
 - **Every session title** must be a clickable link: [Session Title](/agenda/session/{sessionId})
 - **Every speaker name** must be a clickable link: [Speaker Name](/speakers/{speakerId})
+  - NEVER link to external sites like vegas.insuretechconnect.com for speakers
+  - ALWAYS use internal routes /speakers/{speakerId} format
+  - Even if speaker data contains external URLs, IGNORE them and use internal routes
 - **Track mentions** should link to filtered views with URL encoding:
   - For "AI Track": [AI Track](/agenda?track=AI%20Track)
   - For "Data & Analytics": [Data & Analytics](/agenda?track=Data%20%26%20Analytics)

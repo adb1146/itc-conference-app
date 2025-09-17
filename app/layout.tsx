@@ -6,10 +6,7 @@ import Navigation from '@/components/Navigation'
 import ChatWidget from '@/components/ChatWidget'
 import { VegasTimeDisplay } from '@/components/vegas-time-display'
 import { PSAdvisoryCTA } from '@/components/ps-advisory-cta'
-import { MobileOptimizedLayout } from '@/components/MobileOptimizedLayout'
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt'
-import { PWALayout } from '@/components/PWALayout'
-import { PWAScrollLayout } from '@/components/PWAScrollLayout'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -65,36 +62,21 @@ export default function RootLayout({
       </head>
       <body className={`${inter.className} antialiased`} suppressHydrationWarning>
         <AuthProvider>
-          <MobileOptimizedLayout>
-            <PWALayout>
-              <PWAScrollLayout>
-                {/* Fixed Header */}
-                <div className="pwa-header">
-                  <Navigation />
-                </div>
+          <div className="min-h-screen">
+            {/* Navigation Header */}
+            <Navigation />
 
-                {/* Scrollable Content */}
-                <main className="pwa-content">
-                  <div className="pwa-content-inner">
-                    {children}
-                  </div>
-                </main>
+            {/* Main Content */}
+            <main>
+              {children}
+            </main>
 
-
-                {/* Floating Elements */}
-                <div className="floating-element">
-                  <ChatWidget />
-                </div>
-                <div className="floating-element">
-                  <VegasTimeDisplay />
-                </div>
-                <div className="floating-element">
-                  <PSAdvisoryCTA variant="floating" />
-                </div>
-                <PWAInstallPrompt />
-              </PWAScrollLayout>
-            </PWALayout>
-          </MobileOptimizedLayout>
+            {/* Floating Elements */}
+            <ChatWidget />
+            <VegasTimeDisplay />
+            <PSAdvisoryCTA variant="floating" />
+            <PWAInstallPrompt />
+          </div>
         </AuthProvider>
       </body>
     </html>

@@ -1214,9 +1214,10 @@ RESPONSE GUIDELINES:
 1. ALWAYS recommend 3-5 specific sessions with explanations of relevance
 2. Include clickable links for EVERY session and speaker mentioned:
    - [Session Title](/agenda/session/{session.id})
-   - [Speaker Name](/speakers/{speaker.id})
+   - [Speaker Name](/speakers/{speaker.id}) - NEVER use external ITC Vegas URLs
    - [Track Name](/agenda?track={URL-encoded-track})
    - [Location](/locations?location={URL-encoded-location})
+   IMPORTANT: For speakers, ALWAYS use internal /speakers/{id} routes, NEVER external vegas.insuretechconnect.com URLs
 3. For abstract queries, interpret the business need and find relevant content
 4. Explain WHY each session is relevant to the user's specific question
 5. End with actionable next steps and related topics to explore

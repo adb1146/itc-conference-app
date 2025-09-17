@@ -83,12 +83,14 @@ export function PWALayout({ children }: { children: React.ReactNode }) {
             display: none !important;
           }
 
-          /* Optimize chat interface for PWA */
-          .pwa-mode main {
-            height: 100vh;
-            max-height: 100vh;
-            overflow: hidden;
-          }
+          /* Optimize chat interface for PWA - only on chat pages */
+          ${isChatPage ? `
+            .pwa-mode main {
+              height: 100vh;
+              max-height: 100vh;
+              overflow: hidden;
+            }
+          ` : ''}
 
           /* Hide disclaimer banner on PWA home page */
           .pwa-mode .bg-orange-100 {
