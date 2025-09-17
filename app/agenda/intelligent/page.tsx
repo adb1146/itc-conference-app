@@ -664,7 +664,7 @@ function IntelligentAgendaContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 overflow-y-auto">
+    <div className="h-screen bg-gray-50 overflow-y-auto">
 
 
       {/* Spacer for fixed navigation */}
