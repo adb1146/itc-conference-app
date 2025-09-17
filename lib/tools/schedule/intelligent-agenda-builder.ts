@@ -422,7 +422,12 @@ export async function generateIntelligentAgenda(
 
     allSessions.forEach(session => {
       const dateStr = new Date(session.startTime).toISOString().split('T')[0];
-      const timeStr = new Date(session.startTime).toTimeString().slice(0, 5);
+      const timeStr = new Date(session.startTime).toLocaleTimeString('en-US', {
+        timeZone: 'America/Los_Angeles',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      });
 
       if (sessionsByDayTime.has(dateStr)) {
         const dayMap = sessionsByDayTime.get(dateStr)!;
@@ -576,13 +581,13 @@ export async function generateIntelligentAgenda(
       }
 
       // Add meal breaks
-      const lunchTime = '12:00';
+      const lunchTime = '12:00 PM';
       if (!Array.from(usedTimeSlots).some(time => time >= '11:30' && time <= '13:00')) {
         schedule.push({
           id: `lunch-day${dayNumber}`,
           type: 'meal',
           time: lunchTime,
-          endTime: '13:00',
+          endTime: '1:00 PM',
           title: 'Lunch & Networking',
           item: {
             id: `lunch-${dayNumber}`,
