@@ -43,8 +43,8 @@ const nextConfig: NextConfig = {
 
   // Cache configuration to prevent stale content
   generateBuildId: async () => {
-    // Generate unique build ID based on timestamp
-    return Date.now().toString();
+    // Generate unique build ID based on timestamp with version
+    return `v2-${Date.now()}`;
   },
 
   // Headers for cache control

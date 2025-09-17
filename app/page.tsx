@@ -72,6 +72,8 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* Version indicator for debugging - remove after cache issue resolved */}
+      <div className="hidden" data-version="2.0-nocache">Cache cleared</div>
       {/* Mobile-friendly navigation */}
       <nav className="w-full px-4 py-3 bg-white/80 backdrop-blur-sm border-b border-gray-100 lg:absolute lg:top-0 lg:left-0 lg:right-0 lg:border-none lg:bg-transparent">
         <div className="flex items-center justify-between">
