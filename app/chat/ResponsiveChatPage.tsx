@@ -267,7 +267,7 @@ export default function ResponsiveChatPage() {
 
   // Desktop interface
   return (
-    <div className="h-screen flex flex-col pt-16">
+    <div className="h-screen flex flex-col pt-20 sm:pt-24">
       <div className="flex-1 overflow-hidden">
         <GeminiStyleChat
           messages={displayMessages}

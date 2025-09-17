@@ -2,17 +2,30 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Sparkles, Menu, X } from 'lucide-react'
 
 export default function HomePage() {
   const { data: session } = useSession()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [query, setQuery] = useState('')
   const [placeholder, setPlaceholder] = useState('Ask about sessions, speakers, or get schedule recommendations')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Check for message in URL parameters
+  useEffect(() => {
+    const message = searchParams.get('message')
+    if (message) {
+      setQuery(message)
+      // Auto-submit after a brief delay to show the message
+      setTimeout(() => {
+        router.push(`/chat?message=${encodeURIComponent(message)}`)
+      }, 500)
+    }
+  }, [searchParams, router])
 
   // Auto-resize textarea
   useEffect(() => {
@@ -71,11 +84,11 @@ export default function HomePage() {
   ]
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white pt-20 sm:pt-24">
       {/* Version indicator for debugging - remove after cache issue resolved */}
       <div className="hidden" data-version="2.0-nocache">Cache cleared</div>
-      {/* Mobile-friendly navigation */}
-      <nav className="w-full px-4 py-3 bg-white/80 backdrop-blur-sm border-b border-gray-100 lg:absolute lg:top-0 lg:left-0 lg:right-0 lg:border-none lg:bg-transparent">
+      {/* Mobile-friendly navigation - hidden since main Navigation is shown */}
+      <nav className="hidden w-full px-4 py-3 bg-white/80 backdrop-blur-sm border-b border-gray-100 lg:absolute lg:top-0 lg:left-0 lg:right-0 lg:border-none lg:bg-transparent">
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors">
@@ -141,7 +154,7 @@ export default function HomePage() {
         )}
       </nav>
 
-      <div className="flex flex-col items-center justify-start lg:justify-center min-h-screen px-4 pt-20 pb-8 lg:py-0">
+      <div className="flex flex-col items-center justify-start lg:justify-center min-h-screen px-4 pt-8 pb-8 lg:py-0">
         {/* Header */}
         <div className="w-full max-w-4xl mb-4 lg:mb-8 lg:mt-0">
           <h1 className="text-center mb-3 lg:mb-6">

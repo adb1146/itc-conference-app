@@ -259,15 +259,18 @@ export default function SpeakerDetailPage() {
       }))
     };
 
-    // Store speaker context in sessionStorage
+    // Create the query message
+    const query = `Tell me everything about ${speaker.name} from ${speaker.company}. What are their key areas of expertise? What sessions are they speaking at during ITC Vegas 2025? What should I know about their background and experience?`;
+
+    // Store speaker context in sessionStorage for additional context
     sessionStorage.setItem('askAIContext', JSON.stringify({
       type: 'speaker',
       data: speakerData,
-      query: `Tell me everything about ${speaker.name} from ${speaker.company}. Search the web for information about their background, expertise, recent work, and any relevant industry context. Include information about their sessions at ITC Vegas 2025.`
+      query: query
     }));
 
-    // Navigate to chat
-    router.push('/chat');
+    // Navigate to home page (AI Concierge) with the message
+    router.push(`/?message=${encodeURIComponent(query)}`);
   };
 
   if (loading) {
@@ -419,9 +422,14 @@ export default function SpeakerDetailPage() {
                   <span>{speaker.company}</span>
                 </div>
               </div>
-              {speaker.bio && (
-                <p className="text-gray-700 mb-4">{speaker.bio}</p>
-              )}
+              {/* Bio section - always show something */}
+              <p className="text-gray-700 mb-4">
+                {speaker.bio && speaker.bio !== 'Speaker' && speaker.bio !== 'TBD' ? (
+                  speaker.bio
+                ) : (
+                  `${speaker.name} is a ${speaker.role || 'speaker'} at ${speaker.company || 'TBD'} and will be presenting at ITC Vegas 2025.`
+                )}
+              </p>
               <div className="flex items-center gap-4 flex-wrap">
                 <div className="px-3 py-1 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 rounded-full text-sm font-medium">
                   {speaker.sessions.length} Session{speaker.sessions.length !== 1 ? 's' : ''}
