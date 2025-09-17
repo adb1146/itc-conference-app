@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { Calendar, Clock, MapPin, Search, Filter, ChevronRight, Sparkles, Star } from 'lucide-react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
@@ -24,7 +24,7 @@ interface TimeRange {
   endHour: number;
 }
 
-export default function SimpleAgendaPage() {
+function SimpleAgendaContent() {
   const { data: session, status } = useSession();
   const searchParams = useSearchParams();
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -567,5 +567,20 @@ export default function SimpleAgendaPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function SimpleAgendaPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading agenda...</p>
+        </div>
+      </div>
+    }>
+      <SimpleAgendaContent />
+    </Suspense>
   );
 }
