@@ -12,6 +12,7 @@ import { AIFooterMessage } from '@/components/AIFooterMessage'
 import { MobileOptimizedLayout } from '@/components/MobileOptimizedLayout'
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt'
 import { PWALayout } from '@/components/PWALayout'
+import { PWAScrollLayout } from '@/components/PWAScrollLayout'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -69,25 +70,40 @@ export default function RootLayout({
         <AuthProvider>
           <MobileOptimizedLayout>
             <PWALayout>
-              <Navigation />
-              <PWADisclaimerBanner />
-              <main className="flex-1">
-                {children}
-              </main>
-              <div className="desktop-only">
-                <AIFooterMessage />
-              </div>
-              <PWAFooter />
-              <div className="floating-element">
-                <ChatWidget />
-              </div>
-              <div className="floating-element">
-                <VegasTimeDisplay />
-              </div>
-              <div className="floating-element">
-                <PSAdvisoryCTA variant="floating" />
-              </div>
-              <PWAInstallPrompt />
+              <PWAScrollLayout>
+                {/* Fixed Header */}
+                <div className="pwa-header">
+                  <Navigation />
+                  <PWADisclaimerBanner />
+                </div>
+
+                {/* Scrollable Content */}
+                <main className="pwa-content">
+                  <div className="pwa-content-inner">
+                    {children}
+                  </div>
+                </main>
+
+                {/* Fixed Footer */}
+                <div className="pwa-footer">
+                  <div className="desktop-only">
+                    <AIFooterMessage />
+                  </div>
+                  <PWAFooter />
+                </div>
+
+                {/* Floating Elements */}
+                <div className="floating-element">
+                  <ChatWidget />
+                </div>
+                <div className="floating-element">
+                  <VegasTimeDisplay />
+                </div>
+                <div className="floating-element">
+                  <PSAdvisoryCTA variant="floating" />
+                </div>
+                <PWAInstallPrompt />
+              </PWAScrollLayout>
             </PWALayout>
           </MobileOptimizedLayout>
         </AuthProvider>
