@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -12,6 +12,15 @@ export default function HomePage() {
   const [query, setQuery] = useState('')
   const [placeholder, setPlaceholder] = useState('Ask about sessions, speakers, or get schedule recommendations')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px'
+    }
+  }, [query])
 
   // Rotating placeholder suggestions
   useEffect(() => {
@@ -170,12 +179,24 @@ export default function HomePage() {
         <div className="w-full max-w-3xl mb-8 lg:mb-12">
           <form onSubmit={handleSubmit} className="relative">
             <div className="relative flex items-center">
-              <input
-                type="text"
+              <textarea
+                ref={textareaRef}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    handleSubmit(e)
+                  }
+                }}
                 placeholder={placeholder}
-                className="w-full px-4 sm:px-6 py-3 sm:py-4 pr-20 sm:pr-24 text-base sm:text-lg bg-white border border-gray-200 rounded-full focus:outline-none focus:border-blue-400 focus:bg-white transition-all shadow-sm"
+                className="w-full px-4 sm:px-6 py-3 sm:py-4 pr-20 sm:pr-24 text-base sm:text-lg bg-white border border-gray-200 rounded-2xl focus:outline-none focus:border-blue-400 focus:bg-white transition-all shadow-sm resize-none overflow-y-auto"
+                rows={1}
+                style={{
+                  minHeight: '52px',
+                  maxHeight: '120px',
+                  lineHeight: '1.5'
+                }}
                 autoFocus
               />
               <div className="absolute right-2">
