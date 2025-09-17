@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useChatPersistence } from '@/hooks/useChatPersistence';
 import { GeminiStyleChat } from '@/components/chat/GeminiStyleChat';
-import { MobileChatInterface } from '@/components/chat/MobileChatInterface';
+import { MobileChatInterfaceAnimated } from '@/components/chat/MobileChatInterfaceAnimated';
 
 interface Message {
   id: string;
@@ -14,7 +14,7 @@ interface Message {
   timestamp: Date;
 }
 
-export default function ResponsiveChatPage() {
+function ResponsiveChatPageContent() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -247,7 +247,7 @@ export default function ResponsiveChatPage() {
   // Mobile interface
   if (isMobile) {
     return (
-      <MobileChatInterface
+      <MobileChatInterfaceAnimated
         messages={displayMessages}
         input={input}
         isLoading={isLoading}
@@ -287,5 +287,20 @@ export default function ResponsiveChatPage() {
         />
       </div>
     </div>
+  );
+}
+
+export default function ResponsiveChatPage() {
+  return (
+    <Suspense fallback={
+      <div className="h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading chat...</p>
+        </div>
+      </div>
+    }>
+      <ResponsiveChatPageContent />
+    </Suspense>
   );
 }
