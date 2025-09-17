@@ -526,8 +526,18 @@ export async function generateIntelligentAgenda(
           schedule.push({
             id: `item-${best.session.id}`,
             type: 'session',
-            time: startTime.toTimeString().slice(0, 5),
-            endTime: endTime.toTimeString().slice(0, 5),
+            time: startTime.toLocaleTimeString('en-US', {
+              timeZone: 'America/Los_Angeles',  // Vegas timezone
+              hour: 'numeric',
+              minute: '2-digit',
+              hour12: true
+            }),
+            endTime: endTime.toLocaleTimeString('en-US', {
+              timeZone: 'America/Los_Angeles',  // Vegas timezone
+              hour: 'numeric',
+              minute: '2-digit',
+              hour12: true
+            }),
             title: best.session.title,
             item: {
               id: best.session.id,
