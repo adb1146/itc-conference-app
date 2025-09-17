@@ -4,13 +4,12 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Sparkles, Mic, Menu, X } from 'lucide-react'
+import { Sparkles, Menu, X } from 'lucide-react'
 
 export default function HomePage() {
   const { data: session } = useSession()
   const router = useRouter()
   const [query, setQuery] = useState('')
-  const [isListening, setIsListening] = useState(false)
   const [placeholder, setPlaceholder] = useState('Ask about sessions, speakers, or get schedule recommendations')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
@@ -179,15 +178,7 @@ export default function HomePage() {
                 className="w-full px-4 sm:px-6 py-3 sm:py-4 pr-20 sm:pr-24 text-base sm:text-lg bg-white border border-gray-200 rounded-full focus:outline-none focus:border-blue-400 focus:bg-white transition-all shadow-sm"
                 autoFocus
               />
-              <div className="absolute right-2 flex items-center space-x-1 sm:space-x-2">
-                <button
-                  type="button"
-                  onClick={() => setIsListening(!isListening)}
-                  className="p-2 sm:p-3 text-gray-500 hover:text-gray-700 transition-colors"
-                  aria-label="Voice input"
-                >
-                  <Mic className={`w-4 sm:w-5 h-4 sm:h-5 ${isListening ? 'text-red-500' : ''}`} />
-                </button>
+              <div className="absolute right-2">
                 <button
                   type="submit"
                   className="p-2 sm:p-3 text-gray-500 hover:text-gray-700 transition-colors"

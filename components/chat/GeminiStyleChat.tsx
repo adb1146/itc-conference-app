@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Send, Mic, Image, Plus, MoreVertical, User, MessageCircle, Wand2, Calendar, Users, MapPin, Trash2, Sparkles } from 'lucide-react'
+import { Send, Plus, MoreVertical, User, MessageCircle, Wand2, Calendar, Users, MapPin, Trash2, Sparkles } from 'lucide-react'
 import { MessageFormatter } from './message-formatter'
 import { PSAdvisoryLogo } from '../PSAdvisoryLogo'
 import './chat-animations.css'
@@ -313,20 +313,6 @@ export function GeminiStyleChat({
                 />
 
                 <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    className="p-3 text-gray-500 hover:text-gray-700 transition-colors"
-                  >
-                    <Image className="w-5 h-5" />
-                  </button>
-
-                  <button
-                    type="button"
-                    className="p-3 text-gray-500 hover:text-gray-700 transition-colors"
-                  >
-                    <Mic className="w-5 h-5" />
-                  </button>
-
                   <button
                     type="submit"
                     disabled={!input.trim() || isLoading}
