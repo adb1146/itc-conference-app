@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Calendar, Clock, MapPin, Search, Filter, ChevronRight, Sparkles, Star } from 'lucide-react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
+import { useSearchParams } from 'next/navigation';
 
 interface Session {
   id: string;
@@ -25,12 +26,17 @@ interface TimeRange {
 
 export default function SimpleAgendaPage() {
   const { data: session, status } = useSession();
+  const searchParams = useSearchParams();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [filteredSessions, setFilteredSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState('2025-10-14');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedTrack, setSelectedTrack] = useState('all');
+
+  // Initialize selectedTrack from URL parameter if present
+  const trackParam = searchParams.get('track');
+  const [selectedTrack, setSelectedTrack] = useState(trackParam || 'all');
+
   const [selectedTimeRange, setSelectedTimeRange] = useState('all');
   const [isSearching, setIsSearching] = useState(false);
   const [isAISearch, setIsAISearch] = useState(false);
