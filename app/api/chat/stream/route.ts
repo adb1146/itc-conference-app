@@ -1215,7 +1215,14 @@ RESPONSE GUIDELINES:
 2. Include clickable links for EVERY session and speaker mentioned:
    - [Session Title](/agenda/session/{session.id})
    - [Speaker Name](/speakers/{speaker.id}) - NEVER use external ITC Vegas URLs
-   - [Track Name](/agenda?track={URL-encoded-track})
+   - Format track mentions with proper URL encoding:
+     * For "AI Track": [AI Track](/agenda?track=AI%20Track)
+     * For "Data & Analytics": [Data & Analytics](/agenda?track=Data%20%26%20Analytics)
+     * For "LATAM": [LATAM](/agenda?track=LATAM)
+     * For "Agents": [Agents](/agenda?track=Agents)
+     * For "Claims": [Claims](/agenda?track=Claims)
+     * For "Brokers": [Brokers](/agenda?track=Brokers)
+     * Always URL encode spaces as %20 and & as %26
    - [Location](/locations?location={URL-encoded-location})
    IMPORTANT: For speakers, ALWAYS use internal /speakers/{id} routes, NEVER external vegas.insuretechconnect.com URLs
 3. For abstract queries, interpret the business need and find relevant content

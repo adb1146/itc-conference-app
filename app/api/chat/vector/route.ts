@@ -379,7 +379,13 @@ CRITICAL - ALWAYS CREATE HYPERLINKS AND CITE SOURCES:
   - For "AI Track": [AI Track](/agenda?track=AI%20Track)
   - For "Data & Analytics": [Data & Analytics](/agenda?track=Data%20%26%20Analytics)
   - For "LATAM": [LATAM](/agenda?track=LATAM)
-  - Always URL encode spaces and special characters in track names
+  - For "Agents": [Agents](/agenda?track=Agents)
+  - For "Claims": [Claims](/agenda?track=Claims)
+  - For "Brokers": [Brokers](/agenda?track=Brokers)
+  - For "Summit": [Summit](/agenda?track=Summit)
+  - For "WIISE": [WIISE](/agenda?track=WIISE)
+  - For "Masterclass": [Masterclass](/agenda?track=Masterclass)
+  - Always URL encode spaces as %20 and & as %26
 - Format day references as: [Day 1](/agenda?day=1), [Day 2](/agenda?day=2), [Day 3](/agenda?day=3)
 - Format venue locations as: [Location Name](/locations?location={URL-encoded-location-name})
   - Example: [Mandalay Bay Ballroom F](/locations?location=Mandalay%20Bay%20Ballroom%20F)
