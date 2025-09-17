@@ -184,8 +184,10 @@ THINKING FRAMEWORK FOR AGENDA BUILDING:
    - Uniqueness of content (can't get elsewhere)
 
 3. SCHEDULE OPTIMIZATION (Balance multiple factors):
+   - FULL DAY COVERAGE: Create a complete day schedule from morning (7:00 AM) through evening
+   - Start the day early: Include morning sessions (7:00 AM - 12:00 PM)
    - Cognitive load distribution: Mix intense technical sessions with lighter networking
-   - Energy management: Place difficult content when attendee is fresh
+   - Energy management: Place difficult content when attendee is fresh (morning hours)
    - Topic progression: Build knowledge throughout the day
    - Diversity vs. depth: Balance broad exposure with deep dives
    - Break timing: Ensure mental recovery periods
@@ -277,18 +279,43 @@ ${allSessions.filter(s => {
   .map(s => {
     const startTime = typeof s.startTime === 'string' ? new Date(s.startTime) : s.startTime;
     const endTime = typeof s.endTime === 'string' ? new Date(s.endTime) : s.endTime;
-    const start = startTime instanceof Date ? startTime.toISOString() : String(s.startTime);
-    const end = endTime instanceof Date ? endTime.toISOString() : String(s.endTime);
-    return `- ${s.title} (${start.split('T')[1]} - ${end.split('T')[1]}, ${s.location}, Track: ${s.track})`;
+
+    // Format times in Vegas timezone (PDT)
+    const startFormatted = startTime instanceof Date ?
+      startTime.toLocaleTimeString('en-US', {
+        timeZone: 'America/Los_Angeles',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      }) : String(s.startTime);
+
+    const endFormatted = endTime instanceof Date ?
+      endTime.toLocaleTimeString('en-US', {
+        timeZone: 'America/Los_Angeles',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      }) : String(s.endTime);
+
+    return `- ${s.title} (${startFormatted} - ${endFormatted}, ${s.location}, Track: ${s.track})`;
   })
   .join('\n')}
 
 TASK:
-Create an optimized schedule following this priority:
+Create a COMPLETE FULL-DAY schedule starting from the earliest morning sessions (7:00 AM or earlier if available) through evening activities. DO NOT skip morning sessions.
+
+Follow this priority:
 1. Include ALL favorited sessions (Priority 100)
 2. Add sessions featuring favorited speakers (Priority 85)
-3. Fill gaps with AI recommendations based on profile (Priority 70-50)
+3. Fill ALL time slots throughout the day with AI recommendations based on profile (Priority 70-50)
 4. Ensure proper meal breaks and walking time
+5. IMPORTANT: Start the schedule with the earliest available sessions (typically 7:00-8:00 AM)
+
+The schedule should cover:
+- Early morning (7:00-9:00 AM): Registration, breakfast, early sessions
+- Morning (9:00 AM-12:00 PM): Core conference sessions
+- Afternoon (12:00-5:00 PM): Lunch and afternoon sessions
+- Evening (5:00 PM+): Networking events if available
 
 For each session selection, explain your reasoning including:
 - Why this session fits the user's profile

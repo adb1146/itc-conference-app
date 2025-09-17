@@ -5,11 +5,11 @@
       "headers": [
         {
           "key": "Cache-Control",
-          "value": "s-maxage=0, stale-while-revalidate=0"
+          "value": "no-cache, no-store, must-revalidate"
         },
         {
           "key": "X-Deployment-Version",
-          "value": "2.0-cache-fix"
+          "value": "2.1-prompt-fix"
         }
       ]
     }

@@ -34,11 +34,11 @@ import {
 
 const DEFAULT_OPTIONS: AgendaOptions = {
   includeMeals: true,
-  maxSessionsPerDay: 8,
+  maxSessionsPerDay: 10,  // Increased to accommodate full day
   preferredTracks: [],
   avoidTracks: [],
-  startTime: '8:00 AM',
-  endTime: '6:00 PM',
+  startTime: '7:00 AM',  // Start earlier to include morning sessions
+  endTime: '7:00 PM',    // Extended to include evening events
   minimumBreakMinutes: 15,
   maximumWalkingMinutes: 15
 };
@@ -343,9 +343,9 @@ async function buildDaySchedule(
       minimumBreakMinutes: options.minimumBreakMinutes,
       maximumWalkingMinutes: options.maximumWalkingMinutes,
       targetSessionsPerPeriod: {
-        morning: 3,
-        afternoon: 3,
-        evening: 1
+        morning: 4,    // Increased for full morning coverage
+        afternoon: 4,  // Increased for full afternoon coverage
+        evening: 2     // Include more evening activities
       }
     },
     dayNumber,
@@ -1001,10 +1001,11 @@ function calculateOverallConfidence(days: DaySchedule[]): number {
 }
 
 /**
- * Format time for display
+ * Format time for display in Vegas timezone
  */
 function formatTime(date: Date): string {
   return date.toLocaleTimeString('en-US', {
+    timeZone: 'America/Los_Angeles',  // Vegas is in PDT
     hour: 'numeric',
     minute: '2-digit',
     hour12: true

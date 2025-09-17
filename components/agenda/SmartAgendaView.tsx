@@ -529,8 +529,8 @@ export default function SmartAgendaView({
 
                       {/* Actions */}
                       <div className="flex gap-2 ml-3">
-                        {/* Show favorite button for AI-suggested sessions when authenticated */}
-                        {status === 'authenticated' && isSession && item.source === 'ai-suggested' && (
+                        {/* Show favorite button for all sessions when authenticated */}
+                        {status === 'authenticated' && isSession && (
                           <button
                             onClick={(e) => {
                               const sessionId = item.id.replace('session-', '');

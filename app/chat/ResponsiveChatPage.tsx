@@ -102,19 +102,24 @@ export default function ResponsiveChatPage() {
 
   // Handle message parameter from URL
   useEffect(() => {
-    if (hasGreeted && !isLoading && !hasProcessedUrlMessage.current) {
-      const messageParam = searchParams.get('message');
-      if (messageParam) {
-        hasProcessedUrlMessage.current = true;
-        // Small delay to ensure the welcome message is displayed first
-        setTimeout(() => {
-          sendMessage(messageParam);
-          // Clear the URL parameter after processing to avoid re-sending on navigation
-          router.push('/chat', { scroll: false });
-        }, 500);
-      }
+    // Check for URL message parameter immediately when component loads
+    const messageParam = searchParams.get('message');
+    if (messageParam && !hasProcessedUrlMessage.current && isLoaded) {
+      hasProcessedUrlMessage.current = true;
+
+      // Set the input to show what we're about to send
+      setInput(messageParam);
+
+      // Small delay to ensure chat is ready, longer if we need to wait for greeting
+      const sendDelay = messages.length > 0 ? 500 : 2000;
+
+      setTimeout(() => {
+        sendMessage(messageParam);
+        // Clear the URL parameter after processing to avoid re-sending on navigation
+        router.push('/chat', { scroll: false });
+      }, sendDelay);
     }
-  }, [hasGreeted, isLoading, searchParams, router]);
+  }, [searchParams, messages.length, isLoaded]);
 
   // Send message function
   const sendMessage = async (messageText: string) => {
