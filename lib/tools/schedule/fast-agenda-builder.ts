@@ -103,11 +103,13 @@ export async function generateFastAgenda(
             schedule.push({
               id: `session-${session.id}`,
               time: new Date(session.startTime).toLocaleTimeString('en-US', {
+                timeZone: 'America/Los_Angeles',
                 hour: 'numeric',
                 minute: '2-digit',
                 hour12: true
               }),
               endTime: new Date(session.endTime).toLocaleTimeString('en-US', {
+                timeZone: 'America/Los_Angeles',
                 hour: 'numeric',
                 minute: '2-digit',
                 hour12: true
@@ -224,11 +226,13 @@ export async function generateFastAgenda(
           schedule.push({
             id: `session-${session.id}`,
             time: new Date(session.startTime).toLocaleTimeString('en-US', {
+              timeZone: 'America/Los_Angeles',
               hour: 'numeric',
               minute: '2-digit',
               hour12: true
             }),
             endTime: new Date(session.endTime).toLocaleTimeString('en-US', {
+              timeZone: 'America/Los_Angeles',
               hour: 'numeric',
               minute: '2-digit',
               hour12: true
@@ -264,11 +268,13 @@ export async function generateFastAgenda(
       schedule.push({
         id: `meal-lunch-${dayNumber}`,
         time: lunchTime.toLocaleTimeString('en-US', {
+          timeZone: 'America/Los_Angeles',
           hour: 'numeric',
           minute: '2-digit',
           hour12: true
         }),
         endTime: lunchEndTime.toLocaleTimeString('en-US', {
+          timeZone: 'America/Los_Angeles',
           hour: 'numeric',
           minute: '2-digit',
           hour12: true
