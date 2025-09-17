@@ -63,15 +63,6 @@ export function PWAScrollLayout({ children, className = '' }: PWAScrollLayoutPro
           min-height: 100%;
         }
 
-        /* Footer/Tab bar - fixed at bottom */
-        .pwa-footer {
-          flex-shrink: 0;
-          position: relative;
-          z-index: 50;
-          padding-bottom: env(safe-area-inset-bottom);
-          background: white;
-          border-top: 1px solid #e5e7eb;
-        }
 
         /* Smooth scrolling */
         .pwa-content::-webkit-scrollbar {
@@ -119,10 +110,6 @@ export function PWAScrollLayout({ children, className = '' }: PWAScrollLayoutPro
         @media (orientation: landscape) and (max-height: 500px) {
           .pwa-header {
             padding-top: max(env(safe-area-inset-top), 8px);
-          }
-
-          .pwa-footer {
-            padding-bottom: max(env(safe-area-inset-bottom), 8px);
           }
         }
       `}</style>
