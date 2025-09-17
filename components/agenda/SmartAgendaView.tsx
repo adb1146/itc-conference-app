@@ -424,7 +424,7 @@ export default function SmartAgendaView({
                           <div className="flex items-start gap-2 mb-1">
                             {isSession ? (
                               <Link
-                                href={`/agenda/session/${item.id}`}
+                                href={`/agenda/session/${item.item.id}`}
                                 className="font-semibold text-gray-900 hover:text-blue-600 transition-colors"
                               >
                                 {item.item.title}
