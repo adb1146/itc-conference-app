@@ -70,7 +70,7 @@ export default function HomePage() {
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors">
             <span className="text-lg lg:text-xl font-normal">ITC Vegas</span>
-            <span className="text-xs px-2 py-1 bg-gray-100 rounded-full">2025</span>
+            <span className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded-full">2025</span>
           </Link>
 
           {/* Desktop navigation */}
@@ -176,7 +176,7 @@ export default function HomePage() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder={placeholder}
-                className="w-full px-4 sm:px-6 py-3 sm:py-4 pr-20 sm:pr-24 text-base sm:text-lg bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:border-gray-400 focus:bg-white transition-all"
+                className="w-full px-4 sm:px-6 py-3 sm:py-4 pr-20 sm:pr-24 text-base sm:text-lg bg-white border border-gray-200 rounded-full focus:outline-none focus:border-blue-400 focus:bg-white transition-all shadow-sm"
                 autoFocus
               />
               <div className="absolute right-2 flex items-center space-x-1 sm:space-x-2">
@@ -244,18 +244,6 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Footer - Responsive positioning */}
-        <div className="mt-8 lg:absolute lg:bottom-4 w-full px-4">
-          <div className="flex flex-wrap justify-center items-center gap-2 text-xs text-gray-500">
-            <Link href="https://www.psadvisory.com" target="_blank" className="hover:underline">
-              PS Advisory
-            </Link>
-            <span className="hidden sm:inline">and the</span>
-            <Link href="https://vegas.insuretechconnect.com" target="_blank" className="hover:underline">
-              ITC Vegas
-            </Link>
-          </div>
-        </div>
       </div>
     </div>
   )
