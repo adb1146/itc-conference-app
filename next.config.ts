@@ -40,6 +40,45 @@ const nextConfig: NextConfig = {
   },
   // Output configuration for production
   output: 'standalone',
+
+  // Cache configuration to prevent stale content
+  generateBuildId: async () => {
+    // Generate unique build ID based on timestamp
+    return Date.now().toString();
+  },
+
+  // Headers for cache control
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-cache, no-store, must-revalidate',
+          },
+          {
+            key: 'Pragma',
+            value: 'no-cache',
+          },
+          {
+            key: 'Expires',
+            value: '0',
+          },
+        ],
+      },
+      {
+        // Allow caching for static assets
+        source: '/_next/static/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;
