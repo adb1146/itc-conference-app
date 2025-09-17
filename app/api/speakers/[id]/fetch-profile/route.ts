@@ -75,11 +75,13 @@ export async function POST(
 Query: ${query}
 Context: ${context}
 
-Please provide:
-1. A comprehensive summary of findings
-2. Key facts and details
-3. Relevant URLs if found
-4. Focus on professional/business information for people and company overviews for organizations`
+Instructions:
+- Provide ONLY the factual information found, without any meta-commentary
+- Do NOT include phrases like "I'll search for", "Based on the search results", "Let me find", etc.
+- Start directly with the professional information
+- Focus on professional/business information for people and company overviews for organizations
+- Include key facts, achievements, and relevant details
+- Format as clear, direct statements about the person or company`
               }
             ],
             tools: [webSearchTool],
@@ -213,10 +215,41 @@ Please provide:
     const formatProfileContent = (content: string | null): string | null => {
       if (!content) return null;
 
-      // First, clean up the content
+      // First, remove AI meta-commentary and internal thought process
       let formatted = content
-        .replace(/\[.*?\]/g, '') // Remove citation markers
-        .replace(/\s{2,}/g, ' ') // Normalize spaces
+        // Remove AI's internal dialogue patterns
+        .replace(/I'll search for information about[^.]+\./gi, '')
+        .replace(/Let me search[^.]+\./gi, '')
+        .replace(/Let me perform[^.]+search[^.]+\./gi, '')
+        .replace(/Let me find[^.]+\./gi, '')
+        .replace(/I'm searching[^.]+\./gi, '')
+        .replace(/I can provide[^:]+:/gi, '')
+        .replace(/Based on the search results,[^:]+:/gi, '')
+        .replace(/Based on my search,[^:]+:/gi, '')
+        .replace(/Based on the information[^:]+:/gi, '')
+        .replace(/According to my search[^:]+:/gi, '')
+        .replace(/From the search results[^:]+:/gi, '')
+        .replace(/Here's what I found[^:]+:/gi, '')
+        .replace(/Here is the information[^:]+:/gi, '')
+        .replace(/I've found[^:]+:/gi, '')
+        .replace(/I found[^:]+:/gi, '')
+        .replace(/Let me look[^.]+\./gi, '')
+        .replace(/I'll look[^.]+\./gi, '')
+        .replace(/Searching for[^.]+\./gi, '')
+        .replace(/Looking for[^.]+\./gi, '')
+        .replace(/I need to[^.]+\./gi, '')
+        .replace(/Let me get[^.]+\./gi, '')
+        .replace(/^Current Role and Experience:\s*/gim, '')
+        .replace(/^Professional Background:\s*/gim, '')
+        .replace(/^Professional Summary:\s*/gim, '')
+        .replace(/^Summary:\s*/gim, '')
+        .replace(/^Overview:\s*/gim, '')
+        .replace(/^Profile:\s*/gim, '')
+        .replace(/^About.*?:\s*/gim, '')
+        // Remove citation markers
+        .replace(/\[.*?\]/g, '')
+        // Normalize spaces
+        .replace(/\s{2,}/g, ' ')
         .trim();
 
       // Split into sentences for better processing
