@@ -3,7 +3,6 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import AuthProvider from '@/components/AuthProvider'
 import Navigation from '@/components/Navigation'
-import PWADisclaimerBanner from '@/components/PWADisclaimerBanner'
 import ChatWidget from '@/components/ChatWidget'
 import { VegasTimeDisplay } from '@/components/vegas-time-display'
 import { PSAdvisoryCTA } from '@/components/ps-advisory-cta'
@@ -15,9 +14,9 @@ import { PWAScrollLayout } from '@/components/PWAScrollLayout'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'ITC Vegas 2025 Demo - AI Conference Companion by PS Advisory',
-  description: 'Experience an AI-powered conference companion demo by PS Advisory. Showcasing intelligent recommendations, personalized scheduling, and Salesforce integration for insurance organizations.',
-  keywords: 'ITC Vegas, InsureTech, conference, insurance technology, AI assistant, PS Advisory, Salesforce, demo',
+  title: 'ITC Vegas 2025 - AI Conference Companion by PS Advisory',
+  description: 'Experience an AI-powered conference companion by PS Advisory. Showcasing intelligent recommendations, personalized scheduling, and Salesforce integration for insurance organizations.',
+  keywords: 'ITC Vegas, InsureTech, conference, insurance technology, AI assistant, PS Advisory, Salesforce',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
@@ -72,7 +71,6 @@ export default function RootLayout({
                 {/* Fixed Header */}
                 <div className="pwa-header">
                   <Navigation />
-                  <PWADisclaimerBanner />
                 </div>
 
                 {/* Scrollable Content */}

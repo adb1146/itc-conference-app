@@ -153,7 +153,7 @@ export default function RegisterPage() {
             <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mb-4">
               <UserPlus className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Join the Demo</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Create Your Account</h1>
             <p className="text-sm sm:text-base text-gray-600 mt-2">
               {step === 1 ? 'Register to explore AI-powered conference features' : 'Help us personalize your experience'}
             </p>
@@ -398,10 +398,10 @@ export default function RegisterPage() {
             <div className="flex items-start space-x-2">
               <AlertCircle className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
               <div className="text-xs sm:text-sm text-orange-800">
-                <p className="font-medium mb-1">Demo Registration</p>
+                <p className="font-medium mb-1">Registration Information</p>
                 <p>
                   This is a demonstration site by PS Advisory. We are not affiliated with InsureTech Connect. 
-                  Your registration data will be used solely for demo purposes and to showcase our capabilities.
+                  Your registration data will be used to personalize your conference experience.
                 </p>
                 <a 
                   href="https://vegas.insuretechconnect.com" 

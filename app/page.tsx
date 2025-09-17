@@ -63,7 +63,7 @@ export default function HomePage() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-white">
+    <div className="min-h-screen bg-white">
       {/* Mobile-friendly navigation */}
       <nav className="w-full px-4 py-3 bg-white/80 backdrop-blur-sm border-b border-gray-100 lg:absolute lg:top-0 lg:left-0 lg:right-0 lg:border-none lg:bg-transparent">
         <div className="flex items-center justify-between">
@@ -254,7 +254,6 @@ export default function HomePage() {
             <Link href="https://vegas.insuretechconnect.com" target="_blank" className="hover:underline">
               ITC Vegas
             </Link>
-            <span className="text-center">This is a demo, not affiliated with ITC.</span>
           </div>
         </div>
       </div>
