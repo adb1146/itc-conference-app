@@ -9,7 +9,6 @@ import {
   ThumbsUp, ThumbsDown, RefreshCw, Wand2, Info, ChevronDown, ChevronUp
 } from 'lucide-react';
 import Link from 'next/link';
-import { PSAdvisoryCTA } from '@/components/ps-advisory-cta';
 
 interface Speaker {
   id?: string;
@@ -671,10 +670,6 @@ function IntelligentAgendaContent() {
       {/* Spacer for fixed navigation */}
       <div className="h-16"></div>
 
-      {/* PS Advisory CTA - Inline variant for agenda page */}
-      <div className="max-w-7xl mx-auto px-4 py-2">
-        <PSAdvisoryCTA variant="inline" />
-      </div>
 
       {/* Intelligent Header */}
       <div className="sticky top-16 z-30 bg-white shadow-sm">

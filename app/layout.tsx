@@ -4,7 +4,6 @@ import './globals.css'
 import AuthProvider from '@/components/AuthProvider'
 import Navigation from '@/components/Navigation'
 import ChatWidget from '@/components/ChatWidget'
-import { PSAdvisoryCTA } from '@/components/ps-advisory-cta'
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -72,7 +71,6 @@ export default function RootLayout({
 
             {/* Floating Elements */}
             <ChatWidget />
-            <PSAdvisoryCTA variant="floating" />
             <PWAInstallPrompt />
           </div>
         </AuthProvider>

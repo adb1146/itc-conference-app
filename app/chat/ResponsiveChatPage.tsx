@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useChatPersistence } from '@/hooks/useChatPersistence';
@@ -27,6 +27,7 @@ export default function ResponsiveChatPage() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [dynamicSuggestions, setDynamicSuggestions] = useState<string[]>([]);
   const [conversationContext, setConversationContext] = useState<any>({});
+  const hasProcessedUrlMessage = useRef(false);
 
   // Detect mobile device
   useEffect(() => {
@@ -98,6 +99,22 @@ export default function ResponsiveChatPage() {
       setHasGreeted(true);
     }
   }, [status, session, hasGreeted, isLoaded, messages?.length]);
+
+  // Handle message parameter from URL
+  useEffect(() => {
+    if (hasGreeted && !isLoading && !hasProcessedUrlMessage.current) {
+      const messageParam = searchParams.get('message');
+      if (messageParam) {
+        hasProcessedUrlMessage.current = true;
+        // Small delay to ensure the welcome message is displayed first
+        setTimeout(() => {
+          sendMessage(messageParam);
+          // Clear the URL parameter after processing to avoid re-sending on navigation
+          router.push('/chat', { scroll: false });
+        }, 500);
+      }
+    }
+  }, [hasGreeted, isLoading, searchParams, router]);
 
   // Send message function
   const sendMessage = async (messageText: string) => {
