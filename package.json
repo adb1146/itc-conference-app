@@ -15,7 +15,9 @@
     "prisma:push": "prisma db push",
     "prisma:studio": "prisma studio",
     "verify-model": "node scripts/verify-model.js",
-    "seed": "node scripts/import-fetched-agenda.js"
+    "seed": "node scripts/import-fetched-agenda.js",
+    "validate-dates": "npx tsx scripts/validate-session-dates.ts",
+    "import-csv-fixed": "node scripts/import-csv-agenda-fixed.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.24.3",

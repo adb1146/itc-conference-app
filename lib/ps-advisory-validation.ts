@@ -13,32 +13,39 @@ export const PS_ADVISORY_TEAM = {
   'Andrew Bartels': {
     role: 'Founder & CEO',
     isFounder: true,
-    speaksAtConference: false
+    speaksAtConference: false,
+    attendingConference: true
   },
   'Nancy Paul': {
     role: 'Senior Delivery Manager',
     isFounder: false,
-    speaksAtConference: false
+    speaksAtConference: false,
+    attendingConference: true,
+    availableForMeetings: true
   },
   'Hitesh Malhotra': {
     role: 'CTO',
     isFounder: false,
-    speaksAtConference: false
+    speaksAtConference: false,
+    attendingConference: false
   },
   'Tom King': {
-    role: 'Director of Strategy',
+    role: 'Senior Insurance Consultant',
     isFounder: false,
-    speaksAtConference: false
+    speaksAtConference: false,
+    attendingConference: true
   },
   'Judd Lehmkuhl': {
     role: 'Solution Architect',
     isFounder: false,
-    speaksAtConference: false
+    speaksAtConference: false,
+    attendingConference: false
   },
   'Prateek Shukla': {
     role: 'Solution Architect',
     isFounder: false,
-    speaksAtConference: false
+    speaksAtConference: false,
+    attendingConference: false
   }
 };
 
@@ -135,7 +142,7 @@ export function factCheckPSAdvisory(statement: string): string | null {
   if (lowerStatement.includes('nancy paul') &&
       (lowerStatement.includes('speaking at') || lowerStatement.includes('panel') ||
        lowerStatement.includes('session') || lowerStatement.includes('stage'))) {
-    return 'Nancy Paul is not speaking at ITC Vegas 2025 sessions. She is PS Advisory\'s Senior Delivery Manager who helps insurance clients achieve real ROI through project management expertise.';
+    return 'Nancy Paul is not speaking at ITC Vegas 2025 sessions, but she IS attending the conference. She is PS Advisory\'s Senior Delivery Manager and is available for meetings throughout the conference. You can meet with Nancy Paul in person at ITC Vegas or email contactus@psadvisory.com.';
   }
 
   // Check for any PS Advisory member incorrectly associated with conference sessions
@@ -225,8 +232,12 @@ Nancy Paul is the Senior Delivery Manager at PS Advisory (NOT the founder). She 
 • **Founder:** Andrew Bartels (NOT Nancy Paul)
 • **What they do:** Insurance technology consulting specializing in Salesforce
 • **Conference role:** Built this conference app as a technology demonstration
-• **Physical presence:** PS Advisory does NOT have a booth at ITC Vegas
-• **Speaking sessions:** PS Advisory team members are NOT speaking at the conference
+• **Team attending ITC Vegas 2025:**
+  - Andrew Bartels (Founder & CEO) - ATTENDING
+  - Nancy Paul (Senior Delivery Manager) - ATTENDING & available for meetings
+  - Tom King (Senior Insurance Consultant) - ATTENDING
+• **Booth:** PS Advisory does NOT have a booth at ITC Vegas
+• **Speaking sessions:** PS Advisory team members are NOT speaking at conference sessions
 
 **Important clarifications:**
 • Agim Emruli is NOT affiliated with PS Advisory
@@ -247,13 +258,15 @@ Would you like to know more about:
 
 Nancy Paul is the Senior Delivery Manager at PS Advisory, the technology consulting firm that built this conference app. She has 17 years of project management experience and helps insurance clients achieve real ROI.
 
-**Important:** Nancy Paul is NOT speaking at any ITC Vegas 2025 sessions. She is not presenting, not on any panels, and PS Advisory does not have a booth at the conference.
+**Important:** While Nancy Paul is NOT speaking at any ITC Vegas 2025 sessions and PS Advisory does not have a booth, Nancy IS attending the conference and is available for in-person meetings throughout the event.
 
 **About PS Advisory:**
 • Founded by Andrew Bartels (NOT Nancy Paul)
 • Provides Salesforce consulting for insurance companies
 • Built this conference app as a demonstration
-• Contact them at psadvisory.com
+• Team members ARE attending ITC Vegas 2025
+• Nancy Paul is available for meetings at the conference
+• Contact: Email contactus@psadvisory.com or meet Nancy Paul in person at ITC Vegas
 
 Would you like to:
 • Learn about actual conference sessions and speakers?

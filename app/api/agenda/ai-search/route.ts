@@ -1,8 +1,86 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { searchSimilarSessions } from '@/lib/vector-db';
+import { hybridSearch } from '@/lib/vector-db';
 
 const prisma = new PrismaClient();
+
+// Extract key concepts from query
+function extractQueryConcepts(query: string): {
+  keywords: string[];
+  timeContext?: 'morning' | 'afternoon' | 'evening';
+  dayContext?: string;
+  intentType?: 'when' | 'where' | 'what' | 'who';
+} {
+  const lowerQuery = query.toLowerCase();
+  const keywords: string[] = [];
+  let timeContext: 'morning' | 'afternoon' | 'evening' | undefined;
+  let intentType: 'when' | 'where' | 'what' | 'who' | undefined;
+
+  // Detect intent type
+  if (lowerQuery.includes('when') || lowerQuery.includes('what time')) {
+    intentType = 'when';
+  } else if (lowerQuery.includes('where')) {
+    intentType = 'where';
+  } else if (lowerQuery.includes('who')) {
+    intentType = 'who';
+  } else {
+    intentType = 'what';
+  }
+
+  // Time context detection
+  if (lowerQuery.includes('morning') || lowerQuery.includes('breakfast')) {
+    timeContext = 'morning';
+  } else if (lowerQuery.includes('afternoon') || lowerQuery.includes('lunch')) {
+    timeContext = 'afternoon';
+  } else if (lowerQuery.includes('evening') || lowerQuery.includes('dinner') || lowerQuery.includes('party')) {
+    timeContext = 'evening';
+  }
+
+  // Extract meaningful keywords
+  const importantTerms = [
+    'ai', 'artificial intelligence', 'machine learning', 'ml',
+    'insurtech', 'insurance', 'tech', 'technology',
+    'keynote', 'workshop', 'panel', 'summit', 'masterclass',
+    'expo', 'exhibition', 'floor',
+    'breakfast', 'lunch', 'dinner', 'party', 'reception', 'networking',
+    'registration', 'badge', 'pickup',
+    'golf', 'tournament',
+    'wiise', 'latam', 'brokers', 'agents',
+    'blockchain', 'crypto', 'web3',
+    'claims', 'underwriting', 'risk', 'compliance',
+    'startup', 'innovation', 'digital', 'transformation',
+    'customer', 'experience', 'cx', 'ux',
+    'data', 'analytics', 'big data',
+    'cloud', 'saas', 'platform',
+    'cyber', 'security', 'fraud',
+    'automation', 'rpa', 'process'
+  ];
+
+  // Find matching important terms
+  for (const term of importantTerms) {
+    if (lowerQuery.includes(term)) {
+      keywords.push(term);
+    }
+  }
+
+  // Also extract non-common words from query
+  const stopWords = new Set(['the', 'is', 'at', 'which', 'on', 'and', 'a', 'an', 'as', 'are',
+                             'was', 'were', 'been', 'be', 'have', 'has', 'had', 'do', 'does',
+                             'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must',
+                             'shall', 'can', 'need', 'dare', 'ought', 'used', 'i', 'you', 'he',
+                             'she', 'it', 'we', 'they', 'what', 'when', 'where', 'who', 'how',
+                             'about', 'for', 'with', 'without', 'to', 'from', 'of', 'in']);
+
+  const words = lowerQuery.split(/\s+/);
+  for (const word of words) {
+    const cleaned = word.replace(/[^a-z0-9]/g, '');
+    if (cleaned.length > 2 && !stopWords.has(cleaned) && !keywords.includes(cleaned)) {
+      keywords.push(cleaned);
+    }
+  }
+
+  return { keywords, timeContext, intentType };
+}
 
 export async function POST(request: Request) {
   try {
@@ -12,76 +90,87 @@ export async function POST(request: Request) {
       return NextResponse.json({ sessions: [] });
     }
 
-    // First, try vector search if available
-    let matchedSessionIds: string[] = [];
+    // Extract query concepts for better understanding
+    const { keywords, timeContext, intentType } = extractQueryConcepts(query);
+
+    // Use hybrid search which combines vector and keyword search
+    let searchResults: any[] = [];
 
     try {
-      // Use vector search for semantic matching
-      const vectorResults = await searchSimilarSessions(query, {}, 50);
-      matchedSessionIds = vectorResults.map(r => r.id);
+      // Use the hybrid search for better results
+      searchResults = await hybridSearch(
+        query,           // Full query for semantic understanding
+        keywords,        // Extracted keywords for boosting
+        [],             // No user interests for now
+        100             // Get more results initially for better ranking
+      );
     } catch (error) {
-      console.log('Vector search not available, falling back to keyword search');
+      console.log('Hybrid search not available, using fallback');
+
+      // Fallback to database search
+      const sessions = await prisma.session.findMany({
+        where: {
+          OR: [
+            { title: { contains: query, mode: 'insensitive' } },
+            { description: { contains: query, mode: 'insensitive' } },
+            { tags: { hasSome: keywords } }
+          ]
+        },
+        include: {
+          speakers: {
+            include: {
+              speaker: true
+            }
+          }
+        }
+      });
+
+      searchResults = sessions.map(s => ({
+        id: s.id,
+        title: s.title,
+        description: s.description,
+        score: 1.0,
+        ...s
+      }));
     }
 
-    // Also do keyword search for direct matches
-    const keywordSessions = await prisma.session.findMany({
-      where: {
-        OR: [
-          { title: { contains: query, mode: 'insensitive' } },
-          { description: { contains: query, mode: 'insensitive' } },
-          { tags: { hasSome: query.toLowerCase().split(' ') } }
-        ]
-      },
-      select: { id: true }
-    });
+    // Apply time context filtering if present
+    if (timeContext && searchResults.length > 0) {
+      const timeFiltered = searchResults.filter(session => {
+        const hour = new Date(session.startTime).getUTCHours();
+        if (timeContext === 'morning') return hour >= 7 && hour < 12;
+        if (timeContext === 'afternoon') return hour >= 12 && hour < 17;
+        if (timeContext === 'evening') return hour >= 17;
+        return true;
+      });
 
-    const keywordIds = keywordSessions.map(s => s.id);
+      if (timeFiltered.length > 0) {
+        searchResults = timeFiltered;
+      }
+    }
 
-    // Combine results, prioritizing vector search matches
-    const allSessionIds = [...new Set([...matchedSessionIds, ...keywordIds])];
+    // Get session IDs from search results
+    const allSessionIds = searchResults.map(r => r.id);
 
-    // Handle specific queries
-    const lowerQuery = query.toLowerCase();
-
-    // Special handling for time-based queries
-    if (lowerQuery.includes('when') || lowerQuery.includes('what time')) {
-      // Extract what they're asking about
-      const searchTerms = [];
-
-      if (lowerQuery.includes('expo') || lowerQuery.includes('floor')) {
-        searchTerms.push('expo floor');
-      }
-      if (lowerQuery.includes('breakfast')) {
-        searchTerms.push('breakfast');
-      }
-      if (lowerQuery.includes('lunch')) {
-        searchTerms.push('lunch');
-      }
-      if (lowerQuery.includes('party') || lowerQuery.includes('closing')) {
-        searchTerms.push('closing party');
-      }
-      if (lowerQuery.includes('registration') || lowerQuery.includes('badge')) {
-        searchTerms.push('badge pickup');
-      }
-      if (lowerQuery.includes('keynote')) {
-        searchTerms.push('keynote');
-      }
-
-      // Search for these specific terms
-      if (searchTerms.length > 0) {
-        const specificSessions = await prisma.session.findMany({
-          where: {
-            OR: searchTerms.map(term => ({
-              title: { contains: term, mode: 'insensitive' as const }
+    // If no results from vector search, try specialized searches
+    if (allSessionIds.length === 0 && keywords.length > 0) {
+      const fallbackSessions = await prisma.session.findMany({
+        where: {
+          OR: [
+            { title: { contains: query, mode: 'insensitive' } },
+            { description: { contains: query, mode: 'insensitive' } },
+            ...keywords.map(keyword => ({
+              title: { contains: keyword, mode: 'insensitive' as const }
+            })),
+            ...keywords.map(keyword => ({
+              description: { contains: keyword, mode: 'insensitive' as const }
             }))
-          },
-          select: { id: true }
-        });
+          ]
+        },
+        select: { id: true }
+      });
 
-        const specificIds = specificSessions.map(s => s.id);
-        // Add these to the beginning of results for priority
-        allSessionIds.unshift(...specificIds.filter(id => !allSessionIds.includes(id)));
-      }
+      allSessionIds.push(...fallbackSessions.map(s => s.id));
     }
 
     // Fetch full session data
@@ -95,23 +184,52 @@ export async function POST(request: Request) {
             speaker: true
           }
         }
-      },
-      orderBy: {
-        startTime: 'asc'
       }
     });
 
-    // Sort by relevance (maintain order from search)
+    // Create a map for easy lookup
+    const sessionMap = new Map(sessions.map(s => [s.id, s]));
+
+    // Sort by relevance score if available, otherwise maintain search order
     const sortedSessions = allSessionIds
-      .map(id => sessions.find(s => s.id === id))
-      .filter(Boolean);
+      .map(id => sessionMap.get(id))
+      .filter(Boolean)
+      .sort((a: any, b: any) => {
+        // First, check if we have scores from vector search
+        const scoreA = searchResults.find(r => r.id === a.id)?.score || 0;
+        const scoreB = searchResults.find(r => r.id === b.id)?.score || 0;
+
+        if (scoreA !== scoreB) {
+          return scoreB - scoreA; // Higher score first
+        }
+
+        // Then sort by time
+        return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
+      });
+
+    // Add search metadata for better UX
+    const searchMetadata = {
+      query,
+      keywords,
+      timeContext,
+      intentType,
+      suggestedFilters: [] as string[]
+    };
+
+    // Suggest filters based on results
+    if (sortedSessions.length > 0) {
+      const tracks = [...new Set(sortedSessions.map(s => s.track).filter(Boolean))];
+      if (tracks.length > 1 && tracks.length < 5) {
+        searchMetadata.suggestedFilters = tracks;
+      }
+    }
 
     // Format the response
     return NextResponse.json({
       sessions: sortedSessions,
-      sessionIds: allSessionIds,
+      sessionIds: sortedSessions.map(s => s.id),
       count: sortedSessions.length,
-      query
+      searchMetadata
     });
 
   } catch (error) {

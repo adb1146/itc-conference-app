@@ -4,12 +4,14 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
-import { 
-  Menu, X, Calendar, MessageCircle, Users, Map, 
+import Image from 'next/image';
+import {
+  Menu, X, Calendar, MessageCircle, Users, Map,
   Home, Brain, ChevronDown, Bell, User, Search,
   Sparkles, Clock, Star, LogOut, Settings, UserPlus, Shield,
   ExternalLink, AlertTriangle
 } from 'lucide-react';
+import PSALogo from '../logo/PSA ITC Logo 2025.png';
 
 export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
@@ -141,18 +143,18 @@ export default function Navigation() {
       scrolled ? 'bg-white/95 backdrop-blur-md shadow-lg' : 'bg-white'
     }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16 sm:h-18">
+        <div className="flex justify-between items-center h-20 sm:h-24">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2 min-h-[44px]">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
-              <span className="text-white font-bold text-sm sm:text-xl">ITC</span>
-            </div>
-            <div>
-              <h1 className="text-sm sm:text-lg font-bold text-gray-900">
-                Vegas 2025
-              </h1>
-              <p className="text-xs text-gray-500 -mt-0.5 hidden sm:block">Oct 15-17</p>
-            </div>
+          <Link href="/" className="min-h-[44px] flex items-center">
+            <Image
+              src={PSALogo}
+              alt="PS Advisory ITC Vegas 2025"
+              height={100}
+              width={400}
+              className="h-14 sm:h-16 md:h-20 lg:h-24 w-auto"
+              priority
+              style={{ objectFit: 'contain' }}
+            />
           </Link>
 
           {/* Desktop Navigation */}

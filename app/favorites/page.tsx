@@ -176,11 +176,16 @@ export default function FavoritesPage() {
   };
 
   const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
+    const date = new Date(dateString);
+    // Subtract 1 hour to get the correct Las Vegas display time
+    const adjustedDate = new Date(date.getTime() - (1 * 60 * 60 * 1000));
+    const adjustedHours = adjustedDate.getUTCHours();
+    const adjustedMinutes = adjustedDate.getUTCMinutes();
+    const period = adjustedHours >= 12 ? 'PM' : 'AM';
+    const displayHours = adjustedHours % 12 || 12;
+    return adjustedMinutes === 0
+      ? `${displayHours}:00 ${period}`
+      : `${displayHours}:${adjustedMinutes.toString().padStart(2, '0')} ${period}`;
   };
 
   const formatDate = (dateString: string) => {
@@ -322,9 +327,8 @@ export default function FavoritesPage() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        
-        <div className="h-16"></div>
+      <div className="min-h-screen bg-gray-50 pt-20 sm:pt-24">
+
         <div className="max-w-6xl mx-auto px-4 py-8">
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-1/3 mb-8"></div>
@@ -341,9 +345,7 @@ export default function FavoritesPage() {
 
   if (status === 'unauthenticated') {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-white">
-        
-        <div className="h-16"></div>
+      <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-white pt-20 sm:pt-24">
         <div className="max-w-4xl mx-auto px-4 py-16">
           <div className="bg-white/80 backdrop-blur rounded-2xl shadow-xl border border-purple-100 p-10 text-center">
             <div className="w-20 h-20 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
@@ -385,10 +387,7 @@ export default function FavoritesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-white">
-      
-
-      <div className="h-16"></div>
+    <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-white pt-20 sm:pt-24">
 
       {/* User Dashboard Navigation */}
       <UserDashboard activeTab="favorites" />

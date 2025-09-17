@@ -35,10 +35,12 @@ import {
   getPSAdvisoryFooter,
   isAskingAboutPSAdvisory,
   getPSAdvisoryInfo,
+  getPSAdvisoryDetail,
   relatesToPSAdvisoryExpertise
 } from '@/lib/ps-advisory-context';
 import { validatePSAdvisoryResponse } from '@/lib/ps-advisory-validation';
 import { filterOutPSAdvisoryFakeSessions, cleanPSAdvisoryFromResponse, responseHasPSAdvisoryAsSession } from '@/lib/ps-advisory-response-filter';
+import { formatPSAdvisoryLinks } from '@/lib/ps-advisory-link-formatter';
 import { LocalRecommendationsAgent } from '@/lib/agents/local-recommendations-agent';
 import { getAttendeeNeedResponse, getTimeAwareActivities, getPracticalInfo } from '@/lib/attendee-experience';
 import { getHelpContent, getQuickHelpResponse } from '@/lib/help-content';
@@ -50,6 +52,7 @@ import { detectScheduleOfferOpportunity, generateContextualScheduleOffer, isAcce
 import { validateOnStartup } from '@/lib/startup-validation';
 import { shouldOrchestratorHandle, extractAndPersistUserInfo, activateOrchestrator } from '@/lib/agents/orchestrator-state-fix';
 import { processSimpleOrchestration, getOrCreateState } from '@/lib/agents/orchestrator-fix';
+import { extractDayFromQuery, filterSessionsByDate } from '@/lib/day-extractor';
 
 // Validate environment on startup
 validateOnStartup();
@@ -329,7 +332,36 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // No longer hard-coding PS Advisory responses - let the AI handle it naturally through vector search
+        // Check if user is asking about PS Advisory team members or company
+        if (isAskingAboutPSAdvisory(message)) {
+          console.log('[Stream API] Detected PS Advisory query');
+
+          // Get appropriate PS Advisory information
+          let psAdvisoryResponse = '';
+          const lowerMessage = message.toLowerCase();
+
+          if (lowerMessage.includes('andrew bartels')) {
+            psAdvisoryResponse = getPSAdvisoryDetail('andrew bartels');
+          } else if (lowerMessage.includes('nancy paul')) {
+            psAdvisoryResponse = getPSAdvisoryDetail('nancy paul');
+          } else if (lowerMessage.includes('tom king')) {
+            psAdvisoryResponse = getPSAdvisoryDetail('tom king');
+          } else {
+            psAdvisoryResponse = getPSAdvisoryInfo();
+          }
+
+          // Format PS Advisory team member names as clickable links
+          psAdvisoryResponse = formatPSAdvisoryLinks(psAdvisoryResponse);
+
+          await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(psAdvisoryResponse)}}\n\n`));
+
+          // Add conversation tracking
+          addMessage(sessionId, 'assistant', psAdvisoryResponse);
+
+          await writer.write(encoder.encode(`data: {"type":"done","sessionId":"${sessionId}"}\n\n`));
+          await writer.close();
+          return;
+        }
 
         // Check if user is asking for help about app capabilities
         const isAskingForHelp = message.toLowerCase().includes('what can you') ||
@@ -505,11 +537,11 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Handle practical needs and emotional support intents
-        if (intentClassification && ['practical_need', 'emotional_support', 'navigation_help', 'social_planning'].includes(intentClassification.primary_intent)) {
+        // Handle practical needs and emotional support intents (but NOT social_planning - let it use vector search)
+        if (intentClassification && ['practical_need', 'emotional_support', 'navigation_help'].includes(intentClassification.primary_intent)) {
           console.log('[Stream API] Handling attendee need:', intentClassification.primary_intent);
 
-          // Map intent to attendee need
+          // Map other intents to attendee needs
           const needMapping: Record<string, string> = {
             'practical_need': message.toLowerCase().includes('tired') ? 'tired' :
                              message.toLowerCase().includes('hungry') ? 'hungry' :
@@ -520,7 +552,7 @@ export async function POST(request: NextRequest) {
                                 message.toLowerCase().includes('anxious') ? 'overwhelmed' :
                                 message.toLowerCase().includes('bored') ? 'bored' : 'overwhelmed',
             'navigation_help': 'lost',
-            'social_planning': message.toLowerCase().includes('party') || message.toLowerCase().includes('parties') ? 'networking' : 'networking'
+            'social_planning': 'networking' // fallback if not caught above
           };
 
           const attendeeNeed = needMapping[intentClassification.primary_intent] || 'general';
@@ -792,6 +824,9 @@ export async function POST(request: NextRequest) {
         // Send initial status for regular chat
         await writer.write(encoder.encode(`data: {"type":"status","content":"Analyzing your question..."}\n\n`));
 
+        // Extract day information early for use in search and filtering
+        const dayInfo = extractDayFromQuery(message);
+
         // Analyze query complexity for FASTER model selection
         // Intelligently interpret the query
         const queryInterpretation = interpretQuery(message);
@@ -810,11 +845,16 @@ export async function POST(request: NextRequest) {
                                message.toLowerCase().includes('tell me everything') ||
                                message.toLowerCase().includes('industry context');
 
-        // OPTIMIZED: Reduce topK for faster searches
-        const topK = isAskAIQuery ? 8 : // Reduced from 10
-                    queryComplexity === 'simple' ? 5 : // Reduced from 10
-                    queryComplexity === 'moderate' ? 10 : // Reduced from 20
-                    15; // Reduced from 30
+        // OPTIMIZED: Reduce topK for faster searches, but increase if filtering by day
+        const baseTopK = isAskAIQuery ? 8 : // Reduced from 10
+                        queryComplexity === 'simple' ? 10 : // Increase for better day filtering
+                        queryComplexity === 'moderate' ? 15 : // Increase for better day filtering
+                        20; // Increase for better day filtering
+
+        // If filtering by day, get MANY more results to ensure we have some after filtering
+        const topK = dayInfo.dateFilter ? Math.min(baseTopK * 4, 40) : baseTopK;
+
+        console.log('[Vector Search] Query complexity:', queryComplexity, 'BaseTopK:', baseTopK, 'TopK:', topK, 'Day filter:', dayInfo.dateFilter);
 
         await writer.write(encoder.encode(`data: {"type":"status","content":"Searching conference database..."}\n\n`));
 
@@ -826,11 +866,21 @@ export async function POST(request: NextRequest) {
           if (hasExternalAPIs) {
             try {
               // Use enhanced search query for better matching on abstract queries
-              const searchQuery = queryInterpretation.searchStrategy === 'direct' ? message : enhancedSearchQuery;
+              let searchQuery = queryInterpretation.searchStrategy === 'direct' ? message : enhancedSearchQuery;
+
+              // If a specific day is requested, include it in the search to bias results
+              if (dayInfo.dayRequested) {
+                searchQuery = `${searchQuery} on ${dayInfo.dayRequested}`;
+              }
+
               return await hybridSearch(searchQuery, keywords, userPreferences?.interests, topK);
             } catch (error) {
               console.error('Pinecone search failed:', error);
-              return await searchLocalSessions(message, keywords, topK);
+              // Include day in local search too
+              const localSearchQuery = dayInfo.dayRequested
+                ? `${message} on ${dayInfo.dayRequested}`
+                : message;
+              return await searchLocalSessions(localSearchQuery, keywords, topK);
             }
           } else {
             // OPTIMIZED: Only fetch if local DB is empty
@@ -843,13 +893,17 @@ export async function POST(request: NextRequest) {
                   description: true,
                   track: true,
                   tags: true,
+                  startTime: true,
+                  endTime: true,
+                  location: true,
                   speakers: {
                     select: {
                       speaker: {
                         select: {
                           name: true,
                           company: true,
-                          role: true
+                          role: true,
+                          bio: true
                         }
                       }
                     }
@@ -858,7 +912,11 @@ export async function POST(request: NextRequest) {
               });
               await upsertSessionsToLocalDB(allSessions);
             }
-            return await searchLocalSessions(message, keywords, topK);
+            // Include day in local search too
+            const localSearchQuery = dayInfo.dayRequested
+              ? `${message} on ${dayInfo.dayRequested}`
+              : message;
+            return await searchLocalSessions(localSearchQuery, keywords, topK);
           }
         })();
 
@@ -900,6 +958,13 @@ export async function POST(request: NextRequest) {
 
         // Filter out PS Advisory fake sessions
         vectorResults = filterOutPSAdvisoryFakeSessions(vectorResults);
+
+        // Apply day filtering if a specific day was requested (dayInfo extracted earlier)
+        if (dayInfo.dateFilter) {
+          const unfilteredCount = vectorResults.length;
+          vectorResults = filterSessionsByDate(vectorResults, dayInfo.dateFilter);
+          console.log(`[Day Filter] Filtered from ${unfilteredCount} to ${vectorResults.length} sessions for ${dayInfo.dayRequested}`);
+        }
 
         await writer.write(encoder.encode(`data: {"type":"status","content":"Found ${vectorResults.length} relevant sessions. Generating response..."}\n\n`));
 
@@ -989,6 +1054,12 @@ export async function POST(request: NextRequest) {
           ? `${baseSystemPrompt}\n\n## Conversation Context:\n${conversationContext}\n\n${temporalContext}`
           : `${baseSystemPrompt}\n\n${temporalContext}`;
 
+        // Add day context if a specific day was requested
+        let dayContextPrompt = '';
+        if (dayInfo.dayRequested) {
+          dayContextPrompt = `\n\nIMPORTANT: The user is asking about events on ${dayInfo.dayRequested}. Focus your response on activities and sessions happening on that specific day. The search results have been filtered to only show events from ${dayInfo.dayRequested}.`;
+        }
+
         const masterPrompts = selectMasterPrompts(message);
         const enhancedPrompt = createEnhancedPrompt(
           {
@@ -998,7 +1069,7 @@ export async function POST(request: NextRequest) {
             complexity: queryComplexity,
             conversationHistory // Add conversation history
           },
-          contextualSystemPrompt + '\n\n' + masterPrompts
+          contextualSystemPrompt + '\n\n' + masterPrompts + dayContextPrompt
         );
 
         // Initialize Anthropic with streaming
@@ -1029,11 +1100,14 @@ export async function POST(request: NextRequest) {
 
         // Stream the response and collect for caching
         let fullResponse = '';
+
         for await (const chunk of stream) {
           if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
             const text = chunk.delta.text;
             fullResponse += text;
-            // Escape the text for JSON
+
+            // Don't format during streaming - just send the raw text
+            // The MessageFormatter component will handle markdown links properly
             const escaped = JSON.stringify(text).slice(1, -1);
             await writer.write(encoder.encode(`data: {"type":"content","content":"${escaped}"}\n\n`));
           }
@@ -1046,6 +1120,9 @@ export async function POST(request: NextRequest) {
         if (responseHasPSAdvisoryAsSession(fullResponse)) {
           fullResponse = cleanPSAdvisoryFromResponse(fullResponse);
         }
+
+        // Format PS Advisory team member names as clickable links (for cached/saved version)
+        fullResponse = formatPSAdvisoryLinks(fullResponse);
 
         // Clear the timeout since streaming completed successfully
         clearTimeout(timeout);

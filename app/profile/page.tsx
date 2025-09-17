@@ -177,9 +177,9 @@ export default function ProfilePage() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        
-        <div className="h-16"></div>
+      <div className="min-h-screen bg-gray-50 pt-20 sm:pt-24">
+
+
         <div className="max-w-6xl mx-auto px-4 py-8">
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-1/3 mb-8"></div>
@@ -195,9 +195,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      
-      <div className="h-16"></div>
+    <div className="min-h-screen bg-gray-50 pt-20 sm:pt-24">
 
       {/* User Dashboard Navigation */}
       <UserDashboard activeTab="profile" />

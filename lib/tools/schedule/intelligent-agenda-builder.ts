@@ -422,12 +422,11 @@ export async function generateIntelligentAgenda(
 
     allSessions.forEach(session => {
       const dateStr = new Date(session.startTime).toISOString().split('T')[0];
-      const timeStr = new Date(session.startTime).toLocaleTimeString('en-US', {
-        timeZone: 'America/Los_Angeles',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-      });
+      // For grouping, subtract 1 hour to match the display time
+      const adjustedTime = new Date(session.startTime.getTime() - (1 * 60 * 60 * 1000));
+      const hours = adjustedTime.getUTCHours().toString().padStart(2, '0');
+      const minutes = adjustedTime.getUTCMinutes().toString().padStart(2, '0');
+      const timeStr = `${hours}:${minutes}`;
 
       if (sessionsByDayTime.has(dateStr)) {
         const dayMap = sessionsByDayTime.get(dateStr)!;
@@ -528,21 +527,33 @@ export async function generateIntelligentAgenda(
           const startTime = new Date(best.session.startTime);
           const endTime = new Date(best.session.endTime);
 
+          // Timezone debugging removed - issue resolved
+
+          // The times in the database appear to be off by 1 hour
+          // UTC 08:00 should display as 7:00 AM Las Vegas time
+          const formatAsLocalTime = (date: Date) => {
+            // Subtract 1 hour to get the correct Las Vegas display time
+            const adjustedDate = new Date(date.getTime() - (1 * 60 * 60 * 1000));
+
+            // Extract hours and minutes from the adjusted UTC date
+            const hours = adjustedDate.getUTCHours();
+            const minutes = adjustedDate.getUTCMinutes();
+
+            // Format as 12-hour time
+            const period = hours >= 12 ? 'PM' : 'AM';
+            const displayHours = hours % 12 || 12;
+            const displayMinutes = minutes.toString().padStart(2, '0');
+
+            return minutes === 0
+              ? `${displayHours}:00 ${period}`
+              : `${displayHours}:${displayMinutes} ${period}`;
+          };
+
           schedule.push({
             id: `item-${best.session.id}`,
             type: 'session',
-            time: startTime.toLocaleTimeString('en-US', {
-              timeZone: 'America/Los_Angeles',  // Vegas timezone
-              hour: 'numeric',
-              minute: '2-digit',
-              hour12: true
-            }),
-            endTime: endTime.toLocaleTimeString('en-US', {
-              timeZone: 'America/Los_Angeles',  // Vegas timezone
-              hour: 'numeric',
-              minute: '2-digit',
-              hour12: true
-            }),
+            time: formatAsLocalTime(startTime),
+            endTime: formatAsLocalTime(endTime),
             title: best.session.title,
             item: {
               id: best.session.id,
@@ -571,10 +582,13 @@ export async function generateIntelligentAgenda(
           const sessionStart = startTime.getTime();
           const sessionEnd = endTime.getTime();
 
-          sortedTimeSlots.forEach(([otherTime]) => {
-            const otherTimeDate = new Date(`${dateString}T${otherTime}`);
-            if (otherTimeDate.getTime() >= sessionStart && otherTimeDate.getTime() < sessionEnd) {
-              usedTimeSlots.add(otherTime);
+          sortedTimeSlots.forEach(([otherTime, otherSessions]) => {
+            // Use the actual session start time for comparison instead of constructing from string
+            if (otherSessions.length > 0) {
+              const otherSessionStart = new Date(otherSessions[0].startTime).getTime();
+              if (otherSessionStart >= sessionStart && otherSessionStart < sessionEnd) {
+                usedTimeSlots.add(otherTime);
+              }
             }
           });
         }
@@ -600,8 +614,25 @@ export async function generateIntelligentAgenda(
         });
       }
 
-      // Sort schedule by time
-      schedule.sort((a, b) => a.time.localeCompare(b.time));
+      // Sort schedule by time - convert to 24-hour format for proper sorting
+      schedule.sort((a, b) => {
+        const timeToMinutes = (timeStr: string): number => {
+          const [time, period] = timeStr.split(' ');
+          const [hours, minutes] = time.split(':').map(Number);
+          let totalMinutes = hours * 60 + minutes;
+
+          // Handle 12-hour format
+          if (period === 'PM' && hours !== 12) {
+            totalMinutes += 12 * 60;
+          } else if (period === 'AM' && hours === 12) {
+            totalMinutes -= 12 * 60;
+          }
+
+          return totalMinutes;
+        };
+
+        return timeToMinutes(a.time) - timeToMinutes(b.time);
+      });
 
       // Calculate day stats
       const sessionCount = schedule.filter(item => item.type === 'session').length;

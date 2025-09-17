@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import {
   Calendar, Clock, MapPin, Search, Filter, Star, User, Tag,
   MessageCircle, Brain, Sparkles, TrendingUp, AlertCircle,
@@ -48,6 +49,7 @@ interface AIInsight {
 function IntelligentAgendaContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { data: session, status } = useSession();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [filteredSessions, setFilteredSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
@@ -78,7 +80,23 @@ function IntelligentAgendaContent() {
   useEffect(() => {
     fetchSessions();
     loadUserProfile();
-  }, []);
+    if (status === 'authenticated') {
+      fetchFavorites();
+    }
+  }, [status]);
+
+  const fetchFavorites = async () => {
+    try {
+      const response = await fetch('/api/favorites');
+      if (response.ok) {
+        const data = await response.json();
+        const favoriteIds = new Set(data.favorites?.map((f: any) => f.sessionId) || []);
+        setFavorites(favoriteIds);
+      }
+    } catch (error) {
+      console.error('Error fetching favorites:', error);
+    }
+  };
 
   // Initialize from URL parameters
   useEffect(() => {
@@ -593,7 +611,7 @@ function IntelligentAgendaContent() {
 
   const handleAskAIAboutSession = (session: Session) => {
     // Navigate to chat with session context
-    const sessionInfo = `I'd like to know more about the session "${session.title}" scheduled from ${new Date(session.startTime).toLocaleTimeString()} to ${new Date(session.endTime).toLocaleTimeString()} at ${session.location}. ${session.description}`;
+    const sessionInfo = `I'd like to know more about the session "${session.title}" scheduled from ${new Date(session.startTime).toLocaleTimeString('en-US', { timeZone: 'America/Los_Angeles' })} to ${new Date(session.endTime).toLocaleTimeString('en-US', { timeZone: 'America/Los_Angeles' })} at ${session.location}. ${session.description}`;
     const encodedMessage = encodeURIComponent(sessionInfo);
     router.push(`/chat?message=${encodedMessage}`);
   };
@@ -634,21 +652,55 @@ function IntelligentAgendaContent() {
     filterSessions(); // Revert to normal filtering
   };
 
-  const toggleFavorite = (sessionId: string) => {
-    const newFavorites = new Set(favorites);
-    if (newFavorites.has(sessionId)) {
-      newFavorites.delete(sessionId);
-    } else {
-      newFavorites.add(sessionId);
+  const toggleFavorite = async (sessionId: string) => {
+    // Check if user is authenticated
+    if (!session?.user) {
+      // Could show a login prompt here
+      console.log('User must be logged in to add favorites');
+      return;
     }
-    setFavorites(newFavorites);
+
+    const isFavorited = favorites.has(sessionId);
+
+    try {
+      let response;
+      if (isFavorited) {
+        // DELETE request with query parameters
+        response = await fetch(`/api/favorites?type=session&sessionId=${sessionId}`, {
+          method: 'DELETE'
+        });
+      } else {
+        // POST request with JSON body including type
+        response = await fetch('/api/favorites', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId,
+            type: 'session'
+          })
+        });
+      }
+
+      if (response.ok) {
+        const newFavorites = new Set(favorites);
+        if (isFavorited) {
+          newFavorites.delete(sessionId);
+        } else {
+          newFavorites.add(sessionId);
+        }
+        setFavorites(newFavorites);
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+    }
   };
 
   const formatTime = (dateString: string) => {
     return new Date(dateString).toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
-      hour12: true
+      hour12: true,
+      timeZone: 'America/Los_Angeles' // Always show Las Vegas time
     });
   };
 

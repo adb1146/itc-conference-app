@@ -172,11 +172,15 @@ export default function SessionDetailPage() {
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', { 
-      hour: 'numeric', 
-      minute: '2-digit',
-      hour12: true 
-    });
+    // Subtract 1 hour to get the correct Las Vegas display time
+    const adjustedDate = new Date(date.getTime() - (1 * 60 * 60 * 1000));
+    const adjustedHours = adjustedDate.getUTCHours();
+    const adjustedMinutes = adjustedDate.getUTCMinutes();
+    const period = adjustedHours >= 12 ? 'PM' : 'AM';
+    const displayHours = adjustedHours % 12 || 12;
+    return adjustedMinutes === 0
+      ? `${displayHours}:00 ${period}`
+      : `${displayHours}:${adjustedMinutes.toString().padStart(2, '0')} ${period}`;
   };
 
   const formatDate = (dateString: string) => {

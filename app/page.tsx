@@ -141,26 +141,25 @@ export default function HomePage() {
         )}
       </nav>
 
-      <div className="flex flex-col items-center justify-center min-h-screen px-4 py-8 lg:py-0">
+      <div className="flex flex-col items-center justify-start lg:justify-center min-h-screen px-4 pt-20 pb-8 lg:py-0">
         {/* Header */}
-        <div className="w-full max-w-4xl mb-6 lg:mb-8 mt-16 lg:mt-0">
-          <h1 className="text-center mb-4 lg:mb-6">
-            <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-normal bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+        <div className="w-full max-w-4xl mb-4 lg:mb-8 lg:mt-0">
+          <h1 className="text-center mb-3 lg:mb-6">
+            <span className="text-xl sm:text-2xl md:text-3xl lg:text-5xl font-normal bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
               Meet ITC Concierge,
             </span>
             <br />
-            <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-normal text-gray-800">
+            <span className="text-xl sm:text-2xl md:text-3xl lg:text-5xl font-normal text-gray-800">
               your personal AI assistant
             </span>
           </h1>
 
           {/* Purpose Statement */}
-          <div className="max-w-2xl mx-auto text-center mb-6 lg:mb-8">
-            <p className="text-gray-600 text-base lg:text-lg leading-relaxed">
-              Navigate <span className="font-semibold text-purple-600">295+ sessions</span> and <span className="font-semibold text-blue-600">200+ speakers</span> at ITC Vegas 2025 with ease.
-              Our AI understands the conference context and helps you build the perfect agenda.
+          <div className="max-w-2xl mx-auto text-center mb-4 lg:mb-8">
+            <p className="text-gray-600 text-sm sm:text-base lg:text-lg leading-relaxed">
+              Navigate <span className="font-semibold text-purple-600">295+ sessions</span> and <span className="font-semibold text-blue-600">200+ speakers</span> at ITC Vegas 2025 with ease. Our AI understands the conference context and helps you build the perfect agenda.
             </p>
-            <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 mt-4 text-xs sm:text-sm text-gray-500">
+            <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 lg:gap-6 mt-3 lg:mt-4 text-xs sm:text-sm text-gray-500">
               <span className="flex items-center gap-1">
                 <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                 AI-Powered Search
@@ -178,7 +177,7 @@ export default function HomePage() {
         </div>
 
         {/* Search Box */}
-        <div className="w-full max-w-3xl mb-8 lg:mb-12">
+        <div className="w-full max-w-3xl mb-6 lg:mb-12">
           <form onSubmit={handleSubmit} className="relative">
             <div className="relative flex items-center">
               <textarea

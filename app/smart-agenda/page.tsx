@@ -27,13 +27,27 @@ export default function SmartAgendaPage() {
       // Try to load any existing agenda from localStorage (user-specific key)
       const userSpecificKey = `smartAgenda_${session.user.email}`;
       const clearedKey = `smartAgenda_cleared_${session.user.email}`;
+      const versionKey = `smartAgenda_version_${session.user.email}`;
+
+      // Force clear cache if version changed
+      const CURRENT_VERSION = 'v5-correct-vegas-time';
+      const savedVersion = localStorage.getItem(versionKey);
+
+      if (savedVersion !== CURRENT_VERSION) {
+        console.log('Clearing old agenda due to version change');
+        localStorage.removeItem(userSpecificKey);
+        localStorage.setItem(versionKey, CURRENT_VERSION);
+      }
 
       const savedAgenda = localStorage.getItem(userSpecificKey);
       const wasCleared = localStorage.getItem(clearedKey) === 'true';
 
       if (savedAgenda) {
         try {
-          setSmartAgenda(JSON.parse(savedAgenda));
+          const parsed = JSON.parse(savedAgenda);
+          console.log('Loading cached agenda - first session time:', parsed.days?.[0]?.schedule?.[0]?.time);
+          console.log('Full first session:', parsed.days?.[0]?.schedule?.[0]);
+          setSmartAgenda(parsed);
           // If we have an agenda, remove the cleared flag
           localStorage.removeItem(clearedKey);
         } catch (error) {
@@ -58,6 +72,9 @@ export default function SmartAgendaPage() {
       // Remove the agenda and mark it as explicitly cleared
       localStorage.removeItem(userSpecificKey);
       localStorage.setItem(clearedKey, 'true');
+
+      // Log for debugging
+      console.log('Cleared localStorage for Smart Agenda');
     }
     setAgendaError(null);
   };
@@ -91,12 +108,16 @@ export default function SmartAgendaPage() {
       }
 
       if (data.success && data.agenda && session?.user?.email) {
+        console.log('New agenda generated - first session time:', data.agenda.days?.[0]?.schedule?.[0]?.time);
+        console.log('Full first session:', data.agenda.days?.[0]?.schedule?.[0]);
         setSmartAgenda(data.agenda);
         // Save to localStorage for persistence (user-specific key)
         const userSpecificKey = `smartAgenda_${session.user.email}`;
         const clearedKey = `smartAgenda_cleared_${session.user.email}`;
+        const versionKey = `smartAgenda_version_${session.user.email}`;
 
         localStorage.setItem(userSpecificKey, JSON.stringify(data.agenda));
+        localStorage.setItem(versionKey, 'v5-correct-vegas-time');
         // Remove the cleared flag since we now have a new agenda
         localStorage.removeItem(clearedKey);
       }
@@ -194,8 +215,6 @@ export default function SmartAgendaPage() {
   if (status === 'unauthenticated') {
     return (
       <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-white">
-        
-        <UserDashboard activeTab="agenda" />
 
         <div className="min-h-[60vh] flex items-center justify-center">
           <div className="text-center max-w-md mx-auto px-4">
@@ -231,8 +250,8 @@ export default function SmartAgendaPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-white">
-      
+    <div className="h-screen overflow-y-auto bg-gradient-to-b from-white via-purple-50/30 to-white pt-20 sm:pt-24">
+
       <UserDashboard activeTab="agenda" />
 
       <div className="bg-white/80 backdrop-blur border-b border-purple-100">

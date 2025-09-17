@@ -224,7 +224,9 @@ export function isAskingAboutPSAdvisory(query: string): boolean {
   const lowerQuery = query.toLowerCase();
   return lowerQuery.includes('ps advisory') ||
          lowerQuery.includes('psadvisory') ||
+         lowerQuery.includes('andrew bartels') ||
          lowerQuery.includes('nancy paul') ||
+         lowerQuery.includes('tom king') ||
          lowerQuery.includes('who built this') ||
          lowerQuery.includes('who made this') ||
          lowerQuery.includes('who created this') ||

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, Suspense } from 'react';
-import { Calendar, Clock, MapPin, Search, Filter, ChevronRight, Sparkles, Star } from 'lucide-react';
+import { Calendar, Clock, MapPin, Search, Filter, ChevronRight, Sparkles, Star, Loader2, Info } from 'lucide-react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
@@ -30,7 +30,7 @@ function SimpleAgendaContent() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [filteredSessions, setFilteredSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedDay, setSelectedDay] = useState('2025-10-14');
+  const [selectedDay, setSelectedDay] = useState('2025-10-14'); // Default to Tuesday
   const [searchQuery, setSearchQuery] = useState('');
 
   // Initialize selectedTrack from URL parameter if present
@@ -41,9 +41,14 @@ function SimpleAgendaContent() {
   const [isSearching, setIsSearching] = useState(false);
   const [isAISearch, setIsAISearch] = useState(false);
   const [aiSearchResults, setAiSearchResults] = useState<Session[]>([]);
+  const [searchMetadata, setSearchMetadata] = useState<any>(null);
+  const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [favoriteLoading, setFavoriteLoading] = useState<string | null>(null);
   const searchDebounceRef = useRef<NodeJS.Timeout>();
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
 
   const timeRanges: TimeRange[] = [
     { label: 'All Day', startHour: 0, endHour: 24 },
@@ -58,6 +63,19 @@ function SimpleAgendaContent() {
       fetchFavorites();
     }
   }, [status]);
+
+  // Handle clicks outside of search suggestions
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchInputRef.current && !searchInputRef.current.contains(event.target as Node) &&
+          suggestionsRef.current && !suggestionsRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     // Clear any pending search when component unmounts
@@ -256,6 +274,11 @@ function SimpleAgendaContent() {
 
       const data = await response.json();
 
+      // Store search metadata for better UX
+      if (data.searchMetadata) {
+        setSearchMetadata(data.searchMetadata);
+      }
+
       // Check if we got results
       if (data.sessions && data.sessions.length > 0) {
         // Store all AI results
@@ -279,10 +302,9 @@ function SimpleAgendaContent() {
 
         setFilteredSessions(dayFiltered);
       } else {
-        // No AI results, fallback to basic search
-        setIsAISearch(false);
+        // No AI results, but keep AI mode active to show intelligent "no results" message
         setAiSearchResults([]);
-        filterSessions();
+        setFilteredSessions([]);
       }
     } catch (error) {
       console.error('AI search error:', error);
@@ -303,25 +325,104 @@ function SimpleAgendaContent() {
       clearTimeout(searchDebounceRef.current);
     }
 
+    // Generate search suggestions based on input
+    if (value.trim().length > 0) {
+      const suggestions = generateSearchSuggestions(value);
+      setSearchSuggestions(suggestions);
+      setShowSuggestions(suggestions.length > 0);
+    } else {
+      setSearchSuggestions([]);
+      setShowSuggestions(false);
+    }
+
     // Set new timeout for AI search
     if (value.trim().length > 2) {
       searchDebounceRef.current = setTimeout(() => {
         performAISearch(value);
+        setShowSuggestions(false); // Hide suggestions after search
       }, 500); // Wait 500ms after user stops typing
     } else if (value.trim().length === 0) {
       // Clear search immediately if empty
       setIsAISearch(false);
       setAiSearchResults([]);
+      setSearchMetadata(null);
       filterSessions();
     }
   };
 
-  const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
+  const generateSearchSuggestions = (query: string): string[] => {
+    const lower = query.toLowerCase();
+    const suggestions: string[] = [];
+
+    // Popular searches
+    const popularSearches = [
+      'AI sessions',
+      'keynote speakers',
+      'networking events',
+      'breakfast sessions',
+      'lunch sessions',
+      'expo floor',
+      'workshops',
+      'panel discussions',
+      'closing party',
+      'golf tournament',
+      'WIISE events',
+      'LATAM sessions',
+      'innovation talks',
+      'insurtech trends',
+      'digital transformation'
+    ];
+
+    // Add matching popular searches
+    popularSearches.forEach(search => {
+      if (search.toLowerCase().includes(lower) && suggestions.length < 5) {
+        suggestions.push(search);
+      }
     });
+
+    // Add query-based suggestions
+    if (lower.includes('ai') && suggestions.length < 5) {
+      suggestions.push('AI and machine learning sessions');
+    }
+    if (lower.includes('net') && suggestions.length < 5) {
+      suggestions.push('networking opportunities');
+    }
+    if (lower.includes('key') && suggestions.length < 5) {
+      suggestions.push('keynote presentations');
+    }
+    if ((lower.includes('when') || lower.includes('time')) && suggestions.length < 5) {
+      suggestions.push('when does expo floor open');
+    }
+
+    return suggestions.slice(0, 5);
+  };
+
+  const selectSuggestion = (suggestion: string) => {
+    setSearchQuery(suggestion);
+    setShowSuggestions(false);
+    // Don't refocus to avoid reopening suggestions
+    performAISearch(suggestion);
+  };
+
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    // The database times are stored as UTC but represent Las Vegas local time
+    // So we need to extract the UTC values and format them without timezone conversion
+    const hours = date.getUTCHours();
+    const minutes = date.getUTCMinutes();
+
+    // Subtract 1 hour to match the CSV times (there's a 1-hour offset in the data)
+    const adjustedDate = new Date(date.getTime() - (1 * 60 * 60 * 1000));
+    const adjustedHours = adjustedDate.getUTCHours();
+    const adjustedMinutes = adjustedDate.getUTCMinutes();
+
+    // Format as 12-hour time
+    const period = adjustedHours >= 12 ? 'PM' : 'AM';
+    const displayHours = adjustedHours % 12 || 12;
+
+    return adjustedMinutes === 0
+      ? `${displayHours}:00 ${period}`
+      : `${displayHours}:${adjustedMinutes.toString().padStart(2, '0')} ${period}`;
   };
 
   const getTracks = () => {
@@ -351,11 +452,11 @@ function SimpleAgendaContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      
+    <div className="min-h-screen bg-gray-50 pt-20 sm:pt-24">
+
 
       {/* Clean Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-16 z-30">
+      <div className="bg-white border-b border-gray-200 sticky top-20 sm:top-24 z-30">
         <div className="max-w-7xl mx-auto px-4">
           <div className="py-4">
             <h1 className="text-2xl font-light text-gray-900">Conference Schedule</h1>
@@ -364,6 +465,7 @@ function SimpleAgendaContent() {
           {/* Day Selector */}
           <div className="flex gap-1 pb-4">
             {[
+              { date: '2025-10-13', label: 'Monday', day: 'Oct 13' },
               { date: '2025-10-14', label: 'Tuesday', day: 'Oct 14' },
               { date: '2025-10-15', label: 'Wednesday', day: 'Oct 15' },
               { date: '2025-10-16', label: 'Thursday', day: 'Oct 16' },
@@ -388,9 +490,15 @@ function SimpleAgendaContent() {
             <div className="flex-1 min-w-[300px] relative">
               <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
               <input
+                ref={searchInputRef}
                 type="text"
                 value={searchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
+                onFocus={() => {
+                  if (searchQuery.length > 0 && searchSuggestions.length > 0) {
+                    setShowSuggestions(true);
+                  }
+                }}
                 placeholder="Search sessions (AI-powered)..."
                 className="w-full pl-10 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:bg-white transition-colors"
               />
@@ -401,6 +509,31 @@ function SimpleAgendaContent() {
                   ) : (
                     <Sparkles className="w-5 h-5 text-purple-500" />
                   )}
+                </div>
+              )}
+
+              {/* Search Suggestions Dropdown */}
+              {showSuggestions && searchSuggestions.length > 0 && (
+                <div
+                  ref={suggestionsRef}
+                  className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 z-50"
+                >
+                  <div className="p-2 border-b border-gray-100">
+                    <p className="text-xs text-gray-500 font-medium flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" />
+                      AI Suggestions
+                    </p>
+                  </div>
+                  {searchSuggestions.map((suggestion, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => selectSuggestion(suggestion)}
+                      className="w-full text-left px-3 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-700 transition-colors text-sm cursor-pointer"
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
@@ -471,9 +604,47 @@ function SimpleAgendaContent() {
         </div>
         {Object.keys(groupedSessions).length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500">
-              {isSearching ? 'Searching...' : 'No sessions found for the selected criteria.'}
-            </p>
+            {isSearching ? (
+              <div>
+                <Loader2 className="w-8 h-8 animate-spin text-purple-600 mx-auto mb-4" />
+                <p className="text-gray-600 font-medium">Searching sessions...</p>
+                <p className="text-sm text-gray-500 mt-2">Using AI to find the best matches</p>
+              </div>
+            ) : isAISearch && searchQuery ? (
+              <div className="max-w-md mx-auto">
+                <div className="bg-purple-50 rounded-xl p-6 border border-purple-200">
+                  <Sparkles className="w-8 h-8 text-purple-600 mx-auto mb-4" />
+                  <p className="text-gray-700 font-medium mb-2">No sessions found for "{searchQuery}"</p>
+                  {searchMetadata?.keywords?.length > 0 && (
+                    <p className="text-sm text-gray-600 mb-4">
+                      Searched for: {searchMetadata.keywords.join(', ')}
+                    </p>
+                  )}
+                  <div className="text-sm text-gray-600">
+                    <p className="mb-2">Try:</p>
+                    <ul className="text-left space-y-1">
+                      <li>• Searching for different keywords</li>
+                      <li>• Checking other days of the conference</li>
+                      <li>• Removing filters or selecting "All Tracks"</li>
+                      {selectedTrack !== 'all' && (
+                        <li className="text-purple-600">• The "{selectedTrack}" track may not have sessions on {new Date(selectedDay + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long' })}</li>
+                      )}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="max-w-md mx-auto">
+                <p className="text-gray-500 mb-4">
+                  No sessions found for the selected criteria.
+                </p>
+                {selectedTrack !== 'all' && (
+                  <p className="text-sm text-gray-500">
+                    Try selecting a different day or choosing "All Tracks" to see more sessions.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         ) : (
           <div className="space-y-8">
@@ -537,6 +708,21 @@ function SimpleAgendaContent() {
 
                           <div className="space-y-1 text-xs text-gray-500">
                             <div className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
+                              <span className="font-medium">
+                                {new Date(session.startTime).toLocaleDateString('en-US', {
+                                  weekday: 'short',
+                                  month: 'short',
+                                  day: 'numeric'
+                                })}
+                              </span>
+                              <span className="mx-1">•</span>
+                              <Clock className="w-3 h-3" />
+                              <span>
+                                {formatTime(session.startTime)} - {formatTime(session.endTime)}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1">
                               <MapPin className="w-3 h-3" />
                               <span>{session.location}</span>
                             </div>
@@ -551,9 +737,21 @@ function SimpleAgendaContent() {
 
                           {session.speakers && session.speakers.length > 0 && (
                             <div className="mt-3 pt-3 border-t border-gray-100">
-                              <p className="text-xs text-gray-500">
-                                {session.speakers.map(s => s.speaker?.name).filter(Boolean).join(', ')}
-                              </p>
+                              <div className="text-xs text-gray-500 flex flex-wrap gap-1">
+                                {session.speakers.map((s, index) => (
+                                  s.speaker?.name && (
+                                    <span key={s.speaker.id || index}>
+                                      <span className="text-blue-600">
+                                        {s.speaker.name}
+                                      </span>
+                                      {index < session.speakers.length - 1 &&
+                                        session.speakers[index + 1]?.speaker?.name &&
+                                        <span className="mx-1">,</span>
+                                      }
+                                    </span>
+                                  )
+                                ))}
+                              </div>
                             </div>
                           )}
                         </Link>

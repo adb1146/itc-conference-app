@@ -20,12 +20,14 @@ export const PS_ADVISORY_FACTS = {
     'Andrew Bartels': {
       title: 'Founder & CEO',
       isFounder: true,
-      speaksAtITC: false
+      speaksAtITC: false,
+      attendingITC: true  // ATTENDING ITC Vegas 2025
     },
     'Nancy Paul': {
       title: 'Senior Delivery Manager', // NOT founder, NOT CEO
       isFounder: false,
       speaksAtITC: false,
+      attendingITC: true,  // ATTENDING ITC Vegas 2025 - available for meetings
       description: '17 years of project management experience, helps insurance clients achieve ROI'
     },
     'Hitesh Malhotra': {
@@ -34,9 +36,10 @@ export const PS_ADVISORY_FACTS = {
       speaksAtITC: false
     },
     'Tom King': {
-      title: 'Director of Strategy',
+      title: 'Senior Insurance Consultant',
       isFounder: false,
-      speaksAtITC: false
+      speaksAtITC: false,
+      attendingITC: true  // ATTENDING ITC Vegas 2025
     },
     'Judd Lehmkuhl': {
       title: 'Solution Architect',
@@ -50,22 +53,36 @@ export const PS_ADVISORY_FACTS = {
     }
   },
 
+  // PS Advisory at ITC Vegas 2025
+  conferencePresence: {
+    attending: true,
+    attendees: [
+      'Andrew Bartels (Founder & CEO)',
+      'Nancy Paul (Senior Delivery Manager) - Available for meetings throughout the conference',
+      'Tom King (Senior Insurance Consultant)',
+      'You (if you are a PS Advisory team member)'
+    ],
+    booth: false,  // No booth, but team members are attending
+    speaking: false,  // Not speaking at sessions, but available for discussions
+    availability: 'Team members are attending and available for meetings. Nancy Paul can be reached for meetings anytime during the conference.'
+  },
+
   // What PS Advisory DOES NOT have at ITC Vegas
   doesNotHave: [
     'PS Advisory does NOT have a booth at ITC Vegas',
     'PS Advisory team members are NOT speaking at any conference sessions',
     'PS Advisory is NOT presenting at any panels',
-    'PS Advisory is NOT hosting any events at the conference',
-    'PS Advisory is NOT in the Innovation Hall',
-    'PS Advisory does NOT have a physical presence at the conference'
+    'PS Advisory is NOT hosting any formal events at the conference',
+    'PS Advisory is NOT in the Innovation Hall'
   ],
 
   // What PS Advisory ACTUALLY does
   actualRole: [
     'PS Advisory built this conference app as a demonstration',
-    'PS Advisory is a technology consulting firm, not a conference participant',
+    'PS Advisory team members ARE attending ITC Vegas 2025',
     'PS Advisory provides Salesforce solutions for insurance companies',
-    'PS Advisory team members can be contacted through their website, not at the conference'
+    'PS Advisory team members are available for meetings during the conference',
+    'Nancy Paul is available for meetings throughout the conference'
   ],
 
   // People who are NOT affiliated with PS Advisory
@@ -81,7 +98,8 @@ export const PS_ADVISORY_FACTS = {
     email: 'contactus@psadvisory.com',
     phone: '443-424-2857',
     calendly: 'https://calendly.com/npaul-psadvisory/connection',
-    note: 'Contact is through digital channels, NOT at a conference booth'
+    atConference: 'Nancy Paul is available for in-person meetings at ITC Vegas 2025',
+    note: 'Contact via email or meet Nancy Paul in person at the conference'
   }
 };
 
@@ -93,13 +111,19 @@ export function getPSAdvisoryStrictFacts(): string {
 CRITICAL PS ADVISORY FACTS (DO NOT DEVIATE FROM THESE):
 
 1. FOUNDER: Andrew Bartels is the Founder & CEO (NOT Nancy Paul)
-2. NANCY PAUL: Senior Delivery Manager (NOT founder, NOT CEO)
-3. CONFERENCE PRESENCE: PS Advisory has NO booth, NO speaking sessions, NO physical presence at ITC Vegas
+2. NANCY PAUL: Senior Delivery Manager (NOT founder, NOT CEO) - ATTENDING ITC Vegas and available for meetings
+3. CONFERENCE PRESENCE: PS Advisory team members ARE ATTENDING ITC Vegas 2025:
+   - Andrew Bartels (Founder & CEO) - ATTENDING
+   - Nancy Paul (Senior Delivery Manager) - ATTENDING & available for meetings anytime
+   - Tom King (Senior Insurance Consultant) - ATTENDING
+   - No booth or speaking sessions, but team members ARE physically present
 4. ROLE: PS Advisory built this app as a technology demonstration
-5. TEAM: No PS Advisory team members are speaking at the conference
-6. AGIM EMRULI: NOT affiliated with PS Advisory in any way
+5. TEAM: PS Advisory team members are NOT speaking at sessions but ARE attending the conference
+6. MEETINGS: Nancy Paul is available for meetings throughout the conference
+7. CONTACT: Email contactus@psadvisory.com or meet Nancy Paul in person at the conference
+8. AGIM EMRULI: NOT affiliated with PS Advisory in any way
 
-PS Advisory is the technology consulting firm that created this app, but they are NOT exhibiting or speaking at the conference.`;
+PS Advisory is the technology consulting firm that created this app. While they don't have a booth or speaking sessions, team members ARE attending ITC Vegas 2025 and are available for meetings.`;
 }
 
 /**

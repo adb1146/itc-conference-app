@@ -13,6 +13,13 @@ import Link from 'next/link';
 import AIReasoningPanel from './AIReasoningPanel';
 import SessionSearchPanel from './SessionSearchPanel';
 
+// Helper function to format time in Las Vegas timezone
+// Since times are already formatted (e.g., "9:00 AM"), we just return them as-is
+// They are already in Las Vegas timezone from the backend
+const formatTimeToLasVegas = (timeString: string): string => {
+  return timeString; // Times are already formatted in Las Vegas timezone
+};
+
 interface SmartAgendaViewProps {
   agenda: SmartAgenda;
   onItemRemove?: (itemId: string) => void;
@@ -135,7 +142,7 @@ export default function SmartAgendaView({
   };
 
   const getSourceBadge = (item: ScheduleItem) => {
-    const sessionId = item.id.replace('session-', '');
+    const sessionId = item.id.replace('item-', '');
     const isNowFavorited = favorites.includes(sessionId);
 
     if (item.source === 'user-favorite' || (item.source === 'ai-suggested' && isNowFavorited)) {
@@ -167,7 +174,15 @@ export default function SmartAgendaView({
               Your Smart Agenda
             </h2>
             <p className="text-sm text-gray-600">
-              Generated {new Date(agenda.generatedAt).toLocaleString()}
+              Generated {new Date(agenda.generatedAt).toLocaleString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true,
+                timeZone: 'America/Los_Angeles'
+              })} PT
             </p>
           </div>
 
@@ -476,7 +491,7 @@ export default function SmartAgendaView({
                           <div className="flex flex-wrap gap-3 mt-2 text-sm text-gray-600">
                             <div className="flex items-center gap-1">
                               <Clock className="w-3 h-3" />
-                              {item.time} - {item.endTime}
+                              {formatTimeToLasVegas(item.time)} - {formatTimeToLasVegas(item.endTime)}
                             </div>
                             {item.item.location && (
                               <div className="flex items-center gap-1">
@@ -533,19 +548,21 @@ export default function SmartAgendaView({
                         {status === 'authenticated' && isSession && (
                           <button
                             onClick={(e) => {
-                              const sessionId = item.id.replace('session-', '');
+                              // Extract session ID from item.id which is formatted as 'item-{sessionId}'
+                              const sessionId = item.id.replace('item-', '');
+                              console.log('Toggling favorite for session:', sessionId, 'from item:', item.id);
                               toggleFavorite(e, sessionId);
                             }}
                             className={`p-2 rounded-lg transition-colors ${
-                              favorites.includes(item.id.replace('session-', ''))
+                              favorites.includes(item.id.replace('item-', ''))
                                 ? 'bg-purple-100 text-purple-600 hover:bg-purple-200'
                                 : 'bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600'
                             } ${
-                              favoriteLoading === item.id.replace('session-', '') ? 'opacity-50 cursor-wait' : ''
+                              favoriteLoading === item.id.replace('item-', '') ? 'opacity-50 cursor-wait' : ''
                             }`}
-                            disabled={favoriteLoading === item.id.replace('session-', '')}
+                            disabled={favoriteLoading === item.id.replace('item-', '')}
                             title={
-                              favorites.includes(item.id.replace('session-', ''))
+                              favorites.includes(item.id.replace('item-', ''))
                                 ? 'Remove from favorites'
                                 : 'Add to favorites'
                             }
@@ -553,7 +570,7 @@ export default function SmartAgendaView({
                             <Star
                               className="w-4 h-4"
                               fill={
-                                favorites.includes(item.id.replace('session-', ''))
+                                favorites.includes(item.id.replace('item-', ''))
                                   ? 'currentColor'
                                   : 'none'
                               }
