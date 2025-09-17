@@ -126,9 +126,19 @@ async function scoreSession(
     }
   }
 
-  // 6. Networking opportunities (5% weight)
+  // 6. Networking opportunities and social events (15% weight for dedicated networking)
   const networkingKeywords = ['networking', 'roundtable', 'panel', 'discussion', 'workshop'];
-  if (networkingKeywords.some(keyword => sessionText.includes(keyword))) {
+  const socialEventKeywords = ['reception', 'party', 'happy hour', 'mixer', 'meetup', 'social'];
+  const isNetworkingEvent = session.title.toLowerCase().includes('networking') ||
+                            session.title.toLowerCase().includes('reception');
+  const isSocialEvent = socialEventKeywords.some(keyword =>
+    session.title.toLowerCase().includes(keyword));
+
+  if (isNetworkingEvent || isSocialEvent) {
+    // High priority for dedicated networking/social events
+    score.matchFactors.networking = 15;
+    score.reasons.push('🤝 Essential networking opportunity');
+  } else if (networkingKeywords.some(keyword => sessionText.includes(keyword))) {
     score.matchFactors.networking = 5;
     score.reasons.push('Great networking opportunity');
   }
@@ -380,7 +390,20 @@ export async function generateIntelligentAgenda(
       orderBy: { startTime: 'asc' }
     });
 
-    console.log('[Intelligent Agenda] Total sessions available:', allSessions.length);
+    // Filter out breaks, meals, and networking events for accurate counting
+    const actualSessions = allSessions.filter(session => {
+      const title = session.title.toLowerCase();
+      return !title.includes('break') &&
+             !title.includes('lunch') &&
+             !title.includes('breakfast') &&
+             !title.includes('registration') &&
+             !title.includes('networking') &&
+             !title.includes('reception') &&
+             !title.includes('party');
+    });
+
+    console.log('[Intelligent Agenda] Total items in schedule:', allSessions.length);
+    console.log('[Intelligent Agenda] Actual conference sessions:', actualSessions.length);
 
     // 6. Score all sessions
     const sessionScores = new Map<string, SessionScore>();
@@ -430,6 +453,30 @@ export async function generateIntelligentAgenda(
       const sortedTimeSlots = Array.from(timeSlotsMap.entries())
         .sort((a, b) => a[0].localeCompare(b[0]));
 
+      // First, ensure we include at least one networking/social event for the day
+      let hasNetworkingEvent = false;
+      const networkingEvents = [];
+
+      for (const [timeSlot, sessionsAtTime] of sortedTimeSlots) {
+        const networkingSessions = sessionsAtTime.filter(session => {
+          const title = session.title.toLowerCase();
+          return title.includes('networking') || title.includes('reception') ||
+                 title.includes('party') || title.includes('happy hour') ||
+                 title.includes('mixer') || title.includes('social');
+        });
+
+        if (networkingSessions.length > 0) {
+          networkingEvents.push({
+            timeSlot,
+            sessions: networkingSessions,
+            scores: networkingSessions.map(s => ({
+              session: s,
+              score: sessionScores.get(s.id)!
+            }))
+          });
+        }
+      }
+
       // Select best session for each time slot
       for (const [timeSlot, sessionsAtTime] of sortedTimeSlots) {
         if (usedTimeSlots.has(timeSlot)) continue;
@@ -446,10 +493,33 @@ export async function generateIntelligentAgenda(
         if (scoredSessions.length === 0) continue;
 
         // Take the best scoring session
-        const best = scoredSessions[0];
+        let best = scoredSessions[0];
+
+        // Prioritize networking events, especially end-of-day events
+        const isEndOfDay = timeSlot >= '16:30'; // After 4:30 PM
+        const hasNetworkingHere = networkingEvents.some(ne => ne.timeSlot === timeSlot);
+
+        if (hasNetworkingHere) {
+          const networkingOption = networkingEvents.find(ne => ne.timeSlot === timeSlot);
+          if (networkingOption && networkingOption.scores.length > 0) {
+            // Always include end-of-day networking, or if we haven't had one yet
+            if (isEndOfDay || !hasNetworkingEvent) {
+              best = networkingOption.scores.sort((a, b) => b.score.score - a.score.score)[0];
+              // Give bonus score to ensure it's included
+              best.score.score += 20;
+              hasNetworkingEvent = true;
+            }
+          }
+        }
+
+        // Lower threshold for networking events, higher for regular sessions
+        const isNetworkingEvent = best.session.title.toLowerCase().includes('networking') ||
+                                  best.session.title.toLowerCase().includes('reception') ||
+                                  best.session.title.toLowerCase().includes('party');
+        const scoreThreshold = isNetworkingEvent ? 10 : 15;
 
         // Only include sessions with reasonable scores
-        if (best.score.score > 15 || userProfile.favoriteIds.includes(best.session.id)) {
+        if (best.score.score > scoreThreshold || userProfile.favoriteIds.includes(best.session.id)) {
           const startTime = new Date(best.session.startTime);
           const endTime = new Date(best.session.endTime);
 
@@ -538,7 +608,7 @@ export async function generateIntelligentAgenda(
     }
 
     // 9. Generate insights
-    const insights = generateInsights(selectedSessions, userProfile, allSessions.length);
+    const insights = generateInsights(selectedSessions, userProfile, actualSessions.length);
 
     // 10. Calculate overall metrics
     const totalSessions = days.reduce((sum, day) => sum + day.stats.totalSessions, 0);

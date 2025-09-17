@@ -6,7 +6,7 @@ import {
   Calendar, Clock, MapPin, Search, Filter, Star, User, Tag,
   MessageCircle, Brain, Sparkles, TrendingUp, AlertCircle,
   ChevronRight, X, Zap, Target, Users, BarChart3,
-  ThumbsUp, ThumbsDown, RefreshCw, Wand2, Info
+  ThumbsUp, ThumbsDown, RefreshCw, Wand2, Info, ChevronDown, ChevronUp
 } from 'lucide-react';
 import Link from 'next/link';
 import { PSAdvisoryCTA } from '@/components/ps-advisory-cta';
@@ -65,7 +65,8 @@ function IntelligentAgendaContent() {
     experience: 'intermediate'
   });
   const [aiInsights, setAiInsights] = useState<AIInsight[]>([]);
-  const [showAIPanel, setShowAIPanel] = useState(true);
+  const [showAIPanel, setShowAIPanel] = useState(false); // Start collapsed
+  const [aiInsightsExpanded, setAiInsightsExpanded] = useState(false); // For collapsing the insights section
   const [aiSearchQuery, setAiSearchQuery] = useState('');
   const [lastAiSearch, setLastAiSearch] = useState(''); // Track last search for persistence
   const [isAiSearchActive, setIsAiSearchActive] = useState(false); // Track if AI search is active
@@ -803,24 +804,50 @@ function IntelligentAgendaContent() {
       </div>
 
       <div className="flex">
-        {/* AI Insights Panel */}
+        {/* AI Insights Panel - Collapsible */}
         {showAIPanel && (
-          <div className="w-80 bg-white border-r border-gray-200 p-4 overflow-y-auto" style={{ height: 'calc(100vh - 16rem)' }}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                <Brain className="w-5 h-5 text-purple-600" />
-                AI Insights
-              </h3>
-              <button
-                onClick={() => setShowAIPanel(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-4 h-4" />
-              </button>
+          <div className={`${aiInsightsExpanded ? 'w-80' : 'w-64'} bg-white border-r border-gray-200 transition-all duration-300 overflow-hidden`}>
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <button
+                  onClick={() => setAiInsightsExpanded(!aiInsightsExpanded)}
+                  className="flex items-center gap-2 font-semibold text-gray-900 hover:text-purple-600 transition-colors"
+                >
+                  <Brain className="w-5 h-5 text-purple-600" />
+                  AI Insights
+                  {aiInsightsExpanded ? (
+                    <ChevronUp className="w-4 h-4" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4" />
+                  )}
+                </button>
+                <button
+                  onClick={() => setShowAIPanel(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Summary when collapsed */}
+              {!aiInsightsExpanded && (
+                <div className="text-xs text-gray-600">
+                  <div className="flex items-center justify-between mb-1">
+                    <span>Sessions: {filteredSessions.length}</span>
+                    <span>Favorites: {favorites.size}</span>
+                  </div>
+                  {aiInsights.length > 0 && (
+                    <p className="text-purple-600 font-medium">{aiInsights.length} insights available</p>
+                  )}
+                </div>
+              )}
             </div>
-            
-            {/* User Profile Quick Edit */}
-            <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+
+            {/* Expanded content */}
+            {aiInsightsExpanded && (
+              <div className="px-4 pb-4 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 20rem)' }}>
+                {/* User Profile Quick Edit */}
+                <div className="mb-4 p-3 bg-gray-50 rounded-lg">
               <p className="text-xs font-medium text-gray-700 mb-2">Your Profile</p>
               <div className="space-y-2">
                 <select
@@ -933,29 +960,29 @@ function IntelligentAgendaContent() {
                 </div>
               </div>
             </div>
+              </div>
+            )}
           </div>
         )}
 
         {/* Sessions List */}
         <div className="flex-1 px-4 py-4">
-          {/* AI Toggle Button - Vertical tab attached to left side */}
+          {/* Compact AI Toggle Button */}
           {!showAIPanel && (
             <button
               onClick={() => {
                 setShowAIPanel(true);
+                setAiInsightsExpanded(true); // Open expanded when clicking the button
               }}
-              className="fixed left-0 top-1/2 -translate-y-1/2 z-40 bg-purple-600 text-white rounded-r-lg shadow-lg hover:bg-purple-700 transition-all hover:translate-x-1 writing-mode-vertical-lr"
-              style={{
-                writingMode: 'vertical-rl',
-                textOrientation: 'mixed',
-                padding: '12px 8px'
-              }}
+              className="fixed left-2 top-1/3 z-40 bg-purple-600 text-white rounded-lg shadow-lg hover:bg-purple-700 transition-all hover:scale-105 p-2"
               title="Show AI Insights"
             >
-              <div className="flex items-center gap-2" style={{ writingMode: 'vertical-rl' }}>
-                <Brain className="w-5 h-5 rotate-90" />
-                <span className="text-sm font-medium">AI Insights</span>
-              </div>
+              <Brain className="w-5 h-5" />
+              {aiInsights.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                  {aiInsights.length}
+                </span>
+              )}
             </button>
           )}
           
