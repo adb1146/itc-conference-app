@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
 
         // FIRST: Use AI to classify user intent - much more accurate than keyword matching
         console.log('[Stream API] Classifying user intent with AI...');
-        const intentClassification = await classifyUserIntent(message, {
+        let intentClassification = await classifyUserIntent(message, {
           history: getConversationHistory(sessionId),
           userProfile: userPreferences,
           agendaAlreadyBuilt: false
@@ -408,8 +408,8 @@ export async function POST(request: NextRequest) {
         // Check if we're waiting for preferences from a previous question
         const waitingForPreferences = shouldAskForPreferences(sessionId);
 
-        // Use AI to classify user intent instead of keyword detection
-        let intentClassification: IntentClassification | undefined;
+        // Use AI to classify user intent instead of keyword detection (already done above)
+        // let intentClassification: IntentClassification | undefined; // Already declared above
         let toolDetection = detectToolIntent(message); // Keep as fallback
 
         try {
