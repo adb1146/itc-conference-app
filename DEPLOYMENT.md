@@ -1,7 +1,7 @@
 # Database Sync - Production Deployment Guide
 
 ## Overview
-This guide explains how to sync data from development to production on Railway.
+This guide explains how to sync data from development to production on Vercel.
 
 ## Files Created
 - `scripts/export-data.js` - Exports database to JSON
@@ -27,38 +27,41 @@ git add DEPLOYMENT.md
 # Commit changes
 git commit -m "Add database sync scripts and data export"
 
-# Push to GitHub (Railway will auto-deploy)
+# Push to GitHub (Vercel will auto-deploy)
 git push origin main
 ```
 
-### Step 2: Run Import on Railway
+### Step 2: Run Import on Production
 
-#### Option A: Using Railway CLI
+#### Option A: Using Vercel CLI
 ```bash
-# Install Railway CLI if needed
-npm install -g @railway/cli
+# Install Vercel CLI if needed
+npm install -g vercel
 
-# Login to Railway
-railway login
+# Login to Vercel
+vercel login
 
 # Link to your project
-railway link
+vercel link
 
-# Run the import script
-railway run node scripts/import-data.js
+# Run the import script in production
+vercel env pull .env.production
+node scripts/import-data.js
 ```
 
-#### Option B: Using Railway Dashboard
-1. Go to your Railway project dashboard
-2. Navigate to your service
-3. Open the "Settings" tab
-4. Find "Run Command" or "Console"
-5. Run: `node scripts/import-data.js`
+#### Option B: Using Database Provider Console
+1. Access your database provider (Neon, Supabase, or Vercel Postgres)
+2. Use the SQL console or connection string
+3. Run the import script locally with production DATABASE_URL:
+   ```bash
+   DATABASE_URL="your-production-database-url" node scripts/import-data.js
+   ```
 
 ### Step 3: Verify Production Data
 After import, verify the data:
 ```bash
-railway run node -e "
+# Using production DATABASE_URL
+DATABASE_URL="your-production-database-url" node -e "
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 async function check() {
@@ -78,11 +81,11 @@ check();
 - The export contains 7 test users from dev
 - You may want to delete test users after import:
   ```bash
-  railway run node -e "
+  DATABASE_URL="your-production-database-url" node -e "
   const { PrismaClient } = require('@prisma/client');
   const prisma = new PrismaClient();
-  await prisma.user.deleteMany({ 
-    where: { email: { contains: 'test' } } 
+  await prisma.user.deleteMany({
+    where: { email: { contains: 'test' } }
   });
   await prisma.$disconnect();
   "
@@ -91,14 +94,14 @@ check();
 ### Creating Admin User
 After import, create a production admin user:
 ```bash
-railway run node scripts/create-test-users.js
+DATABASE_URL="your-production-database-url" node scripts/create-test-users.js
 # Or manually create via the app registration
 ```
 
 ### Troubleshooting
-- If import fails, check DATABASE_URL is set correctly in Railway
-- Ensure Prisma migrations are up to date: `railway run npx prisma db push`
-- Check Railway logs for any errors
+- If import fails, check DATABASE_URL is set correctly in your environment
+- Ensure Prisma migrations are up to date: `npx prisma migrate deploy`
+- Check Vercel function logs for any errors
 
 ## Data Overview
 Current export contains:
@@ -111,4 +114,4 @@ Current export contains:
 To update data in the future:
 1. Export from dev: `DATABASE_URL="..." node scripts/export-data.js`
 2. Commit new export: `git add data/exports/latest-export.json && git commit -m "Update data export" && git push`
-3. Run import on Railway: `railway run node scripts/import-data.js`
+3. Run import on production: `DATABASE_URL="your-production-database-url" node scripts/import-data.js`

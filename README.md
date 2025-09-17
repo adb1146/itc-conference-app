@@ -20,95 +20,80 @@ An AI-powered conference companion app for ITC Vegas 2025 (October 15-17, 2025),
 - **Authentication**: NextAuth.js
 - **AI Integration**: Anthropic Claude API
 
-## Deployment to Railway
+## Deployment to Vercel
 
 ### Prerequisites
 
-1. A Railway account (sign up at https://railway.app)
-2. Railway CLI installed (optional): `npm install -g @railway/cli`
+1. A Vercel account (sign up at https://vercel.com)
+2. Vercel CLI installed (optional): `npm install -g vercel`
 
 ### Deployment Steps
 
 #### Option 1: Deploy via GitHub (Recommended)
 
 1. **Connect Repository**
-   - Go to https://railway.app/new
-   - Choose "Deploy from GitHub repo"
+   - Go to https://vercel.com/new
+   - Import your GitHub repository
    - Select `itc-conference-app` repository
-   - Railway will auto-detect the configuration
+   - Vercel will auto-detect the Next.js configuration
 
-2. **Add PostgreSQL Database**
-   - In your Railway project, click "New Service"
-   - Select "Database" → "Add PostgreSQL"
-   - Railway will automatically add the DATABASE_URL
-
-3. **Configure Environment Variables**
-   - Go to your service settings
+2. **Configure Environment Variables**
+   - In your project settings on Vercel
    - Add these environment variables:
    ```
-   NEXTAUTH_URL=https://your-app-name.railway.app
+   DATABASE_URL=<your-postgresql-connection-string>
+   NEXTAUTH_URL=https://your-app-name.vercel.app
    NEXTAUTH_SECRET=<generate-with-openssl-rand-base64-32>
    ANTHROPIC_API_KEY=<your-anthropic-api-key>
+   OPENAI_API_KEY=<your-openai-api-key>
+   PINECONE_API_KEY=<your-pinecone-api-key>
+   PINECONE_ENVIRONMENT=<your-pinecone-environment>
+   PINECONE_INDEX_NAME=<your-pinecone-index-name>
    FIRECRAWL_API_KEY=<your-firecrawl-key-if-needed>
    ```
 
-4. **Deploy**
-   - Railway will automatically deploy on push to master
-   - First deployment will run migrations and start the app
+3. **Deploy**
+   - Vercel will automatically deploy on push to main branch
+   - First deployment will build and start the app
 
 #### Option 2: Deploy via CLI
 
-1. **Install Railway CLI**
+1. **Install Vercel CLI**
    ```bash
-   npm install -g @railway/cli
+   npm install -g vercel
    ```
 
-2. **Login to Railway**
+2. **Deploy to Vercel**
    ```bash
-   railway login
+   vercel
    ```
-
-3. **Initialize Project**
-   ```bash
-   railway init
-   ```
-
-4. **Add PostgreSQL**
-   ```bash
-   railway add postgresql
-   ```
-
-5. **Set Environment Variables**
-   ```bash
-   railway variables set NEXTAUTH_URL=https://your-app-name.railway.app
-   railway variables set NEXTAUTH_SECRET=$(openssl rand -base64 32)
-   railway variables set ANTHROPIC_API_KEY=your-key-here
-   ```
-
-6. **Deploy**
-   ```bash
-   railway up
-   ```
+   - Follow the prompts to link your project
+   - Configure environment variables when prompted
 
 ### Post-Deployment
 
 After deployment, you'll need to:
 
-1. **Run Database Seed** (optional)
-   - SSH into your Railway service or use the Railway CLI
-   - Run: `npm run seed` to populate initial data
+1. **Set up Database**
+   - Use a PostgreSQL provider like Neon, Supabase, or Vercel Postgres
+   - Run migrations: `npx prisma migrate deploy`
+   - Run seed (optional): `npm run seed`
 
 2. **Access Your App**
-   - Your app will be available at: `https://your-app-name.railway.app`
+   - Your app will be available at: `https://your-app-name.vercel.app`
 
 ### Environment Variables
 
 | Variable | Description | Required |
 |----------|-------------|----------|
-| `DATABASE_URL` | PostgreSQL connection string (auto-set by Railway) | Yes |
+| `DATABASE_URL` | PostgreSQL connection string | Yes |
 | `NEXTAUTH_URL` | Your app's URL | Yes |
 | `NEXTAUTH_SECRET` | Secret for NextAuth (generate with `openssl rand -base64 32`) | Yes |
 | `ANTHROPIC_API_KEY` | Claude API key | Yes |
+| `OPENAI_API_KEY` | OpenAI API key for embeddings | Yes |
+| `PINECONE_API_KEY` | Pinecone API key for vector search | Optional |
+| `PINECONE_ENVIRONMENT` | Pinecone environment | Optional |
+| `PINECONE_INDEX_NAME` | Pinecone index name | Optional |
 | `FIRECRAWL_API_KEY` | Firecrawl API key for web scraping | Optional |
 
 ## Local Development

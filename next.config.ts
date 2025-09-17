@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
     // !! WARN !!
     // Dangerously allow production builds to successfully complete even if
     // your project has type errors.
-    // This is needed for Railway deployment while we fix all TypeScript issues
+    // This is needed for deployment while we fix all TypeScript issues
     ignoreBuildErrors: true,
   },
   eslint: {
