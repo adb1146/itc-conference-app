@@ -240,21 +240,6 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Why We Built This - Hidden on mobile to save space */}
-        <div className="hidden sm:block w-full max-w-2xl mt-8 lg:mt-12 p-4 lg:p-6 bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl border border-purple-100">
-          <h3 className="text-sm font-semibold text-purple-700 mb-2">Why we built ITC Concierge</h3>
-          <p className="text-xs text-gray-600 leading-relaxed">
-            With hundreds of sessions across multiple tracks, finding the right content at ITC Vegas can be overwhelming.
-            We created this AI assistant to help you discover hidden gems, avoid scheduling conflicts, and maximize your
-            conference ROI. Whether you're a CTO exploring innovation or an underwriter seeking automation insights,
-            our AI understands your needs and guides you to the most relevant sessions.
-          </p>
-          <div className="flex items-center gap-4 mt-3">
-            <span className="text-xs text-purple-600 font-medium">Built by PS Advisory</span>
-            <span className="text-xs text-gray-400">•</span>
-            <span className="text-xs text-gray-500">Powered by Claude AI</span>
-          </div>
-        </div>
 
       </div>
     </div>
