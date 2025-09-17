@@ -123,19 +123,28 @@ export async function POST(request: NextRequest) {
         // Check if research agent is already active (continuing conversation) - MUST CHECK BEFORE REGISTRATION
         const conversation = getConversation(sessionId);
 
-        // FIRST: Check if this is an agenda building request - redirect to Smart Agenda page
-        const agendaKeywords = [
-          'build my agenda', 'build my schedule', 'create my schedule', 'personalized agenda',
-          'help designing my schedule', 'help me design', 'design my schedule',
-          'help with my schedule', 'need help designing', 'help with my agenda',
-          'organize these into', 'personal schedule'
-        ];
+        // FIRST: Use AI to classify user intent - much more accurate than keyword matching
+        console.log('[Stream API] Classifying user intent with AI...');
+        const intentClassification = await classifyUserIntent(message, {
+          history: getConversationHistory(sessionId),
+          userProfile: userPreferences,
+          agendaAlreadyBuilt: false
+        });
 
-        const lowerMessage = message.toLowerCase();
-        const isAgendaRequest = agendaKeywords.some(keyword => lowerMessage.includes(keyword));
+        console.log('[Stream API] Intent classification:', {
+          primary: intentClassification.primary_intent,
+          confidence: intentClassification.confidence,
+          action: intentClassification.suggested_action
+        });
+
+        // Check if this is an agenda building request - redirect to Smart Agenda page
+        const isAgendaRequest = (
+          intentClassification.primary_intent === 'agenda_building' &&
+          intentClassification.confidence > 0.7
+        ) || intentClassification.suggested_action === 'build_agenda';
 
         if (isAgendaRequest) {
-          console.log('[Stream API] Detected agenda request - redirecting to Smart Agenda page');
+          console.log('[Stream API] AI detected agenda building intent - redirecting to Smart Agenda page');
 
           // Get user from database if authenticated
           let user = null;
