@@ -4,7 +4,8 @@ import { Resend } from 'resend';
 import nodemailer from 'nodemailer';
 
 // Initialize Resend (recommended for production)
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+// Trim any whitespace/newlines from API key
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY.trim()) : null;
 
 // Initialize Nodemailer (for development/testing or as fallback)
 const createNodemailerTransporter = () => {
@@ -46,8 +47,9 @@ export class EmailService {
   private adminEmail: string;
 
   private constructor() {
-    this.fromEmail = process.env.EMAIL_FROM || 'noreply@itc-conference.com';
-    this.adminEmail = process.env.ADMIN_EMAIL || 'admin@itc-conference.com';
+    // Trim any whitespace/newlines from environment variables
+    this.fromEmail = (process.env.EMAIL_FROM || 'noreply@itc-conference.com').trim();
+    this.adminEmail = (process.env.ADMIN_EMAIL || 'admin@itc-conference.com').trim();
   }
 
   public static getInstance(): EmailService {
