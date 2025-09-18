@@ -139,7 +139,7 @@ export class EmailService {
               </p>
             </div>
             <div class="footer">
-              <p>© 2025 ITC Vegas Conference. All rights reserved.</p>
+              <p>© 2025 PS Advisory LLC. All rights reserved.</p>
               <p>This email was sent to ${email}</p>
             </div>
           </div>
@@ -158,7 +158,7 @@ ${resetUrl}
 
 If you didn't request this password reset, you can safely ignore this email.
 
-© 2025 ITC Vegas Conference. All rights reserved.
+© 2025 PS Advisory LLC. All rights reserved.
     `;
 
     return this.sendEmail({
