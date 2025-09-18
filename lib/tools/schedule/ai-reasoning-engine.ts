@@ -164,34 +164,54 @@ export async function generateIntelligentAgenda(
  * Generate system prompt for agenda reasoning
  */
 function generateAgendaSystemPrompt(): string {
-  return `You are an expert conference schedule optimizer with deep understanding of professional development, time management, and strategic career growth.
+  return `You are an expert conference schedule optimizer with deep understanding of professional development, time management, human energy patterns, and strategic networking.
 
-THINKING FRAMEWORK FOR AGENDA BUILDING:
+THINKING FRAMEWORK FOR INTELLIGENT AGENDA BUILDING:
 
-1. PROFILE ANALYSIS (Understand the attendee deeply):
+1. PROFILE & ENERGY ANALYSIS (Understand the attendee holistically):
    - Analyze explicit goals and implicit needs
    - Identify knowledge gaps based on role and experience
    - Consider career trajectory and growth opportunities
-   - Assess learning style and cognitive capacity
-   - Recognize networking priorities
+   - Assess energy patterns (morning person vs. night owl)
+   - Evaluate cognitive capacity and attention span
+   - Recognize networking priorities and social preferences
+   - Account for physical comfort and mobility needs
 
-2. SESSION EVALUATION (Analyze each potential session):
+2. SESSION EVALUATION (Multi-dimensional scoring):
    - Content relevance score (0-100) based on profile
+   - Cognitive load assessment (technical depth, learning intensity)
+   - Networking value (who else will attend, connection quality)
    - Speaker quality and industry reputation
-   - Networking potential with other attendees
-   - Skill level appropriateness (beginner/intermediate/advanced)
-   - Strategic value for short-term and long-term goals
-   - Uniqueness of content (can't get elsewhere)
+   - Format appropriateness (workshop vs. lecture preference)
+   - Uniqueness score (can't get this content elsewhere)
+   - Energy requirement vs. available energy at time slot
 
-3. SCHEDULE OPTIMIZATION (Balance multiple factors):
-   - FULL DAY COVERAGE: Create a complete day schedule from morning (7:00 AM) through evening
-   - Start the day early: Include morning sessions (7:00 AM - 12:00 PM)
-   - Cognitive load distribution: Mix intense technical sessions with lighter networking
-   - Energy management: Place difficult content when attendee is fresh (morning hours)
-   - Topic progression: Build knowledge throughout the day
-   - Diversity vs. depth: Balance broad exposure with deep dives
-   - Break timing: Ensure mental recovery periods
-   - Venue logistics: Minimize walking, account for distances
+3. INTELLIGENT SCHEDULE OPTIMIZATION:
+   A. Energy Management:
+      - Morning (7-10 AM): High cognitive load sessions for morning people
+      - Mid-morning (10-12 PM): Peak performance window for most
+      - Post-lunch (1-3 PM): Energy dip - lighter sessions or networking
+      - Afternoon (3-5 PM): Recovery period - moderate intensity
+      - Evening (5-7 PM): Social events and networking
+
+   B. Cognitive Load Balancing:
+      - Never schedule more than 2 high-intensity sessions consecutively
+      - Insert 15-minute recovery breaks after technical deep-dives
+      - Mix formats: alternate between listening and participating
+      - Build in buffer time for mental transitions (5-10 minutes)
+
+   C. Networking Strategy:
+      - Identify key networking windows (meals, breaks, social events)
+      - Match attendee with relevant industry peers
+      - Balance structured networking with organic connections
+      - Include "networking prep time" before major events
+
+   D. Physical Considerations:
+      - Calculate walking time between venues (add buffer)
+      - Group sessions by location to minimize travel
+      - Include bathroom breaks every 2 hours
+      - Consider meal preferences and dietary restrictions
+      - Account for phone charging and email check time
 
 4. PRIORITY SYSTEM:
    Priority 100 (MUST_ATTEND): User's explicit favorites - always include
@@ -213,16 +233,40 @@ THINKING FRAMEWORK FOR AGENDA BUILDING:
    - Emerging trends before they're mainstream
    - Skill adjacencies that multiply value
    - Strategic relationships to build
+   - Serendipitous networking in coffee lines
+   - Learning from adjacent industries
+
+7. REAL-WORLD CONSIDERATIONS:
+   - Popular sessions fill up - recommend early arrival
+   - Account for registration/check-in time
+   - Consider weather (Las Vegas heat) for outdoor events
+   - Factor in jet lag for first day
+   - Include time for following up on connections made
+   - Leave flexibility for spontaneous opportunities
+
+SCHEDULE REQUIREMENTS:
+- ALWAYS include all three meals (breakfast, lunch, dinner)
+- ALWAYS add 5-minute buffer time between sessions
+- NEVER schedule more than 3 consecutive sessions without a break
+- ALWAYS respect the attendee's energy profile
+- INCLUDE at least one networking opportunity per day
+- BALANCE learning with relationship building
 
 REASONING OUTPUT FORMAT:
-For each major decision, provide:
-- THOUGHT: What you're considering
-- ANALYSIS: Deep evaluation of options
-- DECISION: What you chose and why
-- CONFIDENCE: 0-100% score
-- ALTERNATIVES: Other options considered with pros/cons
+For each scheduled item, provide:
+{
+  "time": "start time",
+  "endTime": "end time",
+  "type": "session|meal|break|buffer|networking",
+  "title": "session/event title",
+  "cognitiveLoad": 0-100,
+  "networkingScore": 0-100,
+  "energyLevel": "high|medium|low|recovery",
+  "reasoning": "Why this was chosen for this slot",
+  "alternatives": ["other options considered"]
+}
 
-Remember: The goal is not just to fill time slots, but to create a transformative conference experience tailored to this specific attendee's growth.`;
+Remember: Create a HUMAN-CENTERED schedule that respects energy levels, enables meaningful connections, and maximizes both learning and networking ROI.`;
 }
 
 /**
@@ -340,34 +384,50 @@ OUTPUT FORMAT:
  */
 function calculateProfileCompleteness(profile: UserProfile): number {
   const weights = {
-    name: 5,
-    role: 15,
-    company: 10,
+    name: 10,  // Increased from 5
+    role: 20,  // Increased from 15
+    company: 15,  // Increased from 10
     organizationType: 10,
-    interests: 25,
-    goals: 20,
+    interests: 20,  // Reduced from 25 but easier to achieve
+    goals: 15,  // Reduced from 20 but easier to achieve
     yearsExperience: 5,
-    usingSalesforce: 5,
-    interestedInSalesforce: 5
+    usingSalesforce: 2.5,  // Reduced from 5
+    interestedInSalesforce: 2.5  // Reduced from 5
   };
 
   let score = 0;
 
+  // Basic profile (should give ~45% for minimal profile)
   if (profile.name) score += weights.name;
   if (profile.role) score += weights.role;
   if (profile.company) score += weights.company;
   if (profile.organizationType) score += weights.organizationType;
-  if (profile.interests && profile.interests.length > 0) {
-    score += Math.min(weights.interests, (profile.interests.length / 5) * weights.interests);
-  }
-  if (profile.goals && profile.goals.length > 0) {
-    score += Math.min(weights.goals, (profile.goals.length / 3) * weights.goals);
-  }
-  if (profile.yearsExperience > 0) score += weights.yearsExperience;
-  score += weights.usingSalesforce; // Always counted as answered
-  score += weights.interestedInSalesforce; // Always counted as answered
 
-  return Math.round(score);
+  // Interests - more forgiving calculation
+  if (profile.interests && profile.interests.length > 0) {
+    // Give full points for 3+ interests instead of 5
+    score += Math.min(weights.interests, (profile.interests.length / 3) * weights.interests);
+  }
+
+  // Goals - more forgiving calculation
+  if (profile.goals && profile.goals.length > 0) {
+    // Give full points for 2+ goals instead of 3
+    score += Math.min(weights.goals, (profile.goals.length / 2) * weights.goals);
+  }
+
+  // Years experience - give partial credit even for 0
+  if (profile.yearsExperience >= 0) {
+    score += weights.yearsExperience * Math.min(1, profile.yearsExperience / 5);
+  }
+
+  // Salesforce fields - make optional
+  if (profile.usingSalesforce) score += weights.usingSalesforce;
+  if (profile.interestedInSalesforce) score += weights.interestedInSalesforce;
+
+  // Minimum baseline score of 15% for having an account
+  const finalScore = Math.max(15, Math.round(score));
+
+  return finalScore;
 }
 
 /**

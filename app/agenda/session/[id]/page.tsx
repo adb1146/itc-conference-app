@@ -210,32 +210,12 @@ export default function SessionDetailPage() {
   const askAIAboutSession = () => {
     if (!session) return;
 
-    // Prepare session data for AI context
-    const sessionData = {
-      id: session.id,
-      title: session.title,
-      description: session.description,
-      track: session.track,
-      speakers: session.speakers.map(s => ({
-        name: s.speaker.name,
-        role: s.speaker.role,
-        company: s.speaker.company
-      })),
-      tags: session.tags,
-      location: session.location,
-      startTime: session.startTime,
-      endTime: session.endTime
-    };
+    // Create a focused query about the session
+    const speakerNames = session.speakers.map(s => s.speaker.name).join(', ');
+    const query = `Tell me about the ITC Vegas session "${session.title}"${speakerNames ? ` with ${speakerNames}` : ''}. What are the key topics, takeaways, and why should I attend?`;
 
-    // Store session context in sessionStorage
-    sessionStorage.setItem('askAIContext', JSON.stringify({
-      type: 'session',
-      data: sessionData,
-      query: `Tell me everything about the session "${session.title}". Search the web for information about the speakers, the topics covered, and any relevant industry context. Include information from the ITC Vegas website if available.`
-    }));
-
-    // Navigate to chat
-    router.push('/chat');
+    // Navigate to chat with the message as a URL parameter
+    router.push(`/chat?message=${encodeURIComponent(query)}`);
   };
 
   if (loading) {
@@ -281,7 +261,7 @@ export default function SessionDetailPage() {
     <>
       
       <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-white">
-        <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="container mx-auto px-4 py-4 sm:py-6 md:py-8 max-w-4xl">
           {/* Back Button */}
           <button
             onClick={() => router.back()}
@@ -292,20 +272,20 @@ export default function SessionDetailPage() {
           </button>
 
           {/* Session Header */}
-          <div className="bg-white/80 backdrop-blur rounded-2xl shadow-xl border border-purple-100 p-8 mb-6">
-            <div className="flex justify-between items-start mb-6">
+          <div className="bg-white/80 backdrop-blur rounded-2xl shadow-xl border border-purple-100 p-4 sm:p-6 md:p-8 mb-6">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-6">
               <div className="flex-1">
-                <h1 className="text-3xl font-normal mb-4">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-normal mb-4 break-words">
                   <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">{session.title}</span>
                 </h1>
 
                 {/* Tags */}
                 {session.tags && session.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-4">
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-4">
                     {session.tags.map((tag, index) => (
                       <span
                         key={index}
-                        className="px-4 py-1.5 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 rounded-xl text-sm font-medium"
+                        className="px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium"
                       >
                         {tag}
                       </span>
@@ -315,7 +295,7 @@ export default function SessionDetailPage() {
               </div>
 
               {/* Action Buttons - All aligned together */}
-              <div className="flex items-center gap-2 ml-4">
+              <div className="flex items-center gap-2 sm:ml-4">
                 <FavoriteButton
                   itemId={session.id}
                   type="session"
@@ -323,36 +303,36 @@ export default function SessionDetailPage() {
                 />
                 <button
                   onClick={askAIAboutSession}
-                  className="p-2.5 text-purple-400 hover:text-purple-600 hover:bg-purple-50 rounded-xl transition-all"
+                  className="p-2 sm:p-2.5 text-purple-400 hover:text-purple-600 hover:bg-purple-50 rounded-xl transition-all"
                   title="Ask AI about this session"
                 >
-                  <MessageCircle className="h-6 w-6" />
+                  <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6" />
                 </button>
                 <button
                   onClick={shareSession}
-                  className="p-2.5 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                  className="p-2 sm:p-2.5 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
                   title="Share session"
                 >
-                  <Share2 className="h-6 w-6" />
+                  <Share2 className="h-5 w-5 sm:h-6 sm:w-6" />
                 </button>
               </div>
             </div>
 
             {/* Session Details */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
               <div className="flex items-center gap-3 text-gray-600">
                 <Calendar className="w-5 h-5 text-blue-600" />
                 <div>
-                  <p className="text-sm text-gray-500">Date</p>
-                  <p className="font-medium">{formatDate(session.startTime)}</p>
+                  <p className="text-xs sm:text-sm text-gray-500">Date</p>
+                  <p className="text-sm sm:text-base font-medium">{formatDate(session.startTime)}</p>
                 </div>
               </div>
               
               <div className="flex items-center gap-3 text-gray-600">
                 <Clock className="w-5 h-5 text-blue-600" />
                 <div>
-                  <p className="text-sm text-gray-500">Time</p>
-                  <p className="font-medium">
+                  <p className="text-xs sm:text-sm text-gray-500">Time</p>
+                  <p className="text-sm sm:text-base font-medium">
                     {formatTime(session.startTime)} - {formatTime(session.endTime)}
                   </p>
                 </div>
@@ -361,14 +341,14 @@ export default function SessionDetailPage() {
               <div className="flex items-center gap-3 text-gray-600">
                 <MapPin className="w-5 h-5 text-blue-600" />
                 <div>
-                  <p className="text-sm text-gray-500">Location</p>
-                  <p className="font-medium">{session.location || 'TBD'}</p>
+                  <p className="text-xs sm:text-sm text-gray-500">Location</p>
+                  <p className="text-sm sm:text-base font-medium">{session.location || 'TBD'}</p>
                 </div>
               </div>
             </div>
 
             {/* Enhanced Description */}
-            <div className="prose max-w-none">
+            <div className="prose prose-sm sm:prose-base max-w-none">
               <h2 className="text-xl font-semibold text-gray-900 mb-3">About This Session</h2>
               {enriching && !session.enrichedSummary ? (
                 <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 mb-4">
@@ -444,7 +424,7 @@ export default function SessionDetailPage() {
             )}
 
             {/* Why You Should Attend */}
-            <div className="mt-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-6">
+            <div className="mt-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4 sm:p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-purple-600" />
                 Why You Should Attend
@@ -556,8 +536,8 @@ export default function SessionDetailPage() {
 
           {/* Speakers Section */}
           {session.speakers && session.speakers.length > 0 && (
-            <div className="bg-white rounded-xl shadow-lg p-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+            <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 md:p-8">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6 flex items-center gap-2">
                 <Users className="w-6 h-6 text-blue-600" />
                 Speakers
               </h2>
@@ -569,9 +549,9 @@ export default function SessionDetailPage() {
                     href={`/speakers/${speaker.id}`}
                     className="block group"
                   >
-                    <div className="flex items-start gap-4 p-4 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg hover:bg-gray-50 transition-colors">
                       {/* Speaker Avatar */}
-                      <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+                      <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
                         {speaker.imageUrl ? (
                           <img 
                             src={speaker.imageUrl} 
@@ -579,17 +559,17 @@ export default function SessionDetailPage() {
                             className="w-full h-full rounded-full object-cover"
                           />
                         ) : (
-                          <User className="w-8 h-8 text-white" />
+                          <User className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-white" />
                         )}
                       </div>
                       
                       {/* Speaker Info */}
                       <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
                           {speaker.name}
                         </h3>
                         {(speaker.role || speaker.company) && (
-                          <p className="text-gray-600 flex items-center gap-1">
+                          <p className="text-sm sm:text-base text-gray-600 flex flex-wrap items-center gap-1">
                             {speaker.role}
                             {speaker.role && speaker.company && ' at '}
                             {speaker.company && (

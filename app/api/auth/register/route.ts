@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import prisma from '@/lib/db';
+import { emailService } from '@/lib/email/email-service';
 
 export async function POST(request: NextRequest) {
   
@@ -89,6 +90,25 @@ export async function POST(request: NextRequest) {
         usingSalesforce: usingSalesforce || false,
         interestedInSalesforce: interestedInSalesforce || false
       }
+    });
+
+    // Send email notifications asynchronously (don't block registration)
+    Promise.all([
+      // Send welcome email to user
+      emailService.sendWelcomeEmail({
+        name: user.name || 'Conference Attendee',
+        email: user.email
+      }),
+      // Send notification to admin
+      emailService.sendRegistrationNotification({
+        name: user.name || 'Not provided',
+        email: user.email,
+        company: user.company || undefined,
+        role: user.role || undefined
+      })
+    ]).catch(error => {
+      // Log email errors but don't fail registration
+      console.error('Email notification error:', error);
     });
 
     // Return success (without password)

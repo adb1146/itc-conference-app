@@ -201,13 +201,13 @@ export default function ProfilePage() {
       <UserDashboard activeTab="profile" />
 
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="bg-white/80 backdrop-blur rounded-2xl shadow-xl border border-purple-100 p-8">
-          <div className="flex items-center justify-between mb-8">
+        <div className="bg-white/80 backdrop-blur rounded-2xl shadow-xl border border-purple-100 p-4 sm:p-6 md:p-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-gradient-to-br from-purple-100 to-blue-100 rounded-xl shadow-md">
                 <User className="w-7 h-7 text-purple-600" />
               </div>
-              <h1 className="text-3xl font-normal">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-normal">
                 <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">My Profile</span>
               </h1>
             </div>

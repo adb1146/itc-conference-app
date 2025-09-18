@@ -221,7 +221,7 @@ export default function SmartAgendaPage() {
             <div className="bg-gradient-to-br from-purple-100 to-blue-100 rounded-full p-5 w-24 h-24 mx-auto mb-6 flex items-center justify-center shadow-lg">
               <Sparkles className="w-12 h-12 text-purple-600" />
             </div>
-            <h2 className="text-3xl font-normal mb-3">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-normal mb-3">
               <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">Access Smart Agenda</span>
             </h2>
             <p className="text-gray-600 mb-8 text-lg">
@@ -256,15 +256,15 @@ export default function SmartAgendaPage() {
 
       <div className="bg-white/80 backdrop-blur border-b border-purple-100">
         <div className="max-w-6xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-normal flex items-center gap-3">
-                <div className="p-2.5 bg-gradient-to-br from-purple-100 to-blue-100 rounded-xl shadow-md">
-                  <Sparkles className="w-7 h-7 text-purple-600" />
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-normal flex items-center gap-2 sm:gap-3">
+                <div className="p-2 sm:p-2.5 bg-gradient-to-br from-purple-100 to-blue-100 rounded-xl shadow-md">
+                  <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-purple-600" />
                 </div>
                 <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">Smart Agenda</span>
               </h1>
-              <p className="text-base text-gray-600 mt-2 ml-14">
+              <p className="text-sm sm:text-base text-gray-600 mt-2 sm:ml-14">
                 Your AI-powered personalized conference schedule
               </p>
             </div>

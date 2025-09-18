@@ -17,6 +17,17 @@ import { searchSimilarSessions } from '@/lib/vector-db';
 import { generateEmbedding } from '@/lib/vector-db';
 import prisma from '@/lib/db';
 import {
+  calculateCognitiveLoad,
+  calculateNetworkingScore,
+  getOptimalEnergyForTimeSlot,
+  shouldInsertBreak,
+  createSmartBreak,
+  createBufferTime,
+  isNetworkingEvent,
+  createEnhancedMealBreak,
+  calculateIntelligentSessionScore
+} from './intelligent-scheduler';
+import {
   generateIntelligentAgenda,
   analyzeSessionFit,
   SessionPriority,
@@ -40,7 +51,16 @@ const DEFAULT_OPTIONS: AgendaOptions = {
   startTime: '7:00 AM',  // Start earlier to include morning sessions
   endTime: '7:00 PM',    // Extended to include evening events
   minimumBreakMinutes: 15,
-  maximumWalkingMinutes: 15
+  maximumWalkingMinutes: 15,
+
+  // Intelligent scheduling defaults
+  energyProfile: 'steady',
+  preferredBreakDuration: 15,
+  maxConsecutiveSessions: 3,
+  networkingPriority: 'medium',
+  includeBufferTime: true,
+  includeDinner: true,
+  includeNetworkingEvents: true
 };
 
 // Conference dates
@@ -50,11 +70,11 @@ const CONFERENCE_DATES = [
   '2025-10-17'  // Day 3
 ];
 
-// Standard meal times
+// Standard meal times with networking considerations
 const MEAL_TIMES = {
-  breakfast: { start: '7:30 AM', end: '8:30 AM', title: 'Breakfast Break' },
-  lunch: { start: '12:00 PM', end: '1:00 PM', title: 'Lunch Break' },
-  dinner: { start: '6:00 PM', end: '7:30 PM', title: 'Dinner Break' }
+  breakfast: { start: '7:30 AM', end: '8:30 AM', title: '🥐 Breakfast & Morning Networking' },
+  lunch: { start: '12:00 PM', end: '1:00 PM', title: '🥗 Lunch & Midday Connections' },
+  dinner: { start: '6:00 PM', end: '7:30 PM', title: '🍽️ Dinner & Evening Networking' }
 };
 
 /**
@@ -512,34 +532,50 @@ async function buildDaySchedule(
  */
 function calculateProfileCompleteness(profile: UserProfile): number {
   const weights = {
-    name: 5,
-    role: 15,
-    company: 10,
+    name: 10,  // Increased from 5
+    role: 20,  // Increased from 15
+    company: 15,  // Increased from 10
     organizationType: 10,
-    interests: 25,
-    goals: 20,
+    interests: 20,  // Reduced from 25 but easier to achieve
+    goals: 15,  // Reduced from 20 but easier to achieve
     yearsExperience: 5,
-    usingSalesforce: 5,
-    interestedInSalesforce: 5
+    usingSalesforce: 2.5,  // Reduced from 5
+    interestedInSalesforce: 2.5  // Reduced from 5
   };
 
   let score = 0;
 
+  // Basic profile (should give ~45% for minimal profile)
   if (profile.name) score += weights.name;
   if (profile.role) score += weights.role;
   if (profile.company) score += weights.company;
   if (profile.organizationType) score += weights.organizationType;
-  if (profile.interests && profile.interests.length > 0) {
-    score += Math.min(weights.interests, (profile.interests.length / 5) * weights.interests);
-  }
-  if (profile.goals && profile.goals.length > 0) {
-    score += Math.min(weights.goals, (profile.goals.length / 3) * weights.goals);
-  }
-  if (profile.yearsExperience > 0) score += weights.yearsExperience;
-  score += weights.usingSalesforce;
-  score += weights.interestedInSalesforce;
 
-  return Math.round(score);
+  // Interests - more forgiving calculation
+  if (profile.interests && profile.interests.length > 0) {
+    // Give full points for 3+ interests instead of 5
+    score += Math.min(weights.interests, (profile.interests.length / 3) * weights.interests);
+  }
+
+  // Goals - more forgiving calculation
+  if (profile.goals && profile.goals.length > 0) {
+    // Give full points for 2+ goals instead of 3
+    score += Math.min(weights.goals, (profile.goals.length / 2) * weights.goals);
+  }
+
+  // Years experience - give partial credit even for 0
+  if (profile.yearsExperience >= 0) {
+    score += weights.yearsExperience * Math.min(1, profile.yearsExperience / 5);
+  }
+
+  // Salesforce fields - make optional
+  if (profile.usingSalesforce) score += weights.usingSalesforce;
+  if (profile.interestedInSalesforce) score += weights.interestedInSalesforce;
+
+  // Minimum baseline score of 15% for having an account
+  const finalScore = Math.max(15, Math.round(score));
+
+  return finalScore;
 }
 
 /**

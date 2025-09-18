@@ -192,15 +192,15 @@ export default function SpeakersPage() {
       {/* Header */}
       <div className="sticky top-16 z-30 bg-white/80 backdrop-blur border-b border-purple-100">
         <div className="px-4 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-normal flex items-center gap-3">
-                <div className="p-2.5 bg-gradient-to-br from-purple-100 to-blue-100 rounded-xl shadow-md">
-                  <Users className="w-7 h-7 text-purple-600" />
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-normal flex items-center gap-2 sm:gap-3">
+                <div className="p-2 sm:p-2.5 bg-gradient-to-br from-purple-100 to-blue-100 rounded-xl shadow-md">
+                  <Users className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-purple-600" />
                 </div>
                 <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">Speakers</span>
               </h1>
-              <p className="text-base text-gray-600 mt-2 ml-14">
+              <p className="text-sm sm:text-base text-gray-600 mt-2 sm:ml-14">
                 {loading ? 'Loading...' : <><span className="font-medium text-purple-600">{speakers.length}</span> industry leaders and experts</>}
               </p>
             </div>

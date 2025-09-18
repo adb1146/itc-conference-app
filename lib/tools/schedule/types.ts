@@ -9,18 +9,53 @@ export interface AgendaOptions {
   endTime: string;   // "6:00 PM"
   minimumBreakMinutes: number;
   maximumWalkingMinutes: number;
+
+  // Enhanced options for intelligent scheduling
+  energyProfile?: 'morning-person' | 'night-owl' | 'steady';
+  preferredBreakDuration?: number; // 15, 30, 45 minutes
+  maxConsecutiveSessions?: number; // Before forcing a break
+
+  // Networking preferences
+  networkingPriority?: 'high' | 'medium' | 'low';
+  preferredGroupSize?: 'large-events' | 'small-groups' | 'one-on-one';
+  industryFocus?: string[];
+
+  // Session format preferences
+  sessionFormats?: {
+    keynote?: boolean;
+    panel?: boolean;
+    workshop?: boolean;
+    demo?: boolean;
+    networking?: boolean;
+  };
+
+  // Comfort and accessibility
+  mobilityConstraints?: 'minimize-walking' | 'stairs-ok' | 'elevator-only';
+  dietaryRestrictions?: string[];
+
+  // Smart scheduling
+  includeBufferTime?: boolean; // Add transition time between sessions
+  includeDinner?: boolean; // Include dinner break
+  includeNetworkingEvents?: boolean; // Prioritize social events
 }
 
 export interface ScheduleItem {
   id: string;
   time: string; // Formatted time like "9:00 AM"
   endTime: string; // Formatted time like "10:00 AM"
-  type: 'session' | 'meal' | 'break' | 'travel';
+  type: 'session' | 'meal' | 'break' | 'travel' | 'buffer' | 'networking';
   source: 'user-favorite' | 'ai-suggested' | 'system' | 'schedule';
   priority?: 'high' | 'medium' | 'low';
   title?: string; // Direct title for display
   matchScore?: number; // Session match score (0-100)
   matchReasons?: string[]; // Why this session was selected
+
+  // Enhanced metadata for intelligent scheduling
+  cognitiveLoad?: number; // 0-100: mental energy required
+  networkingScore?: number; // 0-100: networking opportunity value
+  uniquenessScore?: number; // 0-100: how unique/rare this content is
+  energyLevel?: 'high' | 'medium' | 'low' | 'recovery'; // Energy state
+
   item: {
     id: string;
     title: string;

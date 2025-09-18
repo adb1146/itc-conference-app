@@ -347,11 +347,11 @@ export default function FavoritesPage() {
     return (
       <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-white pt-20 sm:pt-24">
         <div className="max-w-4xl mx-auto px-4 py-16">
-          <div className="bg-white/80 backdrop-blur rounded-2xl shadow-xl border border-purple-100 p-10 text-center">
+          <div className="bg-white/80 backdrop-blur rounded-2xl shadow-xl border border-purple-100 p-6 sm:p-8 md:p-10 text-center">
             <div className="w-20 h-20 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
               <Star className="w-10 h-10 text-orange-500" />
             </div>
-            <h1 className="text-3xl font-normal mb-4">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-normal mb-4">
               <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">Save Your Favorites</span>
             </h1>
             <p className="text-gray-600 mb-8 max-w-md mx-auto text-lg leading-relaxed">
@@ -395,15 +395,15 @@ export default function FavoritesPage() {
       {/* Header */}
       <div className="bg-white/80 backdrop-blur border-b border-purple-100">
         <div className="max-w-6xl mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-normal flex items-center gap-3">
-                <div className="p-2.5 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-xl shadow-md">
-                  <Star className="w-7 h-7 text-orange-500 fill-current" />
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-normal flex items-center gap-2 sm:gap-3">
+                <div className="p-2 sm:p-2.5 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-xl shadow-md">
+                  <Star className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-orange-500 fill-current" />
                 </div>
                 <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">My Favorites</span>
               </h1>
-              <p className="text-base text-gray-600 mt-2 ml-14">
+              <p className="text-sm sm:text-base text-gray-600 mt-2 sm:ml-14">
                 <span className="font-medium text-purple-600">{favorites.length}</span> saved {favorites.length === 1 ? 'item' : 'items'}
               </p>
             </div>

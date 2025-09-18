@@ -361,11 +361,11 @@ export default function SpeakerDetailPage() {
         )}
 
         {/* Speaker Info Card */}
-        <div className="bg-white/80 backdrop-blur rounded-2xl shadow-xl border border-purple-100 p-8 mb-8">
-          <div className="flex items-start gap-6">
+        <div className="bg-white/80 backdrop-blur rounded-2xl shadow-xl border border-purple-100 p-4 sm:p-6 md:p-8 mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
             {/* Avatar */}
-            <div className="relative w-24 h-24 flex-shrink-0">
-              <div className="w-24 h-24 rounded-full flex items-center justify-center overflow-hidden">
+            <div className="relative w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center overflow-hidden">
                 {speaker.imageUrl ? (
                   <img
                     src={speaker.imageUrl}
@@ -379,7 +379,7 @@ export default function SpeakerDetailPage() {
                   />
                 ) : null}
                 <div className={`w-full h-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center ${speaker.imageUrl ? 'hidden' : ''}`}>
-                  <span className="text-white text-3xl font-bold">
+                  <span className="text-white text-xl sm:text-2xl md:text-3xl font-bold">
                     {speaker.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
                   </span>
                 </div>
@@ -402,9 +402,9 @@ export default function SpeakerDetailPage() {
             </div>
 
             {/* Info */}
-            <div className="flex-1">
-              <div className="flex items-start justify-between mb-2">
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">{speaker.name}</h1>
+            <div className="flex-1 w-full text-center sm:text-left">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-0 mb-2">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent break-words">{speaker.name}</h1>
                 <FavoriteButton
                   itemId={speaker.id}
                   type="speaker"
@@ -412,7 +412,7 @@ export default function SpeakerDetailPage() {
                   className="ml-4"
                 />
               </div>
-              <div className="flex items-center gap-4 text-gray-600 mb-4">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm sm:text-base text-gray-600 mb-4">
                 <div className="flex items-center gap-2">
                   <Briefcase className="w-4 h-4" />
                   <span>{speaker.role}</span>
@@ -423,7 +423,7 @@ export default function SpeakerDetailPage() {
                 </div>
               </div>
               {/* Bio section - always show something */}
-              <p className="text-gray-700 mb-4">
+              <p className="text-sm sm:text-base text-gray-700 mb-4">
                 {speaker.bio && speaker.bio !== 'Speaker' && speaker.bio !== 'TBD' ? (
                   speaker.bio
                 ) : (
@@ -431,7 +431,7 @@ export default function SpeakerDetailPage() {
                 )}
               </p>
               <div className="flex items-center gap-4 flex-wrap">
-                <div className="px-3 py-1 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 rounded-full text-sm font-medium">
+                <div className="px-2 sm:px-3 py-1 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 rounded-full text-xs sm:text-sm font-medium">
                   {speaker.sessions.length} Session{speaker.sessions.length !== 1 ? 's' : ''}
                 </div>
                 {speaker.linkedinUrl && (

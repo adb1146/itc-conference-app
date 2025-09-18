@@ -173,7 +173,7 @@ function LocationsContent() {
         <div className="container mx-auto px-4 max-w-6xl">
           {/* Page Header */}
           <div className="mb-8">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               Venue & Locations
             </h1>
             <p className="text-lg text-gray-600">
