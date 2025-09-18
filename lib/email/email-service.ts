@@ -117,17 +117,23 @@ export class EmailService {
             .content { background: white; padding: 30px; border: 1px solid #e5e7eb; border-radius: 0 0 10px 10px; }
             .button { display: inline-block; padding: 12px 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
             .footer { text-align: center; margin-top: 30px; color: #6b7280; font-size: 14px; }
+            .disclaimer { background: #fef3c7; border: 1px solid #fbbf24; padding: 15px; margin: 20px 0; border-radius: 5px; color: #78350f; font-size: 13px; }
           </style>
         </head>
         <body>
           <div class="container">
             <div class="header">
-              <h1>ITC Vegas 2025</h1>
-              <p>Password Reset Request</p>
+              <h1>PS Advisory AI Demo</h1>
+              <p>ITC Concierge App - Password Reset</p>
             </div>
             <div class="content">
               <h2>Reset Your Password</h2>
-              <p>We received a request to reset your password for your ITC Vegas 2025 account.</p>
+              <p>We received a request to reset your password for your <strong>PS Advisory AI Demo ITC Concierge App</strong> account.</p>
+
+              <div class="disclaimer">
+                <strong>Important:</strong> This is a demonstration app created by PS Advisory LLC. This is NOT affiliated with the official ITC Vegas 2025 conference or website.
+              </div>
+
               <p>Click the button below to reset your password. This link will expire in 1 hour.</p>
               <div style="text-align: center;">
                 <a href="${resetUrl}" class="button">Reset Password</a>
@@ -140,6 +146,7 @@ export class EmailService {
             </div>
             <div class="footer">
               <p>© 2025 PS Advisory LLC. All rights reserved.</p>
+              <p>This is a demonstration application and is not affiliated with ITC Vegas 2025.</p>
               <p>This email was sent to ${email}</p>
             </div>
           </div>
@@ -148,9 +155,11 @@ export class EmailService {
     `;
 
     const text = `
-Reset Your Password
+Reset Your Password - PS Advisory AI Demo ITC Concierge App
 
-We received a request to reset your password for your ITC Vegas 2025 account.
+We received a request to reset your password for your PS Advisory AI Demo ITC Concierge App account.
+
+IMPORTANT: This is a demonstration app created by PS Advisory LLC. This is NOT affiliated with the official ITC Vegas 2025 conference or website.
 
 Click the link below to reset your password. This link will expire in 1 hour.
 
@@ -159,11 +168,12 @@ ${resetUrl}
 If you didn't request this password reset, you can safely ignore this email.
 
 © 2025 PS Advisory LLC. All rights reserved.
+This is a demonstration application and is not affiliated with ITC Vegas 2025.
     `;
 
     return this.sendEmail({
       to: email,
-      subject: 'Reset Your Password - ITC Vegas 2025',
+      subject: 'Reset Your Password - PS Advisory AI Demo',
       html,
       text,
     });
