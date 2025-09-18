@@ -8,11 +8,11 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Menu, X, Calendar, MessageCircle, Users, Map,
-  Home, Brain, ChevronDown, Bell, User, Search,
+  Home, Brain, ChevronDown, User, Search,
   Sparkles, Clock, Star, LogOut, Settings, UserPlus, Shield,
-  ExternalLink, AlertTriangle
+  ExternalLink, AlertTriangle, BookOpen
 } from 'lucide-react';
-import PSALogo from '../logo/PSA ITC Logo 2025.png';
+import ITCLogo from '../logo/ITC Concierge Logo.png';
 
 export default function NavigationAnimated() {
   const [isOpen, setIsOpen] = useState(false);
@@ -94,10 +94,11 @@ export default function NavigationAnimated() {
     highlight?: boolean;
   }> = [
     { href: '/', label: 'Home', icon: Home },
-    { href: '/agenda', label: 'Conference Agenda', icon: Calendar },
+    { href: '/agenda', label: 'Agenda', icon: Calendar },
     { href: '/chat', label: 'AI Concierge', icon: Brain },
     { href: '/speakers', label: 'Speakers', icon: Users },
-    { href: '/favorites', label: 'My Favorites', icon: Star, requireAuth: true },
+    { href: '/favorites', label: 'Favorites', icon: Star, requireAuth: true },
+    { href: '/guide', label: 'Guide', icon: BookOpen, highlight: true },
   ];
 
   const isActive = (href: string) => {
@@ -157,22 +158,23 @@ export default function NavigationAnimated() {
       scrolled ? 'bg-white/95 backdrop-blur-md shadow-lg' : 'bg-white'
     }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20 sm:h-24">
+        <div className="flex justify-between items-center h-44 sm:h-48 md:h-52 lg:h-56">
           {/* Logo */}
-          <Link href="/" className="min-h-[44px] flex items-center">
-            <Image
-              src={PSALogo}
-              alt="PS Advisory ITC Vegas 2025"
-              height={100}
-              width={400}
-              className="h-14 sm:h-16 md:h-20 lg:h-24 w-auto"
-              priority
-              style={{ objectFit: 'contain' }}
-            />
+          <Link href="/" className="flex items-center justify-center py-2">
+            <div className="relative">
+              <Image
+                src={ITCLogo}
+                alt="ITC Vegas 2025 Concierge"
+                height={300}
+                width={600}
+                className="h-40 sm:h-44 md:h-48 lg:h-52 w-auto object-contain"
+                priority
+              />
+            </div>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-1">
+          <div className="hidden md:flex items-center gap-1">
             {navItems.map((item) => {
               const Icon = item.icon;
               const active = isActive(item.href);
@@ -184,17 +186,17 @@ export default function NavigationAnimated() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center space-x-2 px-3 sm:px-4 py-2 rounded-lg transition-all min-h-[44px] ${
+                  className={`flex items-center gap-1.5 px-2 lg:px-3 py-2 rounded-lg transition-all min-h-[40px] whitespace-nowrap ${
                     active
                       ? 'bg-blue-50 text-blue-700 font-medium'
                       : 'text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  <Icon className="w-4 h-4" />
-                  <span className="text-xs sm:text-sm">{item.label}</span>
+                  <Icon className="w-4 h-4 flex-shrink-0" />
+                  <span className="text-xs lg:text-sm">{item.label}</span>
                   {item.highlight && (
-                    <span className="ml-1 px-1.5 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full">
-                      AI
+                    <span className="ml-1 px-1.5 py-0.5 bg-green-100 text-green-700 text-[10px] rounded-full font-medium">
+                      New
                     </span>
                   )}
                 </Link>
@@ -203,17 +205,17 @@ export default function NavigationAnimated() {
           </div>
 
           {/* Right Side Actions */}
-          <div className="hidden lg:flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-2">
             {/* Search Button and Dropdown */}
             <div className="relative search-container">
               <button
                 onClick={handleSearchClick}
-                className={`p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors min-h-[44px] min-w-[44px] ${
+                className={`p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors min-h-[40px] min-w-[40px] ${
                   searchOpen ? 'bg-gray-100' : ''
                 }`}
                 aria-label="Search"
               >
-                <Search className="w-5 h-5" />
+                <Search className="w-4 h-4" />
               </button>
 
               {/* Animated Search Dropdown */}
@@ -359,12 +361,6 @@ export default function NavigationAnimated() {
               </AnimatePresence>
             </div>
 
-            {session && (
-              <button className="relative p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors min-h-[44px] min-w-[44px]">
-                <Bell className="w-5 h-5" />
-              </button>
-            )}
-
             {/* User Menu */}
             {status === 'loading' ? (
               <div className="px-3 py-2 text-sm text-gray-600">Loading...</div>
@@ -409,6 +405,15 @@ export default function NavigationAnimated() {
                       >
                         <User className="w-4 h-4" />
                         <span>My Profile</span>
+                      </Link>
+
+                      <Link
+                        href="/guide"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      >
+                        <BookOpen className="w-4 h-4" />
+                        <span>Getting Started</span>
                       </Link>
 
                       <Link
@@ -469,21 +474,21 @@ export default function NavigationAnimated() {
           </div>
 
           {/* Mobile Menu and Search */}
-          <div className="md:hidden flex items-center gap-2">
+          <div className="md:hidden flex items-center gap-1">
             <button
               onClick={handleSearchClick}
-              className={`p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center ${
+              className={`p-1.5 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center ${
                 searchOpen ? 'bg-gray-100' : ''
               }`}
               aria-label="Search"
             >
-              <Search className="w-6 h-6" />
+              <Search className="w-5 h-5" />
             </button>
             <button
               onClick={handleMenuToggle}
-              className="p-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+              className="p-1.5 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center"
             >
-              {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </div>
@@ -497,7 +502,7 @@ export default function NavigationAnimated() {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -100, opacity: 0 }}
             transition={{ duration: 0.3, ease: 'easeInOut' }}
-            className="md:hidden fixed inset-x-0 top-16 bg-white shadow-lg border-t border-gray-200 z-40 search-container"
+            className="md:hidden fixed inset-x-0 top-52 sm:top-56 bg-white shadow-lg border-t border-gray-200 z-40 search-container"
           >
             <div className="p-4">
               <div className="relative">
@@ -669,8 +674,8 @@ export default function NavigationAnimated() {
                       <Icon className="w-5 h-5" />
                       <span>{item.label}</span>
                       {item.highlight && (
-                        <span className="ml-auto px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full">
-                          NEW
+                        <span className="ml-auto px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full font-medium">
+                          New
                         </span>
                       )}
                     </Link>
@@ -695,6 +700,17 @@ export default function NavigationAnimated() {
                     >
                       <User className="w-5 h-5" />
                       <span>Profile Settings</span>
+                    </Link>
+                    <Link
+                      href="/guide"
+                      onClick={() => {
+                        triggerHaptic();
+                        setIsOpen(false);
+                      }}
+                      className="flex items-center space-x-3 px-3 py-3 w-full text-left text-gray-700 hover:bg-gray-50 rounded-lg transition-colors min-h-[44px]"
+                    >
+                      <BookOpen className="w-5 h-5" />
+                      <span>Getting Started</span>
                     </Link>
                     <button
                       onClick={() => {

@@ -64,8 +64,8 @@ export default function RootLayout({
             {/* Navigation Header */}
             <NavigationAnimated />
 
-            {/* Main Content */}
-            <main>
+            {/* Main Content - Add padding-top for fixed nav header */}
+            <main className="pt-44 sm:pt-48 md:pt-52 lg:pt-56">
               {children}
             </main>
 

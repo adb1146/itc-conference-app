@@ -254,6 +254,24 @@ function HomePageContent() {
           </div>
         </div>
 
+        {/* Disclaimer */}
+        <div className="w-full max-w-4xl mt-8 sm:mt-12 px-4">
+          <div className="text-center py-4 border-t border-gray-100">
+            <p className="text-xs sm:text-sm text-gray-500">
+              Demo by{' '}
+              <a
+                href="https://psadvisory.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-purple-600 hover:text-purple-700 underline"
+              >
+                PS Advisory
+              </a>
+              {' • '}
+              Not affiliated with official ITC app
+            </p>
+          </div>
+        </div>
 
       </div>
     </div>

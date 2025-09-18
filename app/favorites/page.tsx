@@ -333,7 +333,7 @@ export default function FavoritesPage() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-gray-50 pt-20 sm:pt-24">
+      <div className="min-h-screen bg-gray-50">
 
         <div className="max-w-6xl mx-auto px-4 py-8">
           <div className="animate-pulse">
@@ -351,7 +351,7 @@ export default function FavoritesPage() {
 
   if (status === 'unauthenticated') {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-white pt-20 sm:pt-24">
+      <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-white">
         <div className="max-w-4xl mx-auto px-4 py-16">
           <div className="bg-white/80 backdrop-blur rounded-2xl shadow-xl border border-purple-100 p-6 sm:p-8 md:p-10 text-center">
             <div className="w-20 h-20 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
@@ -393,7 +393,7 @@ export default function FavoritesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-white pt-20 sm:pt-24">
+    <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-white">
 
       {/* User Dashboard Navigation */}
       <UserDashboard activeTab="favorites" />

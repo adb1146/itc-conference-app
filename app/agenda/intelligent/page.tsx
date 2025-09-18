@@ -719,12 +719,8 @@ function IntelligentAgendaContent() {
     <div className="h-screen bg-gray-50 overflow-y-auto">
 
 
-      {/* Spacer for fixed navigation */}
-      <div className="h-16"></div>
-
-
-      {/* Intelligent Header */}
-      <div className="sticky top-16 z-30 bg-white shadow-sm">
+      {/* Intelligent Header - removed sticky since main nav is already fixed */}
+      <div className="bg-white shadow-sm">
         <div className="px-4 py-3">
           <div className="flex items-center justify-between">
             <div>

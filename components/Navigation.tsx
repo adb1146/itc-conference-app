@@ -11,7 +11,7 @@ import {
   Sparkles, Clock, Star, LogOut, Settings, UserPlus, Shield,
   ExternalLink, AlertTriangle
 } from 'lucide-react';
-import PSALogo from '../logo/PSA ITC Logo 2025.png';
+import ITCLogo from '../logo/ITC Concierge Logo.png';
 
 export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
@@ -147,11 +147,11 @@ export default function Navigation() {
           {/* Logo */}
           <Link href="/" className="min-h-[44px] flex items-center">
             <Image
-              src={PSALogo}
-              alt="PS Advisory ITC Vegas 2025"
-              height={100}
+              src={ITCLogo}
+              alt="ITC Vegas 2025 Concierge"
+              height={120}
               width={400}
-              className="h-14 sm:h-16 md:h-20 lg:h-24 w-auto"
+              className="h-16 sm:h-18 md:h-22 lg:h-26 w-auto"
               priority
               style={{ objectFit: 'contain' }}
             />
