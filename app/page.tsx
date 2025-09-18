@@ -84,7 +84,7 @@ function HomePageContent() {
   ]
 
   return (
-    <div className="min-h-screen bg-white pt-20 sm:pt-24">
+    <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/20 to-white">
       {/* Version indicator for debugging - remove after cache issue resolved */}
       <div className="hidden" data-version="2.0-nocache">Cache cleared</div>
       {/* Mobile-friendly navigation - hidden since main Navigation is shown */}
@@ -154,21 +154,21 @@ function HomePageContent() {
         )}
       </nav>
 
-      <div className="flex flex-col items-center justify-start lg:justify-center min-h-screen px-4 pt-8 pb-8 lg:py-0">
+      <div className="flex flex-col items-center justify-start min-h-[calc(100vh-11rem)] sm:min-h-[calc(100vh-12rem)] md:min-h-[calc(100vh-13rem)] lg:min-h-[calc(100vh-14rem)] px-4 pt-4 sm:pt-6 md:pt-8 lg:pt-12 pb-8">
         {/* Header */}
-        <div className="w-full max-w-4xl mb-4 lg:mb-8 lg:mt-0">
-          <h1 className="text-center mb-3 lg:mb-6">
-            <span className="text-xl sm:text-2xl md:text-3xl lg:text-5xl font-normal bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+        <div className="w-full max-w-4xl mb-4 sm:mb-6 lg:mb-8">
+          <h1 className="text-center mb-2 sm:mb-3 lg:mb-4">
+            <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-normal bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
               Meet ITC Concierge,
             </span>
             <br />
-            <span className="text-xl sm:text-2xl md:text-3xl lg:text-5xl font-normal text-gray-800">
+            <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-normal text-gray-800">
               your personal AI assistant
             </span>
           </h1>
 
           {/* Purpose Statement */}
-          <div className="max-w-2xl mx-auto text-center mb-4 lg:mb-8">
+          <div className="max-w-2xl mx-auto text-center mb-3 sm:mb-4 lg:mb-6">
             <p className="text-gray-600 text-sm sm:text-base lg:text-lg leading-relaxed">
               Navigate <span className="font-semibold text-purple-600">295+ sessions</span> and <span className="font-semibold text-blue-600">200+ speakers</span> at ITC Vegas 2025 with ease. Our AI understands the conference context and helps you build the perfect agenda.
             </p>
@@ -190,7 +190,7 @@ function HomePageContent() {
         </div>
 
         {/* Search Box */}
-        <div className="w-full max-w-3xl mb-6 lg:mb-12">
+        <div className="w-full max-w-3xl mb-4 sm:mb-6 lg:mb-8">
           <form onSubmit={handleSubmit} className="relative">
             <div className="relative flex items-center">
               <textarea
@@ -255,7 +255,7 @@ function HomePageContent() {
         </div>
 
         {/* Disclaimer */}
-        <div className="w-full max-w-4xl mt-8 sm:mt-12 px-4">
+        <div className="w-full max-w-4xl mt-auto pt-4 sm:pt-6 px-4">
           <div className="text-center py-4 border-t border-gray-100">
             <p className="text-xs sm:text-sm text-gray-500">
               Demo by{' '}
