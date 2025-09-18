@@ -6,6 +6,7 @@ import crypto from 'crypto';
 export async function POST(request: Request) {
   try {
     const { email } = await request.json();
+    console.log('[Password Reset] Request received for email:', email);
 
     if (!email) {
       return NextResponse.json(
@@ -21,10 +22,13 @@ export async function POST(request: Request) {
 
     // Always return success even if user not found (security best practice)
     if (!user) {
+      console.log('[Password Reset] No user found for email:', email);
       return NextResponse.json({
         message: 'If an account exists with this email, a password reset link has been sent.'
       });
     }
+
+    console.log('[Password Reset] User found:', user.id, user.email);
 
     // Generate reset token
     const resetToken = crypto.randomBytes(32).toString('hex');
@@ -43,10 +47,14 @@ export async function POST(request: Request) {
     });
 
     // Send reset email
+    console.log('[Password Reset] Sending email to:', user.email);
+    console.log('[Password Reset] Reset URL will be:', `${process.env.NEXTAUTH_URL}/auth/reset-password?token=${resetToken}`);
+
     const result = await emailService.sendPasswordResetEmail(user.email, resetToken);
+    console.log('[Password Reset] Email send result:', result);
 
     if (!result.success) {
-      console.error('Failed to send password reset email:', result.error);
+      console.error('[Password Reset] Failed to send email:', result.error);
       return NextResponse.json(
         { error: 'Failed to send reset email. Please try again.' },
         { status: 500 }
