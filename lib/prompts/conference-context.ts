@@ -42,7 +42,7 @@ ${conferenceKnowledge.conference.specialEvents.map(event =>
 - Startup Alley open throughout conference
 
 ### Tips for Attendees
-- Download the ITC Vegas mobile app for real-time updates
+- Download the [official ITC Vegas 2025 app](https://apps.apple.com/us/app/itc-vegas-2025/id1637886092) for real-time updates
 - Business casual dress code recommended
 - Bring layers - conference rooms can be cold
 - Hydrate frequently - Las Vegas is dry
@@ -51,7 +51,7 @@ ${conferenceKnowledge.conference.specialEvents.map(event =>
 ### Contact Information
 - Help Desk: help@itcvegas.com
 - Emergency: 702-555-0911
-- Conference App: Search "ITC Vegas" in app stores
+- Conference App: [ITC Vegas 2025 on App Store](https://apps.apple.com/us/app/itc-vegas-2025/id1637886092)
 `;
 }
 
@@ -92,7 +92,7 @@ export function getNetworkingTips(): string {
 4. **Evening Events**: Opening Reception, Innovation Awards
 
 ### Networking Tips
-- Use the mobile app's "Connect" feature to find attendees
+- Use the [official mobile app's](https://apps.apple.com/us/app/itc-vegas-2025/id1637886092) "Connect" feature to find attendees
 - Wear your badge visibly - it has NFC for quick contact exchange
 - Join track-specific meetups announced in the app
 - Visit Startup Alley during breaks for demos

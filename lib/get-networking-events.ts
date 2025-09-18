@@ -169,7 +169,7 @@ export async function getNetworkingEvents(specificDay?: string) {
 
     // Add tips
     response += "**💡 Networking Tips:**\n";
-    response += "• Download the ITC app to schedule 1:1 meetings\n";
+    response += "• Download the [official ITC Vegas 2025 app](https://apps.apple.com/us/app/itc-vegas-2025/id1637886092) to schedule 1:1 meetings\n";
     response += "• Business cards are still important - bring plenty\n";
     response += "• Happy hours and coffee breaks are prime networking times\n";
     response += "• The Expo Floor is open all day for casual networking\n";

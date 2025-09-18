@@ -416,6 +416,208 @@ This is a demonstration app and is not affiliated with ITC Vegas 2025.
       text,
     });
   }
+
+  /**
+   * Send personalized schedule email to user
+   */
+  async sendScheduleEmail(data: {
+    name: string;
+    email: string;
+    schedule: Array<{
+      day: string;
+      sessions: Array<{
+        title: string;
+        time: string;
+        location: string;
+        speakers?: string[];
+        description?: string;
+      }>;
+    }>;
+  }): Promise<{ data?: any; error?: any }> {
+    if (!resend) {
+      console.error('Resend not initialized');
+      return { error: 'Email service not configured' };
+    }
+
+    try {
+      // Generate calendar links for each session
+      const baseUrl = process.env.NEXTAUTH_URL || 'https://itc-conference-app.vercel.app';
+
+      // Build HTML content for schedule
+      let scheduleHtml = '';
+      data.schedule.forEach(day => {
+        scheduleHtml += `
+          <h2 style="color: #4f46e5; margin-top: 30px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">
+            ${day.day}
+          </h2>
+        `;
+
+        day.sessions.forEach(session => {
+          const calendarUrl = `${baseUrl}/api/calendar/add?` + new URLSearchParams({
+            title: session.title,
+            date: day.day,
+            time: session.time,
+            location: session.location,
+            description: session.description || '',
+            speakers: session.speakers?.join(',') || ''
+          }).toString();
+
+          scheduleHtml += `
+            <div style="background: #f9fafb; border-left: 4px solid #667eea; padding: 15px; margin: 15px 0; border-radius: 5px;">
+              <h3 style="color: #1f2937; margin: 0 0 10px 0;">${session.title}</h3>
+              <p style="color: #6b7280; margin: 5px 0;">
+                <strong>📍 Location:</strong> ${session.location}<br>
+                <strong>🕒 Time:</strong> ${session.time}
+                ${session.speakers ? `<br><strong>🎤 Speakers:</strong> ${session.speakers.join(', ')}` : ''}
+              </p>
+              ${session.description ? `<p style="color: #4b5563; margin: 10px 0 15px 0; font-size: 14px;">${session.description}</p>` : ''}
+              <a href="${calendarUrl}" style="display: inline-block; background: #667eea; color: white; padding: 8px 16px; text-decoration: none; border-radius: 5px; font-size: 14px;">
+                📅 Add to Calendar
+              </a>
+            </div>
+          `;
+        });
+      });
+
+      const result = await resend.emails.send({
+        from: this.fromEmail,
+        to: data.email,
+        subject: 'Your Personalized ITC Vegas 2025 Schedule',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px;">
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+              <h1 style="margin: 0; font-size: 28px;">Your ITC Vegas 2025 Schedule</h1>
+              <p style="margin: 10px 0 0 0; opacity: 0.95;">PS Advisory AI Demo - ITC Concierge App</p>
+            </div>
+
+            <!-- Content -->
+            <div style="background: white; padding: 30px; border: 1px solid #e5e7eb; border-top: none;">
+              <p style="color: #4b5563; font-size: 16px;">
+                Hi ${data.name},
+              </p>
+
+              <p style="color: #4b5563; margin: 20px 0;">
+                Here's your personalized conference schedule for ITC Vegas 2025. Each session includes a calendar link
+                that you can click to add the event directly to your calendar app.
+              </p>
+
+              <div style="background: #f0f9ff; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0;">
+                <p style="margin: 0; color: #1e40af;">
+                  <strong>💡 Pro Tip:</strong> Click the "Add to Calendar" button for each session you want to attend.
+                  The calendar invite will work with iPhone, Android, Outlook, Google Calendar, and more!
+                </p>
+              </div>
+
+              ${scheduleHtml}
+
+              <!-- PS Advisory Section -->
+              <div style="background: #faf5ff; padding: 25px; border-radius: 8px; margin-top: 40px; border: 1px solid #e9d5ff;">
+                <h3 style="color: #6b21a8; margin-top: 0;">
+                  Thank You for Using the PS Advisory AI Demo App!
+                </h3>
+                <p style="color: #7c3aed; margin: 15px 0; line-height: 1.6;">
+                  We hope this AI-powered conference app enhances your ITC Vegas 2025 experience.
+                  This demo showcases our expertise in creating intelligent, personalized solutions for events and organizations.
+                </p>
+                <p style="color: #6b7280; margin: 20px 0;">
+                  <strong>Want to learn more about PS Advisory's services?</strong><br>
+                  We specialize in AI-driven applications, conference management systems, and digital transformation solutions.
+                </p>
+                <div style="margin-top: 20px;">
+                  <a href="mailto:contactus@psadvisory.com" style="display: inline-block; background: #7c3aed; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin-right: 10px;">
+                    📧 Email Us
+                  </a>
+                  <a href="https://www.psadvisory.com" style="display: inline-block; background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px;">
+                    🌐 Visit Our Website
+                  </a>
+                </div>
+                <p style="color: #6b7280; margin: 20px 0 0 0; font-size: 14px;">
+                  📧 contactus@psadvisory.com<br>
+                  🌐 www.psadvisory.com
+                </p>
+              </div>
+            </div>
+
+            <!-- Footer -->
+            <div style="background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px; text-align: center;">
+              <p style="color: #6b7280; margin: 0; font-size: 12px;">
+                This is a demonstration app by PS Advisory LLC.<br>
+                Not affiliated with the official ITC Vegas 2025 conference.<br>
+                <a href="${baseUrl}" style="color: #667eea; text-decoration: none;">Visit the App</a> |
+                <a href="https://apps.apple.com/us/app/itc-vegas-2025/id1637886092" style="color: #667eea; text-decoration: none;">Download Official ITC App</a>
+              </p>
+            </div>
+          </div>
+        `,
+        text: this.generateScheduleTextEmail(data)
+      });
+
+      console.log('Schedule email sent:', result);
+      return result;
+
+    } catch (error) {
+      console.error('Error sending schedule email:', error);
+      return { error };
+    }
+  }
+
+  /**
+   * Generate plain text version of schedule email
+   */
+  private generateScheduleTextEmail(data: {
+    name: string;
+    email: string;
+    schedule: Array<{
+      day: string;
+      sessions: Array<{
+        title: string;
+        time: string;
+        location: string;
+        speakers?: string[];
+        description?: string;
+      }>;
+    }>;
+  }): string {
+    let text = `Your ITC Vegas 2025 Schedule\n`;
+    text += `PS Advisory AI Demo - ITC Concierge App\n`;
+    text += `${'='.repeat(50)}\n\n`;
+    text += `Hi ${data.name},\n\n`;
+    text += `Here's your personalized conference schedule for ITC Vegas 2025.\n\n`;
+
+    data.schedule.forEach(day => {
+      text += `\n${day.day}\n${'-'.repeat(30)}\n\n`;
+
+      day.sessions.forEach((session, index) => {
+        text += `${index + 1}. ${session.title}\n`;
+        text += `   📍 Location: ${session.location}\n`;
+        text += `   🕒 Time: ${session.time}\n`;
+        if (session.speakers) {
+          text += `   🎤 Speakers: ${session.speakers.join(', ')}\n`;
+        }
+        if (session.description) {
+          text += `   ${session.description}\n`;
+        }
+        text += '\n';
+      });
+    });
+
+    text += `\n${'='.repeat(50)}\n`;
+    text += `\nThank you for using the PS Advisory AI Demo App!\n\n`;
+    text += `We hope this AI-powered conference app enhances your ITC Vegas 2025 experience.\n`;
+    text += `This demo showcases our expertise in creating intelligent, personalized solutions.\n\n`;
+    text += `Want to learn more about PS Advisory's services?\n`;
+    text += `We specialize in AI-driven applications, conference management systems,\n`;
+    text += `and digital transformation solutions.\n\n`;
+    text += `Contact us:\n`;
+    text += `📧 Email: contactus@psadvisory.com\n`;
+    text += `🌐 Website: www.psadvisory.com\n`;
+    text += `\n${'='.repeat(50)}\n`;
+    text += `© 2025 PS Advisory LLC. All rights reserved.\n`;
+    text += `This is a demonstration app and is not affiliated with the official ITC Vegas 2025 conference.\n`;
+
+    return text;
+  }
 }
 
 export const emailService = EmailService.getInstance();

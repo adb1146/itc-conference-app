@@ -19,6 +19,7 @@ export default function SmartAgendaPage() {
   const [loading, setLoading] = useState(true);
   const [generatingAgenda, setGeneratingAgenda] = useState(false);
   const [agendaError, setAgendaError] = useState<string | null>(null);
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -191,25 +192,54 @@ export default function SmartAgendaPage() {
     generateSmartAgenda();
   };
 
-  const handleExport = (format: 'ics' | 'pdf' | 'email' = 'ics') => {
+  const handleExport = async (format: 'ics' | 'pdf' | 'email' = 'ics') => {
     if (!smartAgenda) return;
 
-    const agendaText = smartAgenda.days.map(day => {
-      const dayHeader = `Day ${day.dayNumber} - ${new Date(day.date + 'T12:00:00').toLocaleDateString()}\\n`;
-      const items = day.schedule.map(item => {
-        const time = `${item.time} - ${item.endTime}`;
-        return `${time}: ${item.item.title}`;
-      }).join('\\n');
-      return dayHeader + items;
-    }).join('\\n\\n');
+    if (format === 'email') {
+      // Prevent duplicate emails
+      if (sendingEmail) return;
 
-    const blob = new Blob([agendaText], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'itc-vegas-2025-agenda.txt';
-    a.click();
-    URL.revokeObjectURL(url);
+      // Send email with the personalized agenda
+      setSendingEmail(true);
+      try {
+        const response = await fetch('/api/schedule/email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ agenda: smartAgenda })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          alert(`✅ ${result.message}`);
+        } else {
+          alert(`❌ ${result.error || 'Failed to send email'}`);
+        }
+      } catch (error) {
+        console.error('Error sending email:', error);
+        alert('❌ Failed to send schedule email');
+      } finally {
+        setSendingEmail(false);
+      }
+    } else {
+      // Handle other export formats (ics, pdf) - for now just download as text
+      const agendaText = smartAgenda.days.map(day => {
+        const dayHeader = `Day ${day.dayNumber} - ${new Date(day.date + 'T12:00:00').toLocaleDateString()}\\n`;
+        const items = day.schedule.map(item => {
+          const time = `${item.time} - ${item.endTime}`;
+          return `${time}: ${item.item.title}`;
+        }).join('\\n');
+        return dayHeader + items;
+      }).join('\\n\\n');
+
+      const blob = new Blob([agendaText], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'itc-vegas-2025-agenda.txt';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
   };
 
   if (status === 'unauthenticated') {

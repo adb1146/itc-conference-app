@@ -2,6 +2,7 @@
 
 import partiesEvents from '@/data/parties-events.json';
 import conferenceKnowledge from '@/data/conference-knowledge.json';
+import { generateCalendarMarkdownLink } from '@/lib/calendar/calendar-link-generator';
 
 interface DetailedResponse {
   content: string;
@@ -31,7 +32,14 @@ export function getPartyInformation(query: string): DetailedResponse {
   content += `📍 **Location:** [Mandalay Bay Beach & Convention Foyer](/locations?location=Mandalay%20Bay%20Beach)\n`;
   content += `🕐 **Time:** 6:00 PM - 10:00 PM\n`;
   content += `👔 **Dress Code:** Business casual (comfortable shoes recommended)\n`;
-  content += `🍸 **Included:** Open bar, heavy appetizers, live entertainment\n\n`;
+  content += `🍸 **Included:** Open bar, heavy appetizers, live entertainment\n`;
+  content += `${generateCalendarMarkdownLink({
+    title: 'ITC Vegas Opening Reception',
+    date: 'October 14',
+    time: '6:00 PM - 10:00 PM',
+    location: 'Mandalay Bay Beach & Convention Foyer',
+    description: 'Official opening party with open bar, heavy appetizers, and live entertainment. Business casual dress code.'
+  })}\n\n`;
   content += `**Pro Tips:**\n`;
   content += `• Arrive by 6:30 PM for opening remarks\n`;
   content += `• Best networking 6-8 PM before crowds\n`;
@@ -44,7 +52,14 @@ export function getPartyInformation(query: string): DetailedResponse {
   content += `🕐 **Time:** 7:00 PM - Midnight\n`;
   content += `👗 **Dress Code:** Cocktail attire or festive business casual\n`;
   content += `🏆 **Special:** Awards ceremony at 8 PM\n`;
-  content += `🍸 **Included:** Premium open bar, dinner stations, live band & DJ\n\n`;
+  content += `🍸 **Included:** Premium open bar, dinner stations, live band & DJ\n`;
+  content += `${generateCalendarMarkdownLink({
+    title: 'ITC Vegas Closing Party & Awards',
+    date: 'October 16',
+    time: '7:00 PM - 12:00 AM',
+    location: 'Mandalay Bay Events Center',
+    description: 'Closing celebration with awards ceremony at 8 PM. Premium open bar, dinner stations, live band & DJ. Cocktail attire.'
+  })}\n\n`;
   content += `**Insider Info:**\n`;
   content += `• Book late flights - this is legendary!\n`;
   content += `• Multiple bars to avoid lines\n`;
@@ -64,10 +79,34 @@ export function getPartyInformation(query: string): DetailedResponse {
   // Special Events
   content += `### 🎯 **Special Interest Events**\n\n`;
 
-  content += `• **Insurtech Founders Mixer** - Oct 14, 5:00 PM @ [Surf Room](/locations?location=Surf%20Room)\n`;
-  content += `• **International Reception** - Oct 15, 6:00 PM @ [Reef Room](/locations?location=Reef%20Room)\n`;
-  content += `• **Women in Insurance** - Oct 15, 5:30 PM @ [Breakers Room](/locations?location=Breakers%20Room)\n`;
-  content += `• **Carriers Breakfast** - Oct 15, 7:30 AM @ [Breakers Room](/locations?location=Breakers%20Room)\n\n`;
+  content += `• **Insurtech Founders Mixer** - Oct 14, 5:00 PM @ [Surf Room](/locations?location=Surf%20Room) ${generateCalendarMarkdownLink({
+    title: 'Insurtech Founders Mixer',
+    date: 'October 14',
+    time: '5:00 PM',
+    location: 'Surf Room',
+    description: 'Exclusive networking event for insurtech founders and entrepreneurs'
+  })}\n`;
+  content += `• **International Reception** - Oct 15, 6:00 PM @ [Reef Room](/locations?location=Reef%20Room) ${generateCalendarMarkdownLink({
+    title: 'International Reception',
+    date: 'October 15',
+    time: '6:00 PM',
+    location: 'Reef Room',
+    description: 'Networking reception for international attendees and global insurance professionals'
+  })}\n`;
+  content += `• **Women in Insurance** - Oct 15, 5:30 PM @ [Breakers Room](/locations?location=Breakers%20Room) ${generateCalendarMarkdownLink({
+    title: 'Women in Insurance Networking',
+    date: 'October 15',
+    time: '5:30 PM',
+    location: 'Breakers Room',
+    description: 'Networking event for women leaders in insurance'
+  })}\n`;
+  content += `• **Carriers Breakfast** - Oct 15, 7:30 AM @ [Breakers Room](/locations?location=Breakers%20Room) ${generateCalendarMarkdownLink({
+    title: 'Carriers Breakfast',
+    date: 'October 15',
+    time: '7:30 AM',
+    location: 'Breakers Room',
+    description: 'Exclusive breakfast networking for insurance carriers'
+  })}\n\n`;
 
   // Time-specific recommendations
   if (hour >= 16 && hour < 19) {
@@ -79,7 +118,7 @@ export function getPartyInformation(query: string): DetailedResponse {
 
   // Add practical tips
   content += `### 💡 **Party Survival Tips:**\n`;
-  content += `• Download the ITC app for real-time updates\n`;
+  content += `• [Download the official ITC Vegas 2025 app](https://apps.apple.com/us/app/itc-vegas-2025/id1637886092) for real-time updates\n`;
   content += `• Bring business cards - you'll need 100+\n`;
   content += `• Comfortable shoes are essential\n`;
   content += `• Hydrate between drinks\n`;
@@ -145,7 +184,7 @@ export function getVenueInformation(): DetailedResponse {
   content += `• Convention center is 10-min walk from hotel towers\n`;
   content += `• Free tram to Luxor and Excalibur\n`;
   content += `• Golf carts available for accessibility needs\n`;
-  content += `• Download venue map in the ITC app\n\n`;
+  content += `• Download venue map in the [official ITC app](https://apps.apple.com/us/app/itc-vegas-2025/id1637886092)\n\n`;
 
   content += `### 🚗 **Transportation:**\n`;
   content += `• **Airport Shuttle:** Runs every 30 mins\n`;
@@ -221,7 +260,7 @@ export function getNetworkingGuide(): DetailedResponse {
   let content = `## 🤝 **ITC Vegas 2025 Networking Guide**\n\n`;
 
   content += `### 📱 **Networking Tools:**\n`;
-  content += `• **ITC Mobile App** - Message attendees directly\n`;
+  content += `• **[ITC Mobile App](https://apps.apple.com/us/app/itc-vegas-2025/id1637886092)** - Message attendees directly\n`;
   content += `• **AI Matchmaking** - Get personalized introductions\n`;
   content += `• **Meeting Scheduler** - Book 1:1s in advance\n`;
   content += `• **LinkedIn Scanner** - Quick profile exchange\n\n`;
@@ -291,7 +330,7 @@ export function getPracticalGuide(): DetailedResponse {
 
   content += `### 📱 **Essential Info:**\n`;
   content += `• **WiFi:** ITCVEGAS2025 (Password: innovate2025)\n`;
-  content += `• **App:** Download 'ITC Vegas' from App Store/Play Store\n`;
+  content += `• **App:** [Download 'ITC Vegas 2025' from App Store](https://apps.apple.com/us/app/itc-vegas-2025/id1637886092)\n`;
   content += `• **Help Desk:** South Convention Lobby\n`;
   content += `• **Emergency:** Text 'HELP' to 89119\n\n`;
 
@@ -391,7 +430,7 @@ export function getWeatherInformation(): DetailedResponse {
 
   content += `### 📱 **Real-Time Weather:**\n`;
   content += `For current conditions during the conference:\n`;
-  content += `• Check the ITC Vegas app\n`;
+  content += `• Check the [official ITC Vegas app](https://apps.apple.com/us/app/itc-vegas-2025/id1637886092)\n`;
   content += `• Weather.com: [Las Vegas forecast](https://weather.com/weather/today/l/Las+Vegas+NV)\n`;
   content += `• Any outdoor events will be updated in real-time`;
 

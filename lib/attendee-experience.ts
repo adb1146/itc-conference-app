@@ -89,7 +89,7 @@ Pro tip: Happy hours at sponsor booths 5-6:30 PM!`,
 - Breakers/Surf/Shoreline: Breakout rooms
 - Business Center: Quiet space
 
-**Quick tip:** Follow the ITC Vegas signs - they're everywhere! The app also has an interactive map.`,
+**Quick tip:** Follow the ITC Vegas signs - they're everywhere! The [official app](https://apps.apple.com/us/app/itc-vegas-2025/id1637886092) also has an interactive map.`,
       suggestions: [
         "Where's the main stage?",
         "How do I get to Expo Floor?",
@@ -316,7 +316,7 @@ export function getPracticalInfo(topic: string): string {
 - Las Vegas tip: Layers - venues are cold, outside is warm`,
 
     app: `**Mobile App Tips:**
-- Download: Search "ITC Vegas" in app stores
+- Download: [ITC Vegas 2025 on App Store](https://apps.apple.com/us/app/itc-vegas-2025/id1637886092)
 - Features: Schedule builder, 1:1 meeting scheduler, attendee networking
 - Pro tip: Enable notifications for session changes
 - QR code scanner for quick contact exchange`,
@@ -352,5 +352,5 @@ export function getNavigationHelp(from: string, to: string): string {
   };
 
   const key = `${from.toLowerCase()}-to-${to.toLowerCase()}`;
-  return routes[key] || `From ${from} to ${to}: Follow the ITC Vegas signs or check the app's interactive map!`;
+  return routes[key] || `From ${from} to ${to}: Follow the ITC Vegas signs or check the [official app's](https://apps.apple.com/us/app/itc-vegas-2025/id1637886092) interactive map!`;
 }

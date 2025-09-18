@@ -313,10 +313,16 @@ export default function FavoritesPage() {
           }
         }
       } else if (format === 'email') {
-        // For email, show confirmation
-        const data = await response.json();
-        if (data.success) {
-          alert(`Agenda will be sent to ${data.recipient}`);
+        // For email, use our schedule email endpoint
+        const emailResponse = await fetch('/api/schedule/email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const emailResult = await emailResponse.json();
+        if (emailResult.success) {
+          alert(`✅ ${emailResult.message}`);
+        } else {
+          alert(`❌ ${emailResult.error || 'Failed to send email'}`);
         }
       }
     } catch (error) {
@@ -565,6 +571,24 @@ export default function FavoritesPage() {
                         </div>
                       </div>
                     )}
+
+                    {/* Add to Calendar Button */}
+                    <div className="mt-4 pt-4 border-t border-gray-100">
+                      <a
+                        href={`/api/calendar/add?${new URLSearchParams({
+                          title: favorite.session.title,
+                          date: formatDate(favorite.session.startTime),
+                          time: `${formatTime(favorite.session.startTime)} - ${formatTime(favorite.session.endTime)}`,
+                          location: favorite.session.location,
+                          description: favorite.session.description.substring(0, 200),
+                          speakers: favorite.session.speakers.map(s => s.speaker.name).join(',')
+                        }).toString()}`}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors"
+                      >
+                        <Calendar className="w-4 h-4" />
+                        Add to Calendar
+                      </a>
+                    </div>
                   </div>
                 ) : favorite.type === 'speaker' && favorite.speaker ? (
                   <div>

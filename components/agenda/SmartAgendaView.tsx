@@ -214,32 +214,13 @@ export default function SmartAgendaView({
               </button>
             )}
 
-            <div className="relative group">
-              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                <Download className="w-4 h-4 inline mr-2" />
-                Export
-              </button>
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 hidden group-hover:block z-10">
-                <button
-                  onClick={() => onExport?.('ics')}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                >
-                  📅 Calendar (ICS)
-                </button>
-                <button
-                  onClick={() => onExport?.('pdf')}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                >
-                  📄 PDF Document
-                </button>
-                <button
-                  onClick={() => onExport?.('email')}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                >
-                  ✉️ Email to Me
-                </button>
-              </div>
-            </div>
+            <button
+              onClick={() => onExport?.('email')}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-md hover:shadow-lg"
+            >
+              <Mail className="w-4 h-4 inline mr-2" />
+              Email My Schedule
+            </button>
           </div>
         </div>
 

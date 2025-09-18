@@ -7,7 +7,7 @@ import {
   Calendar, Clock, MapPin, Search, Filter, Star, User, Tag,
   MessageCircle, Brain, Sparkles, TrendingUp, AlertCircle,
   ChevronRight, X, Zap, Target, Users, BarChart3,
-  ThumbsUp, ThumbsDown, RefreshCw, Wand2, Info, ChevronDown, ChevronUp
+  ThumbsUp, ThumbsDown, RefreshCw, Wand2, Info, ChevronDown, ChevronUp, Mail, Send
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -738,8 +738,36 @@ function IntelligentAgendaContent() {
               <p className="text-sm text-gray-600 mt-1">October 15-17, 2025 • Las Vegas</p>
             </div>
             
-            {/* AI Status - Always Full AI */}
+            {/* AI Status and Email Button */}
             <div className="flex items-center gap-2">
+              <button
+                onClick={async () => {
+                  if (!session?.user) {
+                    alert('Please sign in to email your schedule');
+                    router.push('/signin');
+                    return;
+                  }
+                  try {
+                    const response = await fetch('/api/schedule/email', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' }
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                      alert(`✅ ${result.message}`);
+                    } else {
+                      alert(`❌ ${result.error || 'Failed to send email'}`);
+                    }
+                  } catch (error) {
+                    alert('❌ Failed to send schedule email');
+                  }
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-md transition-all hover:shadow-lg font-medium"
+                title="Email your personalized schedule"
+              >
+                <Mail className="w-5 h-5" />
+                <span className="text-sm">Email My Schedule</span>
+              </button>
               <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg shadow-sm">
                 <Brain className="w-4 h-4" />
                 <span className="text-xs font-medium">AI Enhanced</span>
