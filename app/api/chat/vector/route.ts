@@ -5,6 +5,7 @@ import { createEnhancedPrompt, analyzeQueryComplexity } from '@/lib/prompt-engin
 import { selectMasterPrompts } from '@/lib/prompts/master-prompt';
 import { hybridSearch } from '@/lib/vector-db';
 import { searchLocalSessions, upsertSessionsToLocalDB, localVectorDB } from '@/lib/local-vector-db';
+import { enhancedSessionSearch } from '@/lib/enhanced-session-search';
 import prisma from '@/lib/db';
 
 /**
@@ -136,12 +137,29 @@ export async function POST(request: NextRequest) {
     }
 
     // Wait for all parallel operations
-    const [vectorResults, webSearchResults] = await Promise.all([
+    let [vectorResults, webSearchResults] = await Promise.all([
       vectorSearchPromise,
       webSearchPromise
     ]);
-    
+
     console.log(`[Vector Chat] Found ${vectorResults.length} semantically relevant sessions`);
+
+    // If vector search returned few or no results, use enhanced search as fallback
+    if (vectorResults.length < 3) {
+      console.log('[Vector Chat] Insufficient vector results, using enhanced search fallback');
+      const enhancedResults = await enhancedSessionSearch(message, topK);
+
+      if (enhancedResults.sessions.length > 0) {
+        console.log(`[Vector Chat] Enhanced search found ${enhancedResults.sessions.length} sessions using ${enhancedResults.searchMethod}`);
+
+        // Convert enhanced search results to vector result format
+        vectorResults = enhancedResults.sessions.map((session: any, index: number) => ({
+          id: session.id,
+          score: 0.7 - (index * 0.05), // Generate decreasing scores for relevance
+          hybridScore: 0.7 - (index * 0.05)
+        }));
+      }
+    }
     
     // Fetch full session data for the results
     const sessionIds = vectorResults.map(r => r.id);

@@ -7,6 +7,7 @@ import { selectMasterPrompts } from '@/lib/prompts/master-prompt';
 import { generateDateContext, parseTimeQuery, getConferenceDay } from '@/lib/conference-dates';
 import { detectToolIntent, formatAgendaResponse } from '@/lib/chat-tool-detector';
 import { generateFastAgenda } from '@/lib/tools/schedule/fast-agenda-builder';
+import { enhancedSessionSearch } from '@/lib/enhanced-session-search';
 
 const prisma = new PrismaClient();
 
@@ -49,7 +50,28 @@ function determineModel(message: string): { model: string; maxTokens: number; te
 async function getRelevantContext(message: string) {
   const lowerMessage = message.toLowerCase();
 
-  // Build search conditions
+  // First, check if this is a specific session query
+  // Look for patterns that suggest the user is asking about a specific session
+  const isSpecificSessionQuery =
+    lowerMessage.includes('datos') ||
+    lowerMessage.includes('tell me about') ||
+    lowerMessage.includes('what is') ||
+    lowerMessage.includes('when is') ||
+    lowerMessage.includes('details about') ||
+    lowerMessage.includes('information about');
+
+  // If it looks like a specific session query, use enhanced search
+  if (isSpecificSessionQuery) {
+    console.log('[Chat API] Using enhanced search for specific session query');
+    const searchResults = await enhancedSessionSearch(message, 10);
+
+    if (searchResults.sessions.length > 0) {
+      console.log(`[Chat API] Enhanced search found ${searchResults.sessions.length} sessions using ${searchResults.searchMethod} method`);
+      return searchResults.sessions;
+    }
+  }
+
+  // Build search conditions for general queries
   const searchConditions = [];
 
   // Use improved date parsing
@@ -63,7 +85,7 @@ async function getRelevantContext(message: string) {
   if (dayInfo && !timeQuery.day) {
     searchConditions.push({ tags: { has: dayInfo.tag } });
   }
-  
+
   // Look for topic keywords in the message
   const topicKeywords = [
     'ai', 'artificial intelligence', 'machine learning', 'automation',
@@ -78,17 +100,28 @@ async function getRelevantContext(message: string) {
     'iot', 'telematics',
     'insurtech', 'innovation'
   ];
-  
+
   const matchedTopics = topicKeywords.filter(topic => lowerMessage.includes(topic));
-  
-  // Build the where clause
+
+  // If we have topic matches, also try enhanced search for better results
+  if (matchedTopics.length > 0 && searchConditions.length === 0) {
+    console.log('[Chat API] Using enhanced search for topic query:', matchedTopics);
+    const searchResults = await enhancedSessionSearch(message, 25);
+
+    if (searchResults.sessions.length > 0) {
+      console.log(`[Chat API] Enhanced search found ${searchResults.sessions.length} sessions using ${searchResults.searchMethod} method`);
+      return searchResults.sessions;
+    }
+  }
+
+  // Build the where clause for traditional database search
   let whereClause: any = {};
-  
+
   // Add day conditions
   if (searchConditions.length > 0) {
     whereClause.OR = searchConditions;
   }
-  
+
   // Add topic conditions
   if (matchedTopics.length > 0) {
     const topicConditions = matchedTopics.map(topic => ({
@@ -98,7 +131,7 @@ async function getRelevantContext(message: string) {
         { track: { contains: topic, mode: 'insensitive' } }
       ]
     }));
-    
+
     if (whereClause.OR) {
       whereClause = {
         AND: [
@@ -110,18 +143,18 @@ async function getRelevantContext(message: string) {
       whereClause.OR = topicConditions;
     }
   }
-  
+
   // Check if we need speaker information
-  const needsSpeakers = lowerMessage.includes('speaker') || 
-                        lowerMessage.includes('who') || 
+  const needsSpeakers = lowerMessage.includes('speaker') ||
+                        lowerMessage.includes('who') ||
                         lowerMessage.includes('present') ||
                         lowerMessage.includes('panelist');
-  
+
   // For general queries or if no specific filters, return a representative sample
   const isGeneralQuery = matchedTopics.length === 0 && searchConditions.length === 0;
   const limit = isGeneralQuery ? 25 : 40; // Fewer sessions for general queries
-  
-  // Fetch relevant sessions
+
+  // Fetch relevant sessions using traditional database search
   const sessions = await prisma.session.findMany({
     where: Object.keys(whereClause).length > 0 ? whereClause : undefined,
     include: needsSpeakers ? {
@@ -136,7 +169,7 @@ async function getRelevantContext(message: string) {
       { startTime: 'asc' }
     ]
   });
-  
+
   return sessions;
 }
 
