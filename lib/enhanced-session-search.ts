@@ -212,6 +212,7 @@ export async function getSessionDetails(identifier: string) {
           include: {
             speaker: true
           }
+        }
       }
     });
   }
@@ -227,6 +228,7 @@ export async function getSessionDetails(identifier: string) {
           include: {
             speaker: true
           }
+        }
       }
     });
   }
