@@ -264,13 +264,16 @@ export default function ProfilePage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Email
+                  <span className="ml-2 text-xs font-normal text-gray-500">(Cannot be changed)</span>
                 </label>
                 <input
                   type="email"
                   value={profileData.email}
                   disabled
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 text-gray-500"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 text-gray-500 cursor-not-allowed"
+                  title="Email address cannot be changed for security reasons"
                 />
+                <p className="mt-1 text-xs text-gray-500">Your email is used for authentication and cannot be modified</p>
               </div>
 
               <div>
