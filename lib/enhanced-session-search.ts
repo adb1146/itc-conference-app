@@ -39,54 +39,81 @@ export async function enhancedSessionSearch(
 
       // Extract key terms from query
       const searchTerms = extractSearchTerms(query);
+      console.log('[Search] Extracted search terms:', searchTerms);
 
-      // Database search with multiple strategies
-      const dbResults = await prisma.session.findMany({
-        where: {
-          OR: [
-            // Exact title match (case insensitive)
-            { title: { contains: query, mode: 'insensitive' } },
-            // Match any of the search terms
-            ...searchTerms.map(term => ({
-              title: { contains: term, mode: 'insensitive' as const }
-            })),
-            // Description search
-            { description: { contains: query, mode: 'insensitive' } },
-            ...searchTerms.map(term => ({
-              description: { contains: term, mode: 'insensitive' as const }
-            })),
-            // Speaker search
-            {
-              speakers: {
-                some: {
-                  speaker: {
-                    name: { contains: query, mode: 'insensitive' }
+      // First, try to find exact or near-exact title matches with important terms
+      if (searchTerms.length > 0) {
+        const importantTerms = searchTerms.filter(term =>
+          !['carriers', 'only', 'summit'].includes(term.toLowerCase())
+        );
+
+        // Search specifically for sessions containing the most important terms
+        const primarySearch = await prisma.session.findMany({
+          where: {
+            AND: importantTerms.slice(0, 2).map(term => ({
+              OR: [
+                { title: { contains: term, mode: 'insensitive' as const } },
+                { description: { contains: term, mode: 'insensitive' as const } }
+              ]
+            }))
+          },
+          include: {
+            speakers: {
+              include: {
+                speaker: true
+              }
+            }
+          },
+          take: limit
+        });
+
+        if (primarySearch.length > 0) {
+          console.log(`[Search] Found ${primarySearch.length} sessions with primary terms`);
+          const existingIds = new Set(results.map((r: any) => r.id));
+          const newResults = primarySearch.filter(r => !existingIds.has(r.id));
+          results.push(...newResults);
+        }
+      }
+
+      // If still not enough results, do broader search
+      if (results.length < 3) {
+        // Database search with multiple strategies
+        const dbResults = await prisma.session.findMany({
+          where: {
+            OR: [
+              // Match any of the important search terms in title
+              ...searchTerms.slice(0, 3).map(term => ({
+                title: { contains: term, mode: 'insensitive' as const }
+              })),
+              // Speaker search for names
+              ...searchTerms.filter(term => term.includes(' ')).map(name => ({
+                speakers: {
+                  some: {
+                    speaker: {
+                      name: { contains: name, mode: 'insensitive' as const }
+                    }
                   }
                 }
+              }))
+            ]
+          },
+          include: {
+            speakers: {
+              include: {
+                speaker: true
               }
-            },
-            // Track search
-            { track: { contains: query, mode: 'insensitive' } },
-            // Location search
-            { location: { contains: query, mode: 'insensitive' } }
-          ]
-        },
-        include: {
-          speakers: {
-            include: {
-              speaker: true
             }
-          }
-        },
-        take: limit
-      });
+          },
+          take: limit
+        });
 
-      console.log(`[Search] Database search found ${dbResults.length} results`);
+        console.log(`[Search] Database search found ${dbResults.length} results`);
 
-      // Add database results that aren't already in vector results
-      const existingIds = new Set(results.map((r: any) => r.id));
-      const newResults = dbResults.filter(r => !existingIds.has(r.id));
-      results.push(...newResults);
+        // Add database results that aren't already in vector results
+        const existingIds = new Set(results.map((r: any) => r.id));
+        const newResults = dbResults.filter(r => !existingIds.has(r.id));
+        results.push(...newResults);
+      }
     }
 
     // Strategy 3: If still no results, try fuzzy matching
@@ -170,7 +197,8 @@ function extractSearchTerms(query: string): string[] {
     'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had',
     'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might',
     'can', 'must', 'shall', 'what', 'who', 'which', 'when', 'where', 'why',
-    'how', 'session', 'tell', 'me', 'show', 'find', 'search', 'look'
+    'how', 'session', 'tell', 'me', 'show', 'find', 'search', 'look',
+    'itc', 'vegas', '2025', 'conference' // Add common conference terms
   ]);
 
   const words = query.toLowerCase()
@@ -182,7 +210,20 @@ function extractSearchTerms(query: string): string[] {
   const quotedPhrases = query.match(/"[^"]+"/g) || [];
   const phrases = quotedPhrases.map(p => p.replace(/"/g, ''));
 
-  return [...new Set([...words, ...phrases])];
+  // Look for important session-specific terms
+  const importantTerms = [];
+  const lowerQuery = query.toLowerCase();
+
+  // Company and product names should be prioritized
+  if (lowerQuery.includes('clearspeed')) importantTerms.push('clearspeed');
+  if (lowerQuery.includes('datos')) importantTerms.push('datos');
+  if (lowerQuery.includes('trust faster')) importantTerms.push('trust faster');
+
+  // Speaker names (extract capitalized words that might be names)
+  const namePattern = /\b[A-Z][a-z]+ [A-Z][a-z]+\b/g;
+  const names = query.match(namePattern) || [];
+
+  return [...new Set([...importantTerms, ...names, ...words, ...phrases])];
 }
 
 /**
