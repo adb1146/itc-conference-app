@@ -89,8 +89,8 @@ export function getPartyInformation(query: string): DetailedResponse {
   // Add action buttons context
   content += `### 🎬 **Quick Actions:**\n`;
   content += `• [View Full Events Calendar](/agenda?type=events)\n`;
-  content += `• [Add to My Schedule](/agenda/builder)\n`;
-  content += `• [Find People to Meet](/networking)\n`;
+  content += `• [Add to My Schedule](/agenda/intelligent)\n`;
+  content += `• [Find People to Meet](/speakers)\n`;
   content += `• [Venue Maps & Directions](/locations)\n`;
 
   return {

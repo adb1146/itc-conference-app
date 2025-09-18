@@ -99,12 +99,17 @@ export async function POST(request: NextRequest) {
         name: user.name || 'Conference Attendee',
         email: user.email
       }),
-      // Send notification to admin
+      // Send notification to admin with all user information
       emailService.sendRegistrationNotification({
         name: user.name || 'Not provided',
         email: user.email,
         company: user.company || undefined,
-        role: user.role || undefined
+        role: user.role || undefined,
+        organizationType: user.organizationType || undefined,
+        interests: user.interests || [],
+        goals: user.goals || [],
+        usingSalesforce: user.usingSalesforce || false,
+        interestedInSalesforce: user.interestedInSalesforce || false
       })
     ]).catch(error => {
       // Log email errors but don't fail registration
