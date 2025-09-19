@@ -11,7 +11,7 @@ export async function GET() {
     console.log('Admin Stats API - IsAdmin:', (session?.user as any)?.isAdmin);
     
     // Check if user is authenticated and is admin
-    const isAdmin = session?.user?.email === 'test@example.com' || (session?.user as any)?.isAdmin;
+    const isAdmin = Boolean((session?.user as any)?.isAdmin);
     if (!session?.user || !isAdmin) {
       console.log('Admin Stats API - Unauthorized');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

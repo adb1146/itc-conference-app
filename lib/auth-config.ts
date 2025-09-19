@@ -2,6 +2,7 @@ import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 import prisma from '@/lib/db';
+import { getAuthSecret } from '@/lib/auth-secret';
 
 export function getAuthOptions(): NextAuthOptions {
   return {
@@ -14,10 +15,7 @@ export function getAuthOptions(): NextAuthOptions {
         },
         async authorize(credentials) {
           try {
-            console.log('Starting auth for:', credentials?.email);
-            
             if (!credentials?.email || !credentials?.password) {
-              console.log('Missing credentials');
               return null;
             }
 
@@ -27,33 +25,28 @@ export function getAuthOptions(): NextAuthOptions {
               }
             });
 
-              console.log('User lookup result:', !!user);
+            if (!user || !user.password) {
+              return null;
+            }
 
-              if (!user || !user.password) {
-                console.log('User not found or no password');
-                return null;
-              }
+            const isPasswordValid = await bcrypt.compare(
+              credentials.password,
+              user.password
+            );
 
-              const isPasswordValid = await bcrypt.compare(
-                credentials.password,
-                user.password
-              );
+            if (!isPasswordValid) {
+              return null;
+            }
 
-              console.log('Password validation:', isPasswordValid);
-
-              if (!isPasswordValid) {
-                return null;
-              }
-
-              // Return user object for JWT
-              return {
-                id: user.id,
-                email: user.email,
-                name: user.name || undefined,
-                role: user.role || undefined,
-                company: user.company || undefined,
-                isAdmin: user.isAdmin || false
-              };
+            // Return user object for JWT
+            return {
+              id: user.id,
+              email: user.email,
+              name: user.name || undefined,
+              role: user.role || undefined,
+              company: user.company || undefined,
+              isAdmin: user.isAdmin || false
+            };
           } catch (error) {
             console.error('Auth error:', error);
             return null;
@@ -101,7 +94,7 @@ export function getAuthOptions(): NextAuthOptions {
         return session;
       }
     },
-    secret: process.env.NEXTAUTH_SECRET || 'your-secret-key-here-change-in-production',
-    debug: true,
+    secret: getAuthSecret(),
+    debug: process.env.NODE_ENV === 'development',
   };
 }

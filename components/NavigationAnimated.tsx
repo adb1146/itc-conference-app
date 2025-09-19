@@ -426,7 +426,7 @@ export default function NavigationAnimated() {
                         <span>Settings</span>
                       </Link>
 
-                      {(session.user?.email === 'test@example.com' || (session.user as any)?.isAdmin) && (
+                      {Boolean((session.user as any)?.isAdmin) && (
                         <>
                           <div className="border-t border-gray-100 mt-1 pt-1"></div>
                           <Link

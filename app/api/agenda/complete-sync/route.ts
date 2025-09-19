@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { requireAdmin } from '@/lib/auth-guards';
 
 // Comprehensive session data for ITC Vegas 2025
 // This includes a more complete dataset based on typical ITC conference structure
@@ -350,6 +351,15 @@ const ITC_VEGAS_2025_SESSIONS = {
 
 export async function POST(request: NextRequest) {
   try {
+    if (process.env.NODE_ENV === 'production') {
+      return NextResponse.json({ error: 'Endpoint disabled in production' }, { status: 403 });
+    }
+
+    const adminCheck = await requireAdmin();
+    if (adminCheck instanceof NextResponse) {
+      return adminCheck;
+    }
+
     console.log('Starting complete conference data sync...');
     
     let totalSessionsSaved = 0;

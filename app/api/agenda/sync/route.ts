@@ -1,11 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import AgendaFetcherService from '@/lib/services/agenda-fetcher';
 import { PrismaClient } from '@prisma/client';
+import { requireAdmin } from '@/lib/auth-guards';
 
 const prisma = new PrismaClient();
 
 export async function POST(request: NextRequest) {
   try {
+    if (process.env.NODE_ENV === 'production') {
+      return NextResponse.json({ error: 'Endpoint disabled in production' }, { status: 403 });
+    }
+
+    const adminCheck = await requireAdmin();
+    if (adminCheck instanceof NextResponse) {
+      return adminCheck;
+    }
+
     // Default to the ITC Vegas 2025 agenda URL
     const body = await request.json().catch(() => ({}));
     const url = body.url || 'https://vegas.insuretechconnect.com/agenda-speakers/2025-agenda';

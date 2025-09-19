@@ -1,8 +1,16 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET() {
-  // Security check - only in development or with secret token
-  const token = process.env.DEBUG_TOKEN || 'test-debug-2024';
+export async function GET(request: NextRequest) {
+  if (process.env.NODE_ENV !== 'development') {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
+  const debugToken = process.env.DEBUG_TOKEN;
+  const authHeader = request.headers.get('authorization');
+
+  if (!debugToken || authHeader !== `Bearer ${debugToken}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   return NextResponse.json({
     environment: process.env.NODE_ENV,

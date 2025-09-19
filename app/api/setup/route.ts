@@ -2,15 +2,27 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import fs from 'fs/promises';
 import path from 'path';
+import { requireAdmin } from '@/lib/auth-guards';
 
 export async function GET(request: Request) {
   try {
+    if (process.env.NODE_ENV !== 'development') {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+
     // Check for force parameter
     const { searchParams } = new URL(request.url);
     const force = searchParams.get('force') === 'true';
     
     // Check if database already has data
     const userCount = await prisma.user.count();
+
+    if (userCount > 0 || force) {
+      const adminCheck = await requireAdmin();
+      if (adminCheck instanceof NextResponse) {
+        return adminCheck;
+      }
+    }
     
     if (userCount > 0 && !force) {
       return NextResponse.json({ 
@@ -100,8 +112,7 @@ export async function GET(request: Request) {
       success: true,
       message: 'One-time setup completed successfully',
       imported: metadata.counts,
-      final: finalCounts,
-      note: 'You can now login with test@example.com / password123'
+      final: finalCounts
     });
     
   } catch (error) {

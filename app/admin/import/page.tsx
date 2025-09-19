@@ -11,7 +11,7 @@ export default function ImportDataPage() {
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const isAdmin = session?.user?.email === 'test@example.com' || (session?.user as any)?.isAdmin;
+  const isAdmin = Boolean((session?.user as any)?.isAdmin);
 
   if (status === 'loading') {
     return (

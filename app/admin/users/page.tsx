@@ -35,8 +35,8 @@ export default function AdminUsersPage() {
   useEffect(() => {
     if (status === 'loading') return;
     
-    // Allow access for test@example.com or users with isAdmin flag
-    const isAdmin = session?.user?.email === 'test@example.com' || (session?.user as any)?.isAdmin;
+    // Only allow users flagged as admins
+    const isAdmin = Boolean((session?.user as any)?.isAdmin);
     
     if (!isAdmin) {
       router.push('/');
@@ -114,7 +114,7 @@ export default function AdminUsersPage() {
     );
   }
 
-  const isAdmin = session?.user?.email === 'test@example.com' || (session?.user as any)?.isAdmin;
+  const isAdmin = Boolean((session?.user as any)?.isAdmin);
   
   if (!isAdmin) {
     return null;

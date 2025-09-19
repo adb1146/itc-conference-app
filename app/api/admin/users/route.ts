@@ -17,10 +17,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    // Always allow test@example.com
-    if (session.user.email === 'test@example.com') {
-      console.log('Admin Users API - Authorized as test@example.com');
-    } else if (!(session?.user as any)?.isAdmin) {
+    if (!(session?.user as any)?.isAdmin) {
       console.log('Admin Users API - Unauthorized: Not admin');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

@@ -2,16 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import prisma from '@/lib/db';
+import { getAuthSecret } from '@/lib/auth-secret';
 
-const SECRET_KEY = process.env.NEXTAUTH_SECRET || 'your-secret-key-here-change-in-production';
+const SECRET_KEY = getAuthSecret();
 
 export async function POST(request: NextRequest) {
   
   try {
     const { email, password } = await request.json();
     
-    console.log('Custom auth attempt for:', email);
-
     if (!email || !password) {
       return NextResponse.json(
         { error: 'Email and password are required' },
@@ -24,8 +23,6 @@ export async function POST(request: NextRequest) {
       where: { email }
     });
 
-    console.log('User found:', !!user);
-
     if (!user || !user.password) {
       return NextResponse.json(
         { error: 'Invalid email or password' },
@@ -35,8 +32,6 @@ export async function POST(request: NextRequest) {
 
     // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.password);
-    
-    console.log('Password valid:', isPasswordValid);
 
     if (!isPasswordValid) {
       return NextResponse.json(

@@ -12,7 +12,7 @@ export async function PATCH(
     const session = await getServerSession(authOptions);
     
     // Check if user is authenticated and is admin
-    const userIsAdmin = session?.user?.email === 'test@example.com' || (session?.user as any)?.isAdmin;
+    const userIsAdmin = Boolean((session?.user as any)?.isAdmin);
     if (!session?.user || !userIsAdmin) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -52,7 +52,7 @@ export async function DELETE(
     const session = await getServerSession(authOptions);
     
     // Check if user is authenticated and is admin
-    const userIsAdmin = session?.user?.email === 'test@example.com' || (session?.user as any)?.isAdmin;
+    const userIsAdmin = Boolean((session?.user as any)?.isAdmin);
     if (!session?.user || !userIsAdmin) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

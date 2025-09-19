@@ -98,8 +98,7 @@ export async function middleware(request: NextRequest) {
       return redirectResponse;
     }
     
-    // Check if user is admin (either by isAdmin flag or test@example.com)
-    const isAdmin = (token as any).email === 'test@example.com' || (token as any).isAdmin;
+    const isAdmin = Boolean((token as any).isAdmin);
     if (!isAdmin) {
       const redirectResponse = NextResponse.redirect(new URL('/', request.url));
       addSecurityHeaders(redirectResponse, request);

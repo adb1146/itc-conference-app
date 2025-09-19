@@ -372,20 +372,31 @@ export default function SmartAgendaView({
     return hours * 60 + minutes;
   };
 
-  const handleConflictResolution = (resolutions: { keep: string; alternative: string }[]) => {
+  const handleConflictResolution = async (resolutions: { keep: string; alternative: string }[]) => {
     // Handle the conflict resolution
     console.log('Resolving conflicts:', resolutions);
 
-    // Here you would typically:
-    // 1. Update the agenda to remove conflicting sessions
-    // 2. Keep the selected sessions
-    // 3. Possibly suggest alternatives for removed sessions
-
-    // For now, just close the modal
+    // Close the modal immediately for better UX
     setShowConflictModal(false);
 
-    // You could emit an event to the parent to handle the actual resolution
-    // onResolveConflicts?.(resolutions);
+    // Process each resolution by removing the alternative sessions
+    for (const resolution of resolutions) {
+      // Remove the session that wasn't chosen
+      if (onItemRemove) {
+        await onItemRemove(resolution.alternative);
+      }
+    }
+
+    // Wait a moment for the parent state to update
+    setTimeout(() => {
+      // Clear the conflicts and re-detect
+      // The useEffect will re-run when agenda prop changes
+      detectConflicts();
+    }, 100);
+
+    // Show success message
+    const removedCount = resolutions.length;
+    console.log(`✅ Successfully resolved ${removedCount} conflict${removedCount > 1 ? 's' : ''}`);
   };
 
   return (
