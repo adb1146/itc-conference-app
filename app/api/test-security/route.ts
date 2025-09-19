@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
 // TEST FILE: This file intentionally contains security issues for testing Claude review
+// Updated: 2025-09-19 - Testing fixed Claude security workflow
 
 export async function POST(request: Request) {
   // Security Issue 1: No authentication check
