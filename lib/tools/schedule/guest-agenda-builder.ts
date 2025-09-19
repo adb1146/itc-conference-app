@@ -5,6 +5,7 @@
 
 import { SmartAgenda, ScheduleItem, AgendaOptions } from './types';
 import prisma from '@/lib/db';
+import { formatSessionTime } from '@/lib/utils/format-time';
 
 export interface GuestPreferences {
   interests: string[];
@@ -266,18 +267,8 @@ export async function generateGuestAgenda(
 
           schedule.push({
             id: `session-${session.id}`,
-            time: new Date(session.startTime).toLocaleTimeString('en-US', {
-              timeZone: 'America/Los_Angeles',
-              hour: 'numeric',
-              minute: '2-digit',
-              hour12: true
-            }),
-            endTime: new Date(session.endTime).toLocaleTimeString('en-US', {
-              timeZone: 'America/Los_Angeles',
-              hour: 'numeric',
-              minute: '2-digit',
-              hour12: true
-            }),
+            time: formatSessionTime(session.startTime),
+            endTime: formatSessionTime(session.endTime),
             type: 'session' as const,
             source: 'ai-suggested' as const,
             item: {

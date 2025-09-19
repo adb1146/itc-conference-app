@@ -1,5 +1,6 @@
 import { SmartAgenda, ScheduleItem, AgendaOptions } from './types';
 import prisma from '@/lib/db';
+import { formatSessionTime } from '@/lib/utils/format-time';
 
 /**
  * Fast agenda builder that creates a personalized schedule without expensive AI calls
@@ -102,18 +103,8 @@ export async function generateFastAgenda(
           if (!usedTimeSlots.has(timeSlot)) {
             schedule.push({
               id: `session-${session.id}`,
-              time: new Date(session.startTime).toLocaleTimeString('en-US', {
-                timeZone: 'America/Los_Angeles',
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true
-              }),
-              endTime: new Date(session.endTime).toLocaleTimeString('en-US', {
-                timeZone: 'America/Los_Angeles',
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true
-              }),
+              time: formatSessionTime(session.startTime),
+              endTime: formatSessionTime(session.endTime),
               type: 'session',
               source: 'user-favorite',
               item: {
@@ -225,18 +216,8 @@ export async function generateFastAgenda(
 
           schedule.push({
             id: `session-${session.id}`,
-            time: new Date(session.startTime).toLocaleTimeString('en-US', {
-              timeZone: 'America/Los_Angeles',
-              hour: 'numeric',
-              minute: '2-digit',
-              hour12: true
-            }),
-            endTime: new Date(session.endTime).toLocaleTimeString('en-US', {
-              timeZone: 'America/Los_Angeles',
-              hour: 'numeric',
-              minute: '2-digit',
-              hour12: true
-            }),
+            time: formatSessionTime(session.startTime),
+            endTime: formatSessionTime(session.endTime),
             type: 'session',
             source: 'ai-suggested',
             item: {
@@ -267,18 +248,8 @@ export async function generateFastAgenda(
 
       schedule.push({
         id: `meal-lunch-${dayNumber}`,
-        time: lunchTime.toLocaleTimeString('en-US', {
-          timeZone: 'America/Los_Angeles',
-          hour: 'numeric',
-          minute: '2-digit',
-          hour12: true
-        }),
-        endTime: lunchEndTime.toLocaleTimeString('en-US', {
-          timeZone: 'America/Los_Angeles',
-          hour: 'numeric',
-          minute: '2-digit',
-          hour12: true
-        }),
+        time: formatSessionTime(lunchTime),
+        endTime: formatSessionTime(lunchEndTime),
         type: 'meal',
         source: 'system',
         item: {

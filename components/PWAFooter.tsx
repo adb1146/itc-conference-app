@@ -108,11 +108,11 @@ export default function PWAFooter() {
                     Speakers
                   </Link>
                   <Link
-                    href="/favorites"
+                    href="/agenda"
                     className="text-xs text-gray-600 hover:text-gray-900 bg-gray-50 rounded-lg p-2 text-center transition-colors"
                     onClick={() => setShowInfo(false)}
                   >
-                    My Schedule
+                    Full Agenda
                   </Link>
                 </div>
               </div>

@@ -1,6 +1,7 @@
 import { SmartAgenda, ScheduleItem, AgendaOptions } from './types';
 import prisma from '@/lib/db';
 import { searchSimilarSessions } from '@/lib/vector-db';
+import { formatSessionTime } from '@/lib/utils/format-time';
 
 // Session cache - READ-ONLY conference data safe to share across all users
 // User-specific data (favorites, preferences) is never cached here
@@ -207,18 +208,8 @@ export async function generateOptimizedAgenda(
 
           schedule.push({
             id: `session-${session.id}`,
-            time: new Date(session.startTime).toLocaleTimeString('en-US', {
-              timeZone: 'America/Los_Angeles',
-              hour: 'numeric',
-              minute: '2-digit',
-              hour12: true
-            }),
-            endTime: new Date(session.endTime).toLocaleTimeString('en-US', {
-              timeZone: 'America/Los_Angeles',
-              hour: 'numeric',
-              minute: '2-digit',
-              hour12: true
-            }),
+            time: formatSessionTime(session.startTime),
+            endTime: formatSessionTime(session.endTime),
             type: 'session',
             source: (favoritedSessionIds.has(session.id) ? 'user-favorite' :
                    recommendedSessionIds.has(session.id) ? 'ai-suggested' :
@@ -229,6 +220,7 @@ export async function generateOptimizedAgenda(
               description: session.description || '',
               location: session.location || '',
               speakers: session.speakers.map((s: any) => ({
+                id: s.speaker.id,
                 name: s.speaker.name,
                 company: s.speaker.company,
                 role: s.speaker.role

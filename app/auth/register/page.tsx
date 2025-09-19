@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
-import { Mail, Lock, User, Building, UserPlus, AlertCircle, Loader2, CheckCircle, ExternalLink, Info } from 'lucide-react';
+import { Mail, Lock, User, Building, UserPlus, AlertCircle, Loader2, CheckCircle, ExternalLink, Info, Sparkles } from 'lucide-react';
 
 const INTERESTS = [
   'AI & Automation',
@@ -70,14 +70,14 @@ export default function RegisterPage() {
         setError('Please fill in all required fields');
         return;
       }
-      
+
       // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(formData.email)) {
         setError('Please enter a valid email address');
         return;
       }
-      
+
       if (formData.password !== formData.confirmPassword) {
         setError('Passwords do not match');
         return;
@@ -88,11 +88,19 @@ export default function RegisterPage() {
       }
       setError('');
       setStep(2);
+    } else if (step === 2) {
+      // Move from step 2 to step 3
+      setError('');
+      setStep(3);
     }
   };
 
   const handleBack = () => {
-    setStep(1);
+    if (step === 3) {
+      setStep(2);
+    } else if (step === 2) {
+      setStep(1);
+    }
     setError('');
   };
 
@@ -132,7 +140,8 @@ export default function RegisterPage() {
       });
 
       if (signInResult?.ok) {
-        router.push('/profile');
+        // Redirect directly to Smart Agenda page after registration
+        router.push('/smart-agenda');
         router.refresh();
       } else {
         router.push('/auth/signin');
@@ -155,14 +164,17 @@ export default function RegisterPage() {
             </div>
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Create Your Account</h1>
             <p className="text-sm sm:text-base text-gray-600 mt-2">
-              {step === 1 ? 'Register to explore AI-powered conference features' : 'Help us personalize your experience'}
+              {step === 1 ? 'Register to explore AI-powered conference features' :
+               step === 2 ? 'Help us personalize your experience' :
+               'Your Smart Agenda is ready to be created!'}
             </p>
           </div>
 
           {/* Progress Indicator */}
           <div className="flex items-center justify-center gap-2 mb-6 sm:mb-8">
-            <div className={`w-24 h-1 rounded-full ${step >= 1 ? 'bg-blue-600' : 'bg-gray-200'}`} />
-            <div className={`w-24 h-1 rounded-full ${step >= 2 ? 'bg-blue-600' : 'bg-gray-200'}`} />
+            <div className={`w-20 h-1 rounded-full ${step >= 1 ? 'bg-blue-600' : 'bg-gray-200'}`} />
+            <div className={`w-20 h-1 rounded-full ${step >= 2 ? 'bg-blue-600' : 'bg-gray-200'}`} />
+            <div className={`w-20 h-1 rounded-full ${step >= 3 ? 'bg-blue-600' : 'bg-gray-200'}`} />
           </div>
 
           {/* Error Message */}
@@ -236,7 +248,7 @@ export default function RegisterPage() {
                   Next Step
                 </button>
               </div>
-            ) : (
+            ) : step === 2 ? (
               /* Step 2: Profile Information */
               <div className="space-y-4 sm:space-y-6">
                 <div>
@@ -362,9 +374,88 @@ export default function RegisterPage() {
                     Back
                   </button>
                   <button
+                    type="button"
+                    onClick={handleNext}
+                    className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-lg font-medium hover:shadow-lg transform hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
+                  >
+                    <CheckCircle className="w-5 h-5" />
+                    Continue to Final Step
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Step 3: Smart Agenda Preview */
+              <div className="space-y-4 sm:space-y-6">
+                <div className="text-center">
+                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-500 to-blue-600 rounded-2xl mb-4">
+                    <Sparkles className="w-8 h-8 text-white" />
+                  </div>
+                  <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">
+                    Almost There! 🎉
+                  </h2>
+                  <p className="text-sm text-gray-600 mb-6">
+                    We're ready to build your personalized conference schedule
+                  </p>
+                </div>
+
+                {/* What You'll Get */}
+                <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-4 sm:p-5 space-y-3">
+                  <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-purple-600" />
+                    Your Smart Agenda will include:
+                  </h3>
+                  <ul className="space-y-2 text-sm text-gray-700">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span>Personalized session recommendations based on your interests</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span>Conflict-free scheduling with break times</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span>AI-powered insights matching your role and goals</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <span>Export to calendar and share with colleagues</span>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Your Interests Summary */}
+                {formData.interests.length > 0 && (
+                  <div className="bg-white border border-purple-200 rounded-lg p-3 sm:p-4">
+                    <p className="text-sm font-medium text-gray-700 mb-2">Based on your interests in:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {formData.interests.slice(0, 5).map(interest => (
+                        <span key={interest} className="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded-full">
+                          {interest}
+                        </span>
+                      ))}
+                      {formData.interests.length > 5 && (
+                        <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full">
+                          +{formData.interests.length - 5} more
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button
+                    type="button"
+                    onClick={handleBack}
+                    className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition"
+                  >
+                    Back
+                  </button>
+                  <button
                     type="submit"
                     disabled={loading}
-                    className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-lg font-medium hover:shadow-lg transform hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 rounded-lg font-medium hover:shadow-lg transform hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {loading ? (
                       <>
@@ -373,11 +464,18 @@ export default function RegisterPage() {
                       </>
                     ) : (
                       <>
-                        <CheckCircle className="w-5 h-5" />
-                        Create Account
+                        <Sparkles className="w-5 h-5" />
+                        Create Account & Build My Agenda
                       </>
                     )}
                   </button>
+                </div>
+
+                {/* Trust Badge */}
+                <div className="text-center">
+                  <p className="text-xs text-gray-500">
+                    Join 500+ conference attendees who've built their perfect schedule
+                  </p>
                 </div>
               </div>
             )}

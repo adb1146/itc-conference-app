@@ -97,7 +97,7 @@ export default function NavigationAnimated() {
     { href: '/agenda', label: 'Agenda', icon: Calendar },
     { href: '/chat', label: 'AI Concierge', icon: Brain },
     { href: '/speakers', label: 'Speakers', icon: Users },
-    { href: '/favorites', label: 'Favorites', icon: Star, requireAuth: true },
+    { href: '/smart-agenda', label: 'Smart Agenda', icon: Sparkles, requireAuth: true },
     { href: '/guide', label: 'Guide', icon: BookOpen, highlight: true },
   ];
 
@@ -158,17 +158,18 @@ export default function NavigationAnimated() {
       scrolled ? 'bg-white/95 backdrop-blur-md shadow-lg' : 'bg-white'
     }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-44 sm:h-48 md:h-52 lg:h-56">
+        <div className="flex justify-between items-center h-16 sm:h-20 md:h-24 lg:h-24">
           {/* Logo */}
-          <Link href="/" className="flex items-center justify-center py-2">
+          <Link href="/" className="flex items-center justify-center">
             <div className="relative">
               <Image
                 src={ITCLogo}
                 alt="ITC Vegas 2025 Concierge"
-                height={300}
-                width={600}
-                className="h-40 sm:h-44 md:h-48 lg:h-52 w-auto object-contain"
+                width={320}
+                height={80}
+                className="h-12 sm:h-14 md:h-16 lg:h-18 w-auto"
                 priority
+                suppressHydrationWarning
               />
             </div>
           </Link>

@@ -6,7 +6,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Brain, Target, Users, TrendingUp, Sparkles, Info, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { Brain, Target, Users, TrendingUp, Sparkles, Info, CheckCircle, ChevronDown, ChevronUp, Shield, Check } from 'lucide-react';
 
 interface AgendaInsightsProps {
   insights: {
@@ -23,6 +23,12 @@ interface AgendaInsightsProps {
       matchingInterests: number;
       networkingOpportunities: number;
       expertSpeakers: number;
+    };
+    aiReviewPerspective?: {
+      qualityScore: number;
+      improvements: string[];
+      recommendations: string[];
+      confidence: number;
     };
   };
 }
@@ -164,6 +170,52 @@ export default function AgendaInsights({ insights }: AgendaInsightsProps) {
                     </li>
                   ))}
                 </ul>
+              </div>
+            </div>
+          )}
+
+          {/* AI Review Perspective */}
+          {insights.aiReviewPerspective && (
+            <div className="flex items-start gap-3">
+              <div className="p-1.5 bg-emerald-100 rounded-lg">
+                <Shield className="w-4 h-4 text-emerald-600" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-900 mb-1">AI Quality Review</p>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 transition-all"
+                        style={{ width: `${insights.aiReviewPerspective.qualityScore}%` }}
+                      />
+                    </div>
+                    <span className="text-sm font-medium text-emerald-700">
+                      {insights.aiReviewPerspective.qualityScore}% Quality Score
+                    </span>
+                  </div>
+
+                  {insights.aiReviewPerspective.improvements.length > 0 && (
+                    <div className="bg-emerald-50 rounded-lg p-2 space-y-1">
+                      <p className="text-xs font-medium text-emerald-700 flex items-center gap-1">
+                        <Check className="w-3 h-3" />
+                        Automatic Improvements Made:
+                      </p>
+                      {insights.aiReviewPerspective.improvements.slice(0, 3).map((improvement, idx) => (
+                        <p key={idx} className="text-xs text-emerald-600 pl-4">• {improvement}</p>
+                      ))}
+                    </div>
+                  )}
+
+                  {insights.aiReviewPerspective.recommendations.length > 0 && (
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-gray-700">Additional Suggestions:</p>
+                      {insights.aiReviewPerspective.recommendations.slice(0, 3).map((rec, idx) => (
+                        <p key={idx} className="text-xs text-gray-600 pl-4">• {rec}</p>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}

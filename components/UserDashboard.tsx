@@ -1,9 +1,11 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Star, Calendar, User, MessageSquare, LogOut } from 'lucide-react';
+import { User, LogOut, Sparkles } from 'lucide-react';
 import { signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 
 interface UserDashboardProps {
   activeTab?: 'favorites' | 'agenda' | 'profile' | 'chat';
@@ -11,30 +13,35 @@ interface UserDashboardProps {
 
 export default function UserDashboard({ activeTab }: UserDashboardProps) {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const [showPulse, setShowPulse] = useState(false);
 
   // Determine active tab from pathname if not provided
   const currentTab = activeTab || (
-    pathname.includes('/favorites') ? 'favorites' :
     pathname.includes('/smart-agenda') ? 'agenda' :
     pathname.includes('/profile') ? 'profile' :
     pathname.includes('/chat') ? 'chat' :
-    'favorites'
+    'agenda'
   );
 
+  // Check if user has created a Smart Agenda
+  useEffect(() => {
+    if (session?.user?.email) {
+      const hasAgenda = localStorage.getItem(`smartAgenda_${session.user.email}`);
+      if (!hasAgenda) {
+        setShowPulse(true);
+      }
+    }
+  }, [session]);
+
   const tabs = [
-    {
-      id: 'favorites',
-      label: 'My Favorites',
-      href: '/favorites',
-      icon: Star,
-      description: 'Sessions & speakers you\'ve saved'
-    },
     {
       id: 'agenda',
       label: 'Smart Agenda',
       href: '/smart-agenda',
-      icon: Calendar,
-      description: 'Your personalized schedule'
+      icon: Sparkles,
+      description: 'Your personalized schedule & favorites',
+      highlight: showPulse
     },
     {
       id: 'profile',
@@ -75,15 +82,29 @@ export default function UserDashboard({ activeTab }: UserDashboardProps) {
                 <Link
                   key={tab.id}
                   href={tab.href}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+                  className={`relative flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
                     currentTab === tab.id
                       ? 'bg-blue-50 text-blue-600'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }`}
                 >
+                  {/* Pulse indicator for Smart Agenda */}
+                  {tab.id === 'agenda' && showPulse && currentTab !== 'agenda' && (
+                    <div className="absolute -top-1 -right-1">
+                      <span className="relative flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-purple-500"></span>
+                      </span>
+                    </div>
+                  )}
                   <Icon className="w-5 h-5" />
                   <div>
-                    <div className="font-medium">{tab.label}</div>
+                    <div className="font-medium flex items-center gap-1">
+                      {tab.label}
+                      {tab.id === 'agenda' && showPulse && currentTab !== 'agenda' && (
+                        <Sparkles className="w-3 h-3 text-purple-500" />
+                      )}
+                    </div>
                     {currentTab === tab.id && (
                       <div className="text-xs text-gray-500">{tab.description}</div>
                     )}
@@ -111,14 +132,28 @@ export default function UserDashboard({ activeTab }: UserDashboardProps) {
                 <Link
                   key={tab.id}
                   href={tab.href}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg whitespace-nowrap transition-all ${
+                  className={`relative flex items-center gap-2 px-3 py-2 rounded-lg whitespace-nowrap transition-all ${
                     currentTab === tab.id
                       ? 'bg-blue-50 text-blue-600'
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                   }`}
                 >
+                  {/* Mobile pulse indicator */}
+                  {tab.id === 'agenda' && showPulse && currentTab !== 'agenda' && (
+                    <div className="absolute -top-1 -right-1">
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-500"></span>
+                      </span>
+                    </div>
+                  )}
                   <Icon className="w-4 h-4" />
-                  <span className="text-sm font-medium">{tab.label}</span>
+                  <span className="text-sm font-medium flex items-center gap-1">
+                    {tab.label}
+                    {tab.id === 'agenda' && showPulse && currentTab !== 'agenda' && (
+                      <Sparkles className="w-3 h-3 text-purple-500" />
+                    )}
+                  </span>
                 </Link>
               );
             })}

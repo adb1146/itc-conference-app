@@ -7,6 +7,7 @@
 import { SmartAgenda, ScheduleItem, AgendaOptions } from './types';
 import prisma from '@/lib/db';
 import { hybridSearch } from '@/lib/vector-db';
+import { reviewAgenda, AgendaReviewContext, IssueSeverity } from './ai-agenda-reviewer';
 
 interface SessionScore {
   sessionId: string;
@@ -37,6 +38,12 @@ interface AgendaInsights {
     matchingInterests: number;
     networkingOpportunities: number;
     expertSpeakers: number;
+  };
+  aiReviewPerspective?: {
+    qualityScore: number;
+    improvements: string[];
+    recommendations: string[];
+    confidence: number;
   };
 }
 
@@ -440,6 +447,7 @@ export async function generateIntelligentAgenda(
     // 8. Build optimal schedule for each day
     const days = [];
     const selectedSessions: Array<{ session: any; score: SessionScore }> = [];
+    // ITC Vegas 2025 dates - October 14-16, 2025
     const dayNumberMap: Record<string, number> = {
       '2025-10-14': 1,
       '2025-10-15': 2,
@@ -452,10 +460,75 @@ export async function generateIntelligentAgenda(
 
       const schedule: ScheduleItem[] = [];
       const usedTimeSlots = new Set<string>();
+      const blockedTimeRanges: Array<{start: number, end: number}> = [];
 
       // Sort time slots
       const sortedTimeSlots = Array.from(timeSlotsMap.entries())
         .sort((a, b) => a[0].localeCompare(b[0]));
+
+      // FIRST PASS: Add all user favorites (they have absolute priority)
+      for (const [timeSlot, sessionsAtTime] of sortedTimeSlots) {
+        const favoritesAtTime = sessionsAtTime.filter(session =>
+          userProfile.favoriteIds.includes(session.id)
+        );
+
+        if (favoritesAtTime.length > 0) {
+          // Add all favorites at this time (user may have selected conflicting favorites intentionally)
+          for (const favoriteSession of favoritesAtTime) {
+            const startTime = new Date(favoriteSession.startTime);
+            const endTime = new Date(favoriteSession.endTime);
+
+            const formatAsLocalTime = (date: Date) => {
+              const adjustedDate = new Date(date.getTime() - (1 * 60 * 60 * 1000));
+              const hours = adjustedDate.getUTCHours();
+              const minutes = adjustedDate.getUTCMinutes();
+              const period = hours >= 12 ? 'PM' : 'AM';
+              const displayHours = hours % 12 || 12;
+              const displayMinutes = minutes.toString().padStart(2, '0');
+              return minutes === 0
+                ? `${displayHours}:00 ${period}`
+                : `${displayHours}:${displayMinutes} ${period}`;
+            };
+
+            schedule.push({
+              id: `item-${favoriteSession.id}`,
+              type: 'session',
+              time: formatAsLocalTime(startTime),
+              endTime: formatAsLocalTime(endTime),
+              title: favoriteSession.title,
+              item: {
+                id: favoriteSession.id,
+                title: favoriteSession.title,
+                description: favoriteSession.description,
+                track: favoriteSession.track,
+                format: favoriteSession.format,
+                location: favoriteSession.location,
+                speakers: favoriteSession.speakers?.map((s: any) => ({
+                  id: s.speaker.id,
+                  name: s.speaker.name,
+                  title: s.speaker.title,
+                  company: s.speaker.company
+                })) || []
+              },
+              priority: 'high',
+              source: 'user-favorite',
+              matchScore: 100, // Max score for favorites
+              matchReasons: ['User favorited this session']
+            });
+
+            // Block this time range from AI suggestions (except for long sessions)
+            const duration = (endTime.getTime() - startTime.getTime()) / (60 * 60 * 1000);
+            if (duration < 3) { // Only block time for regular sessions, not masterclasses/summits
+              blockedTimeRanges.push({
+                start: startTime.getTime(),
+                end: endTime.getTime()
+              });
+            }
+
+            usedTimeSlots.add(timeSlot);
+          }
+        }
+      }
 
       // First, ensure we include at least one networking/social event for the day
       let hasNetworkingEvent = false;
@@ -481,12 +554,61 @@ export async function generateIntelligentAgenda(
         }
       }
 
-      // Select best session for each time slot
+      // Track optional parallel tracks (masterclasses, summits, etc)
+      const optionalParallelSessions: any[] = [];
+
+      // SECOND PASS: Add AI-suggested sessions (avoiding conflicts with favorites)
       for (const [timeSlot, sessionsAtTime] of sortedTimeSlots) {
+        // Skip if we already have a favorite at this time
         if (usedTimeSlots.has(timeSlot)) continue;
 
-        // Sort sessions by score
-        const scoredSessions = sessionsAtTime
+        // Categorize sessions intelligently
+        const categorizedSessions = sessionsAtTime.reduce((acc, session) => {
+          const title = session.title.toLowerCase();
+          const duration = session.endTime && session.startTime ?
+            (new Date(session.endTime).getTime() - new Date(session.startTime).getTime()) / (60 * 60 * 1000) : 0;
+
+          // Identify session types
+          const isExpoFloor = title.includes('expo floor') || title.includes('exhibition');
+          const isMasterclass = title.includes('masterclass') || title.includes('master class');
+          const isSummit = title.includes('summit') || title.includes('kickoff summit');
+          const isWorkshop = title.includes('workshop') && duration >= 3;
+          const isLongSession = duration >= 3 && duration < 6;
+          const isAllDay = duration >= 6;
+
+          // Skip expo floor and all-day events
+          if (isExpoFloor || isAllDay) {
+            return acc;
+          }
+
+          // Track optional parallel sessions (masterclasses, summits, long workshops)
+          if ((isMasterclass || isSummit || (isWorkshop && isLongSession)) && !acc.foundOptional) {
+            // Add to optional sessions with special handling
+            const score = sessionScores.get(session.id);
+            if (score && (score.score > 15 || userProfile.favoriteIds.includes(session.id))) {
+              optionalParallelSessions.push({
+                session,
+                timeSlot,
+                type: isMasterclass ? 'masterclass' : isSummit ? 'summit' : 'workshop',
+                dayNumber
+              });
+              acc.foundOptional = true;
+            }
+          }
+
+          // Regular sessions (< 3 hours) go to main selection
+          if (!isLongSession || (!isMasterclass && !isSummit && !isWorkshop)) {
+            acc.regular.push(session);
+          }
+
+          return acc;
+        }, { regular: [], foundOptional: false });
+
+        const filteredSessions = categorizedSessions.regular;
+
+        // Sort sessions by score (excluding favorites - they're already added)
+        const scoredSessions = filteredSessions
+          .filter(session => !userProfile.favoriteIds.includes(session.id)) // Exclude favorites
           .map(session => ({
             session,
             score: sessionScores.get(session.id)!
@@ -520,10 +642,31 @@ export async function generateIntelligentAgenda(
         const isNetworkingEvent = best.session.title.toLowerCase().includes('networking') ||
                                   best.session.title.toLowerCase().includes('reception') ||
                                   best.session.title.toLowerCase().includes('party');
-        const scoreThreshold = isNetworkingEvent ? 10 : 15;
 
-        // Only include sessions with reasonable scores
-        if (best.score.score > scoreThreshold || userProfile.favoriteIds.includes(best.session.id)) {
+        // Limit to reasonable number of sessions per day (8-10 max)
+        const maxSessionsPerDay = 10;
+        const sessionCount = schedule.filter(item => item.type === 'session').length;
+        if (sessionCount >= maxSessionsPerDay) continue;
+
+        // Use balanced thresholds to get quality sessions without overfilling
+        const scoreThreshold = isNetworkingEvent ? 10 : 20;
+
+        // Check if this session would conflict with any favorites
+        const sessionStart = new Date(best.session.startTime).getTime();
+        const sessionEnd = new Date(best.session.endTime).getTime();
+        const conflictsWithFavorite = blockedTimeRanges.some(range =>
+          (sessionStart >= range.start && sessionStart < range.end) ||
+          (sessionEnd > range.start && sessionEnd <= range.end) ||
+          (sessionStart <= range.start && sessionEnd >= range.end)
+        );
+
+        // Skip if it conflicts with a favorite
+        if (conflictsWithFavorite) continue;
+
+        // Only include sessions with good scores
+        // Ensure minimum of 6 sessions per day for a reasonable schedule
+        if (best.score.score > scoreThreshold ||
+            (sessionCount < 6 && best.score.score > 15)) {
           const startTime = new Date(best.session.startTime);
           const endTime = new Date(best.session.endTime);
 
@@ -578,7 +721,7 @@ export async function generateIntelligentAgenda(
           selectedSessions.push(best);
           usedTimeSlots.add(timeSlot);
 
-          // Mark overlapping time slots as used
+          // Mark overlapping time slots as used to prevent conflicts
           const sessionStart = startTime.getTime();
           const sessionEnd = endTime.getTime();
 
@@ -586,7 +729,11 @@ export async function generateIntelligentAgenda(
             // Use the actual session start time for comparison instead of constructing from string
             if (otherSessions.length > 0) {
               const otherSessionStart = new Date(otherSessions[0].startTime).getTime();
-              if (otherSessionStart >= sessionStart && otherSessionStart < sessionEnd) {
+              const otherSessionEnd = new Date(otherSessions[0].endTime).getTime();
+              // Mark as used if there's any overlap
+              if ((otherSessionStart >= sessionStart && otherSessionStart < sessionEnd) ||
+                  (otherSessionEnd > sessionStart && otherSessionEnd <= sessionEnd) ||
+                  (otherSessionStart <= sessionStart && otherSessionEnd >= sessionEnd)) {
                 usedTimeSlots.add(otherTime);
               }
             }
@@ -639,6 +786,62 @@ export async function generateIntelligentAgenda(
       const favoritesCount = schedule.filter(item => item.source === 'user-favorite').length;
       const aiCount = schedule.filter(item => item.source === 'ai-suggested').length;
 
+      // Add one optional parallel session per day if highly relevant
+      if (optionalParallelSessions.length > 0) {
+        const dayOptionals = optionalParallelSessions.filter(opt => opt.dayNumber === dayNumber);
+        if (dayOptionals.length > 0) {
+          // Pick the best scoring optional session for this day
+          const bestOptional = dayOptionals.sort((a, b) => {
+            const scoreA = sessionScores.get(a.session.id)?.score || 0;
+            const scoreB = sessionScores.get(b.session.id)?.score || 0;
+            return scoreB - scoreA;
+          })[0];
+
+          // Format times using the same logic
+          const startTime = new Date(bestOptional.session.startTime);
+          const endTime = new Date(bestOptional.session.endTime);
+
+          // Format function for optional sessions
+          const formatOptionalTime = (date: Date) => {
+            const adjustedDate = new Date(date.getTime() - (1 * 60 * 60 * 1000));
+            const hours = adjustedDate.getUTCHours();
+            const minutes = adjustedDate.getUTCMinutes();
+            const period = hours >= 12 ? 'PM' : 'AM';
+            const displayHours = hours % 12 || 12;
+            const displayMinutes = minutes.toString().padStart(2, '0');
+            return minutes === 0
+              ? `${displayHours}:00 ${period}`
+              : `${displayHours}:${displayMinutes} ${period}`;
+          };
+
+          schedule.push({
+            id: `optional-${bestOptional.session.id}`,
+            type: 'session',
+            time: formatOptionalTime(startTime),
+            endTime: formatOptionalTime(endTime),
+            title: bestOptional.session.title,
+            item: {
+              id: bestOptional.session.id,
+              title: bestOptional.session.title,
+              description: bestOptional.session.description,
+              track: bestOptional.session.track,
+              format: bestOptional.session.format,
+              location: bestOptional.session.location,
+              speakers: bestOptional.session.speakers?.map((s: any) => ({
+                id: s.speaker.id,
+                name: s.speaker.name,
+                title: s.speaker.title,
+                company: s.speaker.company
+              })) || []
+            },
+            priority: 'optional',  // Special priority for parallel tracks
+            source: userProfile.favoriteIds.includes(bestOptional.session.id) ? 'user-favorite' : 'parallel-track',
+            matchScore: sessionScores.get(bestOptional.session.id)?.score || 0,
+            matchReasons: ['Optional parallel track - ' + bestOptional.type]
+          });
+        }
+      }
+
       days.push({
         dayNumber,
         date: dateString,
@@ -689,7 +892,54 @@ export async function generateIntelligentAgenda(
 
     console.log('[Intelligent Agenda] Generated successfully with', totalSessions, 'sessions');
 
-    return { success: true, agenda };
+    // 11. AI Review - Double-check the generated agenda
+    try {
+      console.log('[Intelligent Agenda] Starting AI review...');
+      const reviewContext: AgendaReviewContext = {
+        agenda,
+        userProfile: {
+          interests: userProfile.interests,
+          role: userProfile.role,
+          experience: userProfile.yearsExperience
+        }
+      };
+
+      const { agenda: reviewedAgenda, review } = await reviewAgenda(reviewContext);
+
+      console.log('[Intelligent Agenda] AI Review complete:', {
+        issuesFound: review.issuesFound.length,
+        issuesFixed: review.issuesFixed.length,
+        confidence: review.confidence,
+        duration: review.reviewDuration
+      });
+
+      // Add review notes to the agenda
+      if (review.notes.length > 0) {
+        reviewedAgenda.warnings = [...(reviewedAgenda.warnings || []), ...review.notes];
+      }
+
+      // Add AI review perspective to insights
+      if (reviewedAgenda.insights) {
+        reviewedAgenda.insights.aiReviewPerspective = {
+          qualityScore: review.confidence,
+          improvements: review.issuesFixed.map(issue =>
+            `Fixed: ${issue.description} (${issue.suggestedFix || 'Automatically resolved'})`
+          ),
+          recommendations: review.issuesFound
+            .filter(issue => !review.issuesFixed.includes(issue))
+            .filter(issue => issue.severity === IssueSeverity.MINOR)
+            .map(issue => issue.suggestedFix || issue.description)
+            .slice(0, 5), // Top 5 recommendations
+          confidence: review.confidence
+        };
+      }
+
+      return { success: true, agenda: reviewedAgenda };
+    } catch (reviewError) {
+      // If review fails, still return the original agenda
+      console.error('[Intelligent Agenda] AI review failed, returning unreviewed agenda:', reviewError);
+      return { success: true, agenda };
+    }
 
   } catch (error) {
     console.error('[Intelligent Agenda] Generation failed:', error);

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { getAuthOptions } from '@/lib/auth-config';
 import prisma from '@/lib/db';
+import { checkSessionConflicts, ConflictCheckResult } from '@/lib/services/conflict-detector';
+import unifiedAgendaService from '@/lib/services/unified-agenda-service';
 
 export async function GET(req: NextRequest) {
   try {
@@ -77,6 +79,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    // Check for conflicts if adding a session favorite
+    let conflictCheck: ConflictCheckResult | undefined;
+    if (type === 'session' && sessionId) {
+      // Fetch the session details
+      const sessionToAdd = await prisma.session.findUnique({
+        where: { id: sessionId }
+      });
+
+      if (sessionToAdd && sessionToAdd.startTime && sessionToAdd.endTime) {
+        // Check if user has an active smart agenda
+        const activeAgenda = await prisma.personalizedAgenda.findFirst({
+          where: {
+            userId: user.id,
+            isActive: true,
+            generatedBy: 'ai_agent'
+          }
+        });
+
+        if (activeAgenda && activeAgenda.agendaData) {
+          // Check for conflicts with the smart agenda
+          conflictCheck = await checkSessionConflicts(sessionToAdd, activeAgenda.agendaData);
+        }
+      }
+    }
+
     // Check if already favorited
     const existing = await prisma.favorite.findFirst({
       where: {
@@ -130,7 +157,22 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    return NextResponse.json({ favorite });
+    // Sync with Smart Agenda if it's a session favorite
+    if (type === 'session' && sessionId) {
+      const agendaSync = await unifiedAgendaService.addFavoriteToAgenda(user.id, sessionId);
+      if (!agendaSync.success) {
+        console.log('Failed to sync with Smart Agenda:', agendaSync.message);
+      }
+    }
+
+    // Return the favorite with conflict information if applicable
+    const response: any = { favorite };
+    if (conflictCheck && conflictCheck.hasConflicts) {
+      response.conflicts = conflictCheck;
+      response.warning = 'This session conflicts with your Smart Agenda';
+    }
+
+    return NextResponse.json(response);
   } catch (error) {
     console.error('Error adding favorite:', error);
     return NextResponse.json({ error: 'Failed to add favorite' }, { status: 500 });
@@ -186,6 +228,14 @@ export async function DELETE(req: NextRequest) {
         id: favorite.id
       }
     });
+
+    // Sync with Smart Agenda if it's a session favorite
+    if (type === 'session' && sessionId) {
+      const agendaSync = await unifiedAgendaService.removeFavoriteFromAgenda(user.id, sessionId);
+      if (!agendaSync.success) {
+        console.log('Failed to sync with Smart Agenda:', agendaSync.message);
+      }
+    }
 
     return NextResponse.json({ message: 'Favorite removed' });
   } catch (error) {

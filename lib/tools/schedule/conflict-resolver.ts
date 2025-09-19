@@ -58,14 +58,23 @@ export function detectScheduleConflicts(
     // Skip non-session items
     if (current.type !== 'session') continue;
 
+    // Skip EXPO Floor sessions - they don't cause conflicts
+    const isCurrentExpo = current.item.title?.toLowerCase().includes('expo floor') ||
+                         current.item.location?.toLowerCase().includes('expo');
+
     // Check for time conflicts with next item
     if (i < sortedSchedule.length - 1) {
       const next = sortedSchedule[i + 1];
+
+      // Skip if next item is EXPO Floor
+      const isNextExpo = next.item.title?.toLowerCase().includes('expo floor') ||
+                        next.item.location?.toLowerCase().includes('expo');
+
       const currentEnd = new Date(`2025-10-15 ${current.endTime}`).getTime();
       const nextStart = new Date(`2025-10-15 ${next.time}`).getTime();
 
-      // Direct overlap
-      if (currentEnd > nextStart) {
+      // Direct overlap - but skip if either session is EXPO Floor
+      if (currentEnd > nextStart && !isCurrentExpo && !isNextExpo) {
         conflicts.push({
           type: 'time-overlap',
           sessionIds: [current.item.id, next.item.id],
@@ -74,8 +83,9 @@ export function detectScheduleConflicts(
         });
       }
 
-      // Venue distance conflict
-      if (next.type === 'session' && current.item.location && next.item.location) {
+      // Venue distance conflict - skip if either is EXPO Floor
+      if (next.type === 'session' && current.item.location && next.item.location &&
+          !isCurrentExpo && !isNextExpo) {
         const distance = calculateVenueDistance(
           current.item.location,
           next.item.location

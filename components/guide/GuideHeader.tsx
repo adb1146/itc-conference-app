@@ -52,7 +52,7 @@ export default function GuideHeader({ userName, completedSteps, totalSteps, isAu
           The #1 thing to do: Create your Smart Agenda! Our AI will build a personalized schedule based on your interests.
         </p>
         <button
-          onClick={() => window.location.href = '/chat'}
+          onClick={() => window.location.href = '/favorites?tab=smart-agenda'}
           className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-medium text-sm sm:text-base shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
         >
           Create My Smart Agenda Now →

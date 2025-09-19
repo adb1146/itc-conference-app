@@ -47,15 +47,36 @@ const nextConfig: NextConfig = {
     return `v2-${Date.now()}`;
   },
 
-  // Headers for cache control
+  // Headers for smart cache control
   async headers() {
     return [
+      // Auth routes - must work properly
       {
-        source: '/(.*)',
+        source: '/api/auth/:path*',
         headers: [
           {
             key: 'Cache-Control',
             value: 'no-cache, no-store, must-revalidate',
+          },
+        ],
+      },
+      // Other API routes - no cache for dynamic data
+      {
+        source: '/api/:path((?!auth).*)*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-cache, no-store, must-revalidate',
+          },
+        ],
+      },
+      // Smart Agenda page - NEVER cache
+      {
+        source: '/smart-agenda',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, no-cache, must-revalidate',
           },
           {
             key: 'Pragma',
@@ -65,15 +86,69 @@ const nextConfig: NextConfig = {
             key: 'Expires',
             value: '0',
           },
+          {
+            key: 'Surrogate-Control',
+            value: 'no-store',
+          },
         ],
       },
+      // User-specific pages - minimal cache with background revalidation
       {
-        // Allow caching for static assets
-        source: '/_next/static/(.*)',
+        source: '/(favorites|profile|search)(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'private, no-cache, must-revalidate',
+          },
+        ],
+      },
+      // Session pages - moderate cache
+      {
+        source: '/sessions/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=60, stale-while-revalidate=300',
+          },
+        ],
+      },
+      // Static pages - longer cache
+      {
+        source: '/(about|sponsors|locations)(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=300, stale-while-revalidate=600',
+          },
+        ],
+      },
+      // Static assets - immutable
+      {
+        source: '/_next/static/:path*',
         headers: [
           {
             key: 'Cache-Control',
             value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      // Images and media - long cache
+      {
+        source: '/images/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=86400, stale-while-revalidate=43200',
+          },
+        ],
+      },
+      // Default for other pages - minimal cache
+      {
+        source: '/:path((?!api|_next/static|_next/image|favicon.ico).*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'private, s-maxage=10, stale-while-revalidate=30',
           },
         ],
       },

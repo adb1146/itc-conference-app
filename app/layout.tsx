@@ -5,6 +5,8 @@ import AuthProvider from '@/components/AuthProvider'
 import NavigationAnimated from '@/components/NavigationAnimated'
 import ChatWidget from '@/components/ChatWidget'
 import { PWAInstallPrompt } from '@/components/PWAInstallPrompt'
+import RefreshIndicator from '@/components/layout/RefreshIndicator'
+import CacheManager from '@/components/layout/CacheManager'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -58,16 +60,40 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="ITC Vegas" />
       </head>
-      <body className={`${inter.className} antialiased`} suppressHydrationWarning>
+      <body className={`${inter.className} antialiased`} suppressHydrationWarning={true}>
         <AuthProvider>
           <div className="min-h-screen">
+            {/* Cache Manager - clears stale caches */}
+            <CacheManager />
+
+            {/* Refresh Indicator for stale content */}
+            <RefreshIndicator />
+
             {/* Navigation Header */}
             <NavigationAnimated />
 
             {/* Main Content - Add padding-top for fixed nav header */}
-            <main className="pt-44 sm:pt-48 md:pt-52 lg:pt-56">
+            <main className="pt-16 sm:pt-20 md:pt-24 lg:pt-24 pb-16">
               {children}
             </main>
+
+            {/* Disclaimer Footer - Fixed at bottom */}
+            <footer className="fixed bottom-0 left-0 right-0 bg-gray-50 border-t border-gray-200 z-40">
+              <div className="max-w-7xl mx-auto px-4 py-2 sm:py-3">
+                <p className="text-xs sm:text-sm text-center text-gray-600">
+                  Demo by{' '}
+                  <a
+                    href="https://psadvisory.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-purple-600 hover:text-purple-700 underline font-medium"
+                  >
+                    PS Advisory
+                  </a>
+                  {' '}• Not affiliated with official ITC app
+                </p>
+              </div>
+            </footer>
 
             {/* Floating Elements */}
             <ChatWidget />

@@ -36,9 +36,19 @@ export async function POST(req: NextRequest) {
     // Parse request body
     const body = await req.json();
     const options: Partial<AgendaOptions> = body.options || {};
+    const enableReview = body.enableReview !== false; // Default to true
+
+    // Set environment variable for AI review (temporary for this request)
+    const originalEnvValue = process.env.ENABLE_AI_REVIEW;
+    process.env.ENABLE_AI_REVIEW = enableReview ? 'true' : 'false';
 
     // Generate smart agenda using intelligent algorithm with insights
     const result = await generateIntelligentAgenda(user.id, options);
+
+    // Restore original environment value
+    if (originalEnvValue !== undefined) {
+      process.env.ENABLE_AI_REVIEW = originalEnvValue;
+    }
 
     if (!result.success) {
       return NextResponse.json(
@@ -49,11 +59,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    return NextResponse.json({
+    // Include review metadata if available
+    const response: any = {
       success: true,
       agenda: result.agenda,
       message: 'Agenda generated successfully'
-    });
+    };
+
+    // Add review summary if AI review was performed
+    if (result.agenda?.aiReview) {
+      response.reviewSummary = {
+        reviewed: result.agenda.aiReview.reviewed,
+        confidence: result.agenda.aiReview.confidence,
+        issuesFixed: result.agenda.aiReview.issuesFixed?.length || 0,
+        notes: result.agenda.aiReview.notes?.slice(0, 3) || [] // Top 3 notes
+      };
+    }
+
+    return NextResponse.json(response);
 
   } catch (error) {
     console.error('Error in agenda builder API:', error);

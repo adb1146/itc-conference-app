@@ -89,7 +89,7 @@ export default function Navigation() {
     { href: '/agenda', label: 'Conference Agenda', icon: Calendar },
     { href: '/chat', label: 'AI Concierge', icon: Brain },
     { href: '/speakers', label: 'Speakers', icon: Users },
-    { href: '/favorites', label: 'My Favorites', icon: Star, requireAuth: true },
+    { href: '/smart-agenda', label: 'Smart Agenda', icon: Sparkles, requireAuth: true },
   ];
 
   const isActive = (href: string) => {

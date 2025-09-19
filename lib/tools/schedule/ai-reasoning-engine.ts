@@ -6,6 +6,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { AI_CONFIG } from '@/lib/ai-config';
 import { generateThinkingInstructions } from '@/lib/prompt-engine';
+import { formatSessionTime } from '@/lib/utils/format-time';
 import type {
   AgendaOptions,
   ScheduleItem,
@@ -324,22 +325,12 @@ ${allSessions.filter(s => {
     const startTime = typeof s.startTime === 'string' ? new Date(s.startTime) : s.startTime;
     const endTime = typeof s.endTime === 'string' ? new Date(s.endTime) : s.endTime;
 
-    // Format times in Vegas timezone (PDT)
+    // Format times without timezone conversion - already in Las Vegas time
     const startFormatted = startTime instanceof Date ?
-      startTime.toLocaleTimeString('en-US', {
-        timeZone: 'America/Los_Angeles',
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      }) : String(s.startTime);
+      formatSessionTime(startTime) : String(s.startTime);
 
     const endFormatted = endTime instanceof Date ?
-      endTime.toLocaleTimeString('en-US', {
-        timeZone: 'America/Los_Angeles',
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      }) : String(s.endTime);
+      formatSessionTime(endTime) : String(s.endTime);
 
     return `- ${s.title} (${startFormatted} - ${endFormatted}, ${s.location}, Track: ${s.track})`;
   })

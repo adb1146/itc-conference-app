@@ -3,14 +3,18 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { invalidateCache, CACHE_KEYS } from '@/lib/cache-utils';
 import {
   Sparkles, Loader2, Calendar, Clock, MapPin, Users,
-  LogIn, UserPlus, Star, AlertCircle, Trash2
+  LogIn, UserPlus, Star, AlertCircle, Trash2, Save, CheckCircle, Database, CloudOff, Cloud, RefreshCw
 } from 'lucide-react';
 import UserDashboard from '@/components/UserDashboard';
 import SmartAgendaView from '@/components/agenda/SmartAgendaView';
 import AgendaInsights from '@/components/agenda/AgendaInsights';
 import { SmartAgenda, ScheduleItem } from '@/lib/tools/schedule/types';
+
+// Version for cache invalidation
+const CURRENT_VERSION = 'v15-ai-review-insights';  // AI review perspective in insights
 
 export default function SmartAgendaPage() {
   const { data: session, status } = useSession();
@@ -20,77 +24,137 @@ export default function SmartAgendaPage() {
   const [generatingAgenda, setGeneratingAgenda] = useState(false);
   const [agendaError, setAgendaError] = useState<string | null>(null);
   const [sendingEmail, setSendingEmail] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [loadStatus, setLoadStatus] = useState<'idle' | 'loading' | 'loaded' | 'not-found' | 'error'>('idle');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const user = session?.user;
 
+  // Load saved agenda from database on mount
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      setLoading(false);
-    } else if (status === 'authenticated' && session?.user?.email) {
-      // Try to load any existing agenda from localStorage (user-specific key)
-      const userSpecificKey = `smartAgenda_${session.user.email}`;
-      const clearedKey = `smartAgenda_cleared_${session.user.email}`;
-      const versionKey = `smartAgenda_version_${session.user.email}`;
 
-      // Force clear cache if version changed
-      const CURRENT_VERSION = 'v5-correct-vegas-time';
-      const savedVersion = localStorage.getItem(versionKey);
-
-      if (savedVersion !== CURRENT_VERSION) {
-        console.log('Clearing old agenda due to version change');
-        localStorage.removeItem(userSpecificKey);
-        localStorage.setItem(versionKey, CURRENT_VERSION);
-      }
-
-      const savedAgenda = localStorage.getItem(userSpecificKey);
-      const wasCleared = localStorage.getItem(clearedKey) === 'true';
-
-      if (savedAgenda) {
+    const loadSavedAgenda = async () => {
+      if (status === 'authenticated' && user) {
+        setLoading(true);
+        setLoadStatus('loading');
         try {
-          const parsed = JSON.parse(savedAgenda);
-          console.log('Loading cached agenda - first session time:', parsed.days?.[0]?.schedule?.[0]?.time);
-          console.log('Full first session:', parsed.days?.[0]?.schedule?.[0]);
-          setSmartAgenda(parsed);
-          // If we have an agenda, remove the cleared flag
-          localStorage.removeItem(clearedKey);
+          const response = await fetch('/api/smart-agenda', {
+            method: 'GET',
+            cache: 'no-store',
+            headers: {
+              'Content-Type': 'application/json',
+              'Cache-Control': 'no-cache',
+            },
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.agenda) {
+              console.log('✅ Successfully loaded agenda from database');
+              setSmartAgenda(data.agenda);
+              setLoadStatus('loaded');
+            } else {
+              console.log('📭 No saved agenda found in database');
+              setLoadStatus('not-found');
+            }
+          } else if (response.status === 401) {
+            console.log('🔐 Authentication required - user not signed in');
+            setLoadStatus('not-found');
+          } else {
+            console.error('❌ Failed to load agenda from database:', response.status);
+            setLoadStatus('error');
+          }
         } catch (error) {
-          console.error('Error parsing saved agenda:', error);
+          console.error('❌ Error loading saved agenda:', error);
+          setLoadStatus('error');
+        } finally {
+          setLoading(false);
         }
+      } else if (status === 'unauthenticated') {
+        setLoading(false);
       }
-      setLoading(false);
+    };
 
-      // Only auto-generate for first-time users (no agenda and not explicitly cleared)
-      if (!savedAgenda && !wasCleared) {
-        generateSmartAgenda();
-      }
+    loadSavedAgenda();
+  }, [status, user]);
+
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      // Clear cache and reload the page
+      invalidateCache(CACHE_KEYS.SMART_AGENDA);
+      router.refresh();
+
+      // Reload the saved agenda from database
+      const loadSavedAgenda = async () => {
+        if (status === 'authenticated' && user) {
+          setLoadStatus('loading');
+          try {
+            const response = await fetch('/api/smart-agenda', {
+              method: 'GET',
+              cache: 'no-store',
+              headers: {
+                'Content-Type': 'application/json',
+                'Cache-Control': 'no-cache',
+              },
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+              if (data.agenda) {
+                console.log('✅ Successfully refreshed agenda from database');
+                setSmartAgenda(data.agenda);
+                setLoadStatus('loaded');
+              } else {
+                console.log('📭 No saved agenda found in database');
+                setLoadStatus('not-found');
+              }
+            } else if (response.status === 401) {
+              console.log('🔐 Authentication required - user not signed in');
+              setLoadStatus('not-found');
+            } else {
+              console.error('❌ Failed to refresh agenda from database:', response.status);
+              setLoadStatus('error');
+            }
+          } catch (error) {
+            console.error('❌ Error refreshing saved agenda:', error);
+            setLoadStatus('error');
+          }
+        }
+      };
+
+      await loadSavedAgenda();
+    } finally {
+      setIsRefreshing(false);
     }
-  }, [status, session]);
-
-  const clearAgenda = () => {
-    setSmartAgenda(null);
-    if (session?.user?.email) {
-      const userSpecificKey = `smartAgenda_${session.user.email}`;
-      const clearedKey = `smartAgenda_cleared_${session.user.email}`;
-
-      // Remove the agenda and mark it as explicitly cleared
-      localStorage.removeItem(userSpecificKey);
-      localStorage.setItem(clearedKey, 'true');
-
-      // Log for debugging
-      console.log('Cleared localStorage for Smart Agenda');
-    }
-    setAgendaError(null);
   };
+
+  const clearAgenda = async () => {
+    setSmartAgenda(null);
+    setAgendaError(null);
+
+    // Clear saved agenda from database
+    if (user?.email) {
+      try {
+        await fetch('/api/smart-agenda', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        console.log('Cleared agenda from database');
+      } catch (error) {
+        console.error('Error clearing agenda:', error);
+      }
+    }
+  };
+
 
   const generateSmartAgenda = async () => {
     setGeneratingAgenda(true);
     setAgendaError(null);
 
     try {
-      // Clear localStorage to force fresh generation
-      if (session?.user?.email) {
-        const userSpecificKey = `smartAgenda_${session.user.email}`;
-        localStorage.removeItem(userSpecificKey);
-      }
-
       const response = await fetch('/api/tools/agenda-builder', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -108,19 +172,52 @@ export default function SmartAgendaPage() {
         return;
       }
 
-      if (data.success && data.agenda && session?.user?.email) {
-        console.log('New agenda generated - first session time:', data.agenda.days?.[0]?.schedule?.[0]?.time);
-        console.log('Full first session:', data.agenda.days?.[0]?.schedule?.[0]);
-        setSmartAgenda(data.agenda);
-        // Save to localStorage for persistence (user-specific key)
-        const userSpecificKey = `smartAgenda_${session.user.email}`;
-        const clearedKey = `smartAgenda_cleared_${session.user.email}`;
-        const versionKey = `smartAgenda_version_${session.user.email}`;
+      if (data.success && data.agenda) {
+        console.log('New agenda generated');
+        const result = data.agenda;
+        setSmartAgenda(result);
 
-        localStorage.setItem(userSpecificKey, JSON.stringify(data.agenda));
-        localStorage.setItem(versionKey, 'v5-correct-vegas-time');
-        // Remove the cleared flag since we now have a new agenda
-        localStorage.removeItem(clearedKey);
+        // Invalidate cache for smart agenda
+        invalidateCache(CACHE_KEYS.SMART_AGENDA, user?.id);
+
+        // Save the agenda to database
+        if (user?.email) {
+          setSaveStatus('saving');
+          try {
+            const saveResponse = await fetch('/api/smart-agenda', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                agenda: result,
+                metadata: {
+                  generatedAt: new Date().toISOString(),
+                  version: CURRENT_VERSION,
+                  insights: result.insights,
+                },
+                researchProfile: data.profile || null,
+              }),
+            });
+
+            if (!saveResponse.ok) {
+              console.error('❌ Failed to save agenda to database');
+              setSaveStatus('error');
+              // Show error for 3 seconds then reset
+              setTimeout(() => setSaveStatus('idle'), 3000);
+            } else {
+              const saveData = await saveResponse.json();
+              console.log('✅ Agenda saved to database successfully:', saveData);
+              setSaveStatus('saved');
+              // Show success for 3 seconds then reset
+              setTimeout(() => setSaveStatus('idle'), 3000);
+            }
+          } catch (saveError) {
+            console.error('❌ Error saving agenda:', saveError);
+            setSaveStatus('error');
+            setTimeout(() => setSaveStatus('idle'), 3000);
+          }
+        }
       }
     } catch (error) {
       console.error('Error generating agenda:', error);
@@ -130,7 +227,7 @@ export default function SmartAgendaPage() {
     }
   };
 
-  const handleAgendaItemRemove = (itemId: string) => {
+  const handleAgendaItemRemove = async (itemId: string) => {
     if (!smartAgenda) return;
 
     const updatedAgenda = { ...smartAgenda };
@@ -167,9 +264,36 @@ export default function SmartAgendaPage() {
     );
 
     setSmartAgenda(updatedAgenda);
-    if (session?.user?.email) {
-      const userSpecificKey = `smartAgenda_${session.user.email}`;
-      localStorage.setItem(userSpecificKey, JSON.stringify(updatedAgenda));
+
+    // Update agenda in database when removing an item
+    if (user?.email) {
+      setSaveStatus('saving');
+      try {
+        const response = await fetch('/api/smart-agenda', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            agenda: updatedAgenda,
+            changeDescription: 'User removed a session',
+          }),
+        });
+
+        if (response.ok) {
+          console.log('✅ Updated agenda in database');
+          setSaveStatus('saved');
+          setTimeout(() => setSaveStatus('idle'), 2000);
+        } else {
+          console.error('❌ Failed to update agenda in database');
+          setSaveStatus('error');
+          setTimeout(() => setSaveStatus('idle'), 3000);
+        }
+      } catch (error) {
+        console.error('❌ Error updating agenda:', error);
+        setSaveStatus('error');
+        setTimeout(() => setSaveStatus('idle'), 3000);
+      }
     }
   };
 
@@ -280,27 +404,79 @@ export default function SmartAgendaPage() {
   }
 
   return (
-    <div className="h-screen overflow-y-auto bg-gradient-to-b from-white via-purple-50/30 to-white pt-20 sm:pt-24">
+    <div className="min-h-screen bg-gradient-to-b from-white via-purple-50/30 to-white">
 
       <UserDashboard activeTab="agenda" />
 
-      <div className="bg-white/80 backdrop-blur border-b border-purple-100">
-        <div className="max-w-6xl mx-auto px-4 py-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4">
-            <div>
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-normal flex items-center gap-2 sm:gap-3">
-                <div className="p-2 sm:p-2.5 bg-gradient-to-br from-purple-100 to-blue-100 rounded-xl shadow-md">
-                  <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-purple-600" />
-                </div>
-                <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">Smart Agenda</span>
-              </h1>
-              <p className="text-sm sm:text-base text-gray-600 mt-2 sm:ml-14">
-                Your AI-powered personalized conference schedule
-              </p>
-            </div>
+      {/* Main content */}
+      {(
+        <div className="bg-white/80 backdrop-blur border-b border-purple-100">
+          <div className="max-w-6xl mx-auto px-4 py-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4">
+              <div>
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-normal flex items-center gap-2 sm:gap-3">
+                  <div className="p-2 sm:p-2.5 bg-gradient-to-br from-purple-100 to-blue-100 rounded-xl shadow-md">
+                    <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-purple-600" />
+                  </div>
+                  <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">Smart Agenda</span>
+                </h1>
+                <p className="text-sm sm:text-base text-gray-600 mt-2 sm:ml-14">
+                  Your AI-powered personalized conference schedule
+                </p>
+              </div>
 
-            {smartAgenda && (
-              <div className="flex gap-3">
+              <div className="flex items-center gap-3">
+                {/* Database Status Indicator */}
+                {(saveStatus !== 'idle' || loadStatus === 'loaded') && (
+                  <div className="flex items-center gap-2">
+                    <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                      saveStatus === 'saving' ? 'bg-blue-100 text-blue-700' :
+                      saveStatus === 'saved' ? 'bg-green-100 text-green-700' :
+                      saveStatus === 'error' ? 'bg-red-100 text-red-700' :
+                      loadStatus === 'loaded' ? 'bg-purple-100 text-purple-700' :
+                      'bg-gray-100 text-gray-600'
+                    }`}>
+                      {saveStatus === 'saving' ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Saving to database...
+                        </>
+                      ) : saveStatus === 'saved' ? (
+                        <>
+                          <CheckCircle className="w-4 h-4" />
+                          Saved to database
+                        </>
+                      ) : saveStatus === 'error' ? (
+                        <>
+                          <CloudOff className="w-4 h-4" />
+                          Save failed
+                        </>
+                      ) : loadStatus === 'loaded' && smartAgenda ? (
+                        <>
+                          <Cloud className="w-4 h-4" />
+                          Synced
+                        </>
+                      ) : null}
+                    </div>
+
+                    {/* Refresh Button */}
+                    <button
+                      onClick={handleRefresh}
+                      disabled={isRefreshing}
+                      className={`p-2 rounded-lg transition-all ${
+                        isRefreshing
+                          ? 'bg-gray-100 text-gray-400'
+                          : 'bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-800 border border-gray-200'
+                      }`}
+                      title="Refresh agenda"
+                    >
+                      <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                    </button>
+                  </div>
+                )}
+
+                {smartAgenda && (
+                <div className="flex gap-3">
                 <button
                   onClick={clearAgenda}
                   className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all bg-white border border-purple-200 text-purple-700 hover:bg-purple-50"
@@ -329,11 +505,13 @@ export default function SmartAgendaPage() {
                     </>
                   )}
                 </button>
-              </div>
-            )}
+                </div>
+              )}
+            </div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       <div className="max-w-6xl mx-auto px-4 py-8">
         {loading ? (
@@ -341,6 +519,13 @@ export default function SmartAgendaPage() {
             <div className="text-center">
               <Loader2 className="w-8 h-8 animate-spin text-purple-600 mx-auto mb-4" />
               <p className="text-gray-600">Loading your smart agenda...</p>
+            </div>
+          </div>
+        ) : loadStatus === 'loading' ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center">
+              <Database className="w-8 h-8 animate-pulse text-purple-600 mx-auto mb-4" />
+              <p className="text-gray-600">Loading your saved agenda from database...</p>
             </div>
           </div>
         ) : generatingAgenda && !smartAgenda ? (

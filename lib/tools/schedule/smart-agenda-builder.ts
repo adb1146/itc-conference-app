@@ -1037,13 +1037,15 @@ function calculateOverallConfidence(days: DaySchedule[]): number {
 }
 
 /**
- * Format time for display in Vegas timezone
+ * Format time for display - times already in Las Vegas timezone
  */
 function formatTime(date: Date): string {
-  return date.toLocaleTimeString('en-US', {
-    timeZone: 'America/Los_Angeles',  // Vegas is in PDT
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
-  });
+  // Extract hours and minutes using UTC to avoid timezone conversion
+  // Times in DB are stored as UTC but represent Las Vegas time
+  const hours = date.getUTCHours();
+  const minutes = date.getUTCMinutes();
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const displayHours = hours % 12 || 12;
+  const displayMinutes = minutes.toString().padStart(2, '0');
+  return `${displayHours}:${displayMinutes} ${period}`;
 }
