@@ -1,0 +1,145 @@
+name: Claude Security Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '**.js'
+      - '**.jsx'
+      - '**.ts'
+      - '**.tsx'
+      - '**.json'
+      - 'prisma/**'
+      - 'app/api/**'
+      - 'lib/**'
+      - 'components/**'
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to review'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  security-review:
+    name: Claude Security Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get Changed Files
+        id: changed-files
+        uses: tj-actions/changed-files@v44
+        with:
+          files: |
+            **/*.{js,jsx,ts,tsx,json}
+            prisma/**
+            app/api/**
+            lib/**
+            components/**
+
+      - name: Claude Security Review
+        if: steps.changed-files.outputs.any_changed == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          model: claude-3-5-sonnet-20241022
+          max_tokens: 8192
+          temperature: 0
+          system_prompt: |
+            You are a security expert reviewing code for vulnerabilities in a Next.js conference application.
+            Focus on identifying security issues in the provided code changes.
+
+            Check for:
+            1. Authentication/Authorization vulnerabilities
+            2. Input validation and sanitization issues
+            3. SQL injection or NoSQL injection risks
+            4. XSS (Cross-Site Scripting) vulnerabilities
+            5. CSRF (Cross-Site Request Forgery) risks
+            6. Path traversal vulnerabilities
+            7. Sensitive data exposure
+            8. Insecure dependencies
+            9. Rate limiting issues
+            10. Security header misconfigurations
+
+            Provide:
+            - Clear description of each vulnerability found
+            - Severity level (Critical/High/Medium/Low)
+            - Specific line numbers and files affected
+            - Recommended fixes with code examples
+            - References to OWASP guidelines when applicable
+
+            Format your response as a markdown comment suitable for GitHub PR review.
+
+          prompt: |
+            Please perform a comprehensive security review of the following code changes:
+
+            Changed Files:
+            ${{ steps.changed-files.outputs.all_changed_files }}
+
+            Review the code for security vulnerabilities, focusing on the OWASP Top 10 and common Next.js security issues.
+
+            For each issue found, provide:
+            1. Issue title and severity
+            2. Affected file and line numbers
+            3. Detailed explanation of the vulnerability
+            4. Proof of concept (if applicable)
+            5. Recommended fix with code example
+
+            If no security issues are found, provide security best practices relevant to the changed code.
+
+      - name: Post Review Results
+        if: steps.changed-files.outputs.any_changed == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const claudeComment = comments.find(comment =>
+              comment.body.includes('🔒 Claude Security Review')
+            );
+
+            const reviewBody = `## 🔒 Claude Security Review
+
+            ${process.env.CLAUDE_REVIEW_OUTPUT || 'Security review completed. Check workflow logs for details.'}
+
+            ---
+            *This automated security review was performed by Claude AI. Please review all findings carefully.*
+            *Review ID: ${context.runId}-${context.runNumber}*`;
+
+            if (claudeComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: claudeComment.id,
+                body: reviewBody,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: reviewBody,
+              });
+            }
+
+      - name: Check for Critical Issues
+        if: contains(env.CLAUDE_REVIEW_OUTPUT, 'Critical') || contains(env.CLAUDE_REVIEW_OUTPUT, 'HIGH')
+        run: |
+          echo "⚠️ Critical security issues detected!"
+          echo "Please address all Critical and High severity findings before merging."
+          exit 1
