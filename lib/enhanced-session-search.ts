@@ -5,11 +5,13 @@
 
 import prisma from '@/lib/db';
 import { searchSimilarSessions } from '@/lib/vector-db';
+import { detectMealQuery, identifyMealSessions } from '@/lib/meal-session-detector';
 
 export interface SessionSearchResult {
   sessions: any[];
-  searchMethod: 'vector' | 'database' | 'combined';
+  searchMethod: 'vector' | 'database' | 'combined' | 'meal-specific';
   totalFound: number;
+  isMealQuery?: boolean;
 }
 
 /**
@@ -20,7 +22,87 @@ export async function enhancedSessionSearch(
   limit: number = 10
 ): Promise<SessionSearchResult> {
   const results: any[] = [];
-  let searchMethod: 'vector' | 'database' | 'combined' = 'vector';
+  let searchMethod: 'vector' | 'database' | 'combined' | 'meal-specific' = 'vector';
+
+  // Check if this is a meal-related query
+  const mealDetection = detectMealQuery(query);
+
+  // Strategy 0: Handle meal queries specifically
+  if (mealDetection.isMealQuery && mealDetection.queryType !== 'external-dining') {
+    console.log('[Search] Detected meal query:', mealDetection);
+    searchMethod = 'meal-specific';
+
+    // Fetch meal sessions
+    const mealSessions = await prisma.session.findMany({
+      where: {
+        OR: [
+          { title: { contains: 'Breakfast', mode: 'insensitive' } },
+          { title: { contains: 'Lunch', mode: 'insensitive' } },
+          { title: { contains: 'Dinner', mode: 'insensitive' } },
+          { title: { contains: 'Reception', mode: 'insensitive' } },
+          { location: { contains: 'Lunch Seminar', mode: 'insensitive' } }
+        ]
+      },
+      include: {
+        speakers: {
+          include: {
+            speaker: true
+          }
+        }
+      },
+      orderBy: { startTime: 'asc' }
+    });
+
+    // Identify and filter meal sessions
+    const identifiedMealSessions = identifyMealSessions(mealSessions);
+
+    // Filter by meal type if specific
+    let filteredSessions = mealSessions;
+    if (mealDetection.mealType && mealDetection.mealType !== 'general') {
+      filteredSessions = mealSessions.filter(session => {
+        const titleLower = session.title.toLowerCase();
+        switch (mealDetection.mealType) {
+          case 'breakfast':
+            return titleLower.includes('breakfast');
+          case 'lunch':
+            return titleLower.includes('lunch');
+          case 'dinner':
+            return titleLower.includes('dinner') || titleLower.includes('gala');
+          default:
+            return true;
+        }
+      });
+    }
+
+    // Filter by time context if specified
+    if (mealDetection.timeContext === 'today') {
+      const today = new Date();
+      const todayDate = today.getDate();
+      filteredSessions = filteredSessions.filter(session => {
+        const sessionDate = new Date(session.startTime).getDate();
+        return sessionDate === todayDate;
+      });
+    } else if (mealDetection.timeContext === 'tomorrow') {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowDate = tomorrow.getDate();
+      filteredSessions = filteredSessions.filter(session => {
+        const sessionDate = new Date(session.startTime).getDate();
+        return sessionDate === tomorrowDate;
+      });
+    }
+
+    if (filteredSessions.length > 0) {
+      console.log(`[Search] Found ${filteredSessions.length} meal sessions`);
+      return {
+        sessions: filteredSessions.slice(0, limit),
+        searchMethod,
+        totalFound: filteredSessions.length,
+        isMealQuery: true
+      };
+    }
+    // If no meal sessions found, continue with regular search
+  }
 
   try {
     // Strategy 1: Try vector search first
@@ -182,7 +264,8 @@ export async function enhancedSessionSearch(
   return {
     sessions: results.slice(0, limit),
     searchMethod,
-    totalFound: results.length
+    totalFound: results.length,
+    isMealQuery: mealDetection.isMealQuery
   };
 }
 

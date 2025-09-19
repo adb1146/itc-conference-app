@@ -3,6 +3,8 @@
  * Core prompts that enhance AI reasoning and response quality
  */
 
+import { VALID_CONFERENCE_TRACKS } from '../conference-tracks';
+
 export const MASTER_PROMPTS = {
   /**
    * Core reasoning framework - always included
@@ -88,10 +90,10 @@ CRITICAL - ALWAYS INCLUDE ACTIONABLE HYPERLINKS (INTERNAL ONLY):
   - NEVER link to external sites like vegas.insuretechconnect.com for speakers
   - ALWAYS use internal routes /speakers/{speakerId} format
   - Even if speaker data contains external URLs, IGNORE them and use internal routes
-- **Track mentions** should link to filtered views with URL encoding:
-  - For "AI Track": [AI Track](/agenda?track=AI%20Track)
-  - For "Data & Analytics": [Data & Analytics](/agenda?track=Data%20%26%20Analytics)
-  - For "LATAM": [LATAM](/agenda?track=LATAM)
+- **Track mentions** - ONLY use ACTUAL tracks that exist:
+  - Valid tracks include: Technology Track, Innovation Track, Claims Track, Strategy Track, etc.
+  - NEVER create or suggest non-existent tracks like "AI & Innovation Track"
+  - When linking to tracks: [Track Name](/agenda?track={URL-encoded-track-name})
   - Always URL encode spaces and special characters in track names
 - **Day references** should link to day views: [Day 1](/agenda?day=1), [Day 2](/agenda?day=2), [Day 3](/agenda?day=3)
 - **Venue locations** MUST link as: [Location Name](/locations?location={URL-encoded-location})
@@ -238,6 +240,78 @@ HUMAN-CENTERED APPROACH:
 - Respect time and attention constraints
 - Focus on actionable outcomes
 - Celebrate successes and progress
+`,
+
+  /**
+   * CRITICAL: Valid conference tracks - NEVER hallucinate track names
+   */
+  VALID_TRACKS: `
+CRITICAL - VALID CONFERENCE TRACKS ONLY:
+========================================================
+The following are the ONLY valid tracks at ITC Vegas 2025:
+
+${VALID_CONFERENCE_TRACKS.join(', ')}
+
+IMPORTANT RULES:
+1. NEVER create or suggest tracks that don't exist (e.g., "AI & Innovation Track")
+2. AI-related sessions are in "Innovation Track" or "Technology Track"
+3. When discussing topics, reference SPECIFIC SESSIONS, not made-up tracks
+4. If a user asks about a non-existent track, politely correct them
+5. Use the exact track names as listed above - don't modify them
+
+COMMON ERRORS TO AVOID:
+❌ "AI & Innovation Track" - DOES NOT EXIST
+❌ "Data & Analytics Track" - DOES NOT EXIST
+❌ "Digital Transformation Track" - DOES NOT EXIST
+❌ "InsurTech Track" - DOES NOT EXIST (use Innovation Track or Startup Track)
+
+When discussing AI topics:
+✅ "You might be interested in sessions from the Innovation Track"
+✅ "The Technology Track has several AI-focused sessions"
+✅ "Here are specific AI sessions across different tracks: [list sessions]"
+========================================================
+`,
+
+  /**
+   * Conference meal sessions guidance
+   */
+  MEAL_SESSIONS: `
+CONFERENCE MEALS & DINING GUIDANCE:
+========================================================
+When users ask about meals (breakfast, lunch, dinner), ALWAYS:
+
+1. PRIORITIZE CONFERENCE-PROVIDED MEALS:
+   • "Breakfast Sponsored by [Company]" - ✅ Included with registration
+   • "Lunch Sponsored by [Company]" - ✅ Included with registration
+   • "Lunch Seminars" - Educational sessions with lunch provided
+   • "Opening/Closing Receptions" - Evening events with food/drinks
+   • "Gala Dinners" - Special evening events
+
+2. IDENTIFY SPECIFIC MEAL SESSIONS:
+   • Check agenda for sessions with "Breakfast", "Lunch", "Dinner" in titles
+   • Look for sessions at meal times (7-9 AM, 12-2 PM, 6-8 PM)
+   • Include location details from the Location field
+   • Note if meals are sponsored (usually means included)
+
+3. PROVIDE COMPLETE MEAL INFORMATION:
+   • ✅ Whether included with registration
+   • 📍 Exact location within venue
+   • ⏰ Specific timing from agenda
+   • 🎯 Sponsor information if available
+   • 📝 Any special requirements (pre-registration, tickets)
+
+4. EXTERNAL DINING - ONLY mention if:
+   • User explicitly asks for restaurants/cafes outside conference
+   • No conference meals available at requested time
+   • User wants alternatives to conference meals
+   • User asks about dietary restrictions not covered by conference
+
+5. RESPONSE EXAMPLES:
+   ✅ "Lunch is provided on Day 2: **Lunch Sponsored by Guidewire** from 12:00-1:30 PM in Oceanside Ballroom"
+   ❌ "Here are some restaurants near Mandalay Bay..." (unless explicitly requested)
+
+IMPORTANT: Conference attendees expect to know about included meals FIRST!
+========================================================
 `
 };
 
@@ -250,13 +324,23 @@ export function selectMasterPrompts(queryType: string): string {
   // CRITICAL: Always include date context first
   prompts.push(MASTER_PROMPTS.DATE_CONTEXT);
 
+  // CRITICAL: Always include valid tracks to prevent hallucination
+  prompts.push(MASTER_PROMPTS.VALID_TRACKS);
+
   // Always include chain of thought and quality
   prompts.push(MASTER_PROMPTS.CHAIN_OF_THOUGHT);
   prompts.push(MASTER_PROMPTS.RESPONSE_QUALITY);
   
   // Add specific prompts based on query characteristics
   const queryLower = queryType.toLowerCase();
-  
+
+  // Add meal guidance for food-related queries
+  if (queryLower.includes('lunch') || queryLower.includes('breakfast') ||
+      queryLower.includes('dinner') || queryLower.includes('meal') ||
+      queryLower.includes('food') || queryLower.includes('eat')) {
+    prompts.push(MASTER_PROMPTS.MEAL_SESSIONS);
+  }
+
   if (queryLower.includes('solve') || queryLower.includes('fix') || queryLower.includes('problem')) {
     prompts.push(MASTER_PROMPTS.PROBLEM_SOLVING);
   }

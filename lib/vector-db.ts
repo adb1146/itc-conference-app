@@ -6,6 +6,7 @@
 import { Pinecone } from '@pinecone-database/pinecone';
 import { OpenAI } from 'openai';
 import { OpenAIEmbeddings } from '@langchain/openai';
+import { getMealContextForEmbedding } from './meal-info-handler';
 
 // Lazy initialization of Pinecone client
 let pineconeClient: Pinecone | null = null;
@@ -126,17 +127,31 @@ export async function generateEmbedding(text: string): Promise<number[]> {
 }
 
 /**
- * Create searchable text from session data
+ * Create searchable text from session data with enhanced track context
  */
 export function createSessionSearchText(session: any): string {
   const parts = [
     session.title,
     session.description,
-    session.track || '',
-    session.level || '',
-    ...(session.tags || []),
   ];
-  
+
+  // Enhanced track context
+  if (session.track) {
+    parts.push(session.track);
+
+    // Add track semantic context if available
+    const { TRACK_SEMANTIC_CONTEXT } = require('./track-embeddings');
+    const trackContext = TRACK_SEMANTIC_CONTEXT[session.track];
+    if (trackContext) {
+      parts.push(trackContext.description);
+      parts.push(`Related topics: ${trackContext.relatedTopics.join(', ')}`);
+    }
+  }
+
+  // Add other metadata
+  parts.push(session.level || '');
+  parts.push(...(session.tags || []));
+
   // Add speaker information if available
   if (session.speakers && session.speakers.length > 0) {
     session.speakers.forEach((ss: any) => {
@@ -148,7 +163,14 @@ export function createSessionSearchText(session: any): string {
       }
     });
   }
-  
+
+  // Add meal context if this is a meal session
+  const mealContext = getMealContextForEmbedding(session);
+  if (mealContext) {
+    parts.push(mealContext);
+    parts.push('conference meal', 'food provided', 'dining');
+  }
+
   return parts.filter(Boolean).join(' ');
 }
 

@@ -9,6 +9,9 @@ import { detectToolIntent, formatAgendaResponse } from '@/lib/chat-tool-detector
 import { generateFastAgenda } from '@/lib/tools/schedule/fast-agenda-builder';
 import { enhancedSessionSearch } from '@/lib/enhanced-session-search';
 import { withRateLimit, rateLimiters } from '@/lib/rate-limit';
+import { preValidateQuery, trackAwareSearch } from '@/lib/track-aware-search';
+import { handleMealQuery, formatMealResponse } from '@/lib/meal-info-handler';
+import { detectMealQuery } from '@/lib/meal-session-detector';
 
 const prisma = new PrismaClient();
 
@@ -60,6 +63,18 @@ async function getRelevantContext(message: string) {
     lowerMessage.includes('when is') ||
     lowerMessage.includes('details about') ||
     lowerMessage.includes('information about');
+
+  // Check if this is a meal query first
+  const mealDetection = detectMealQuery(message);
+  if (mealDetection.isMealQuery && mealDetection.queryType !== 'external-dining') {
+    console.log('[Chat API] Detected meal query, using meal-specific search');
+    const searchResults = await enhancedSessionSearch(message, 25);
+
+    if (searchResults.sessions.length > 0) {
+      console.log(`[Chat API] Meal search found ${searchResults.sessions.length} sessions`);
+      return searchResults.sessions;
+    }
+  }
 
   // If it looks like a specific session query, use enhanced search
   if (isSpecificSessionQuery) {
@@ -182,10 +197,21 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { message, userPreferences } = await request.json();
+    const { message, userPreferences, conversationHistory } = await request.json();
 
     if (!message) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 });
+    }
+
+    // Pre-validate query for track hallucinations
+    const trackValidation = await preValidateQuery(message);
+    let processedMessage = message;
+    let trackWarning = null;
+
+    if (!trackValidation.isValid) {
+      processedMessage = trackValidation.cleanedQuery || message;
+      trackWarning = trackValidation.warning;
+      console.log('[Chat API] Track validation warning:', trackWarning);
     }
 
     // Check if this message should trigger the agenda builder tool
@@ -350,7 +376,8 @@ Guidelines:
       userMessage: message,
       userProfile: userPreferences,
       sessionData: sessionsContext,
-      complexity: queryComplexity
+      complexity: queryComplexity,
+      conversationHistory: conversationHistory || []
     }, basePrompt + '\n\n' + masterPrompts);
     
     const systemPrompt = enhancedPrompt.systemPrompt;
