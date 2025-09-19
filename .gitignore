@@ -47,3 +47,37 @@ next-env.d.ts
 *.log
 *.tmp
 node_modules
+
+# Security: Exclude sensitive data exports and dumps
+data/exports/
+data/dumps/
+data/backups/
+*.sql
+*.dump
+database-export-*.json
+*-export.json
+*.backup
+
+# Security: Environment files with sensitive data
+.env.production.local
+.env.local.backup
+.env.*.backup
+
+# Security: SSH keys and certificates
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.cer
+
+# Security: Logs that might contain sensitive data
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Security: OS-specific sensitive files
+.DS_Store
+Thumbs.db

@@ -457,9 +457,11 @@ export default function FavoritesClient() {
           const printWindow = window.open('', '_blank');
           if (printWindow) {
             // Safely set HTML content using innerHTML after sanitization
-            // Import DOMPurify at the top of the file
-            const DOMPurify = (await import('isomorphic-dompurify')).default;
-            const sanitizedHTML = DOMPurify.sanitize(data.html);
+            const DOMPurify = (await import('dompurify')).default;
+            const sanitizedHTML = DOMPurify.sanitize(data.html, {
+              ALLOWED_TAGS: ['html', 'head', 'body', 'title', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'div', 'span', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'ul', 'ol', 'li', 'strong', 'em', 'br'],
+              ALLOWED_ATTR: ['class', 'style']
+            });
             printWindow.document.body.innerHTML = sanitizedHTML;
             printWindow.document.close();
             printWindow.print();
