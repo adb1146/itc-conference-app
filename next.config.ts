@@ -47,9 +47,39 @@ const nextConfig: NextConfig = {
     return `v2-${Date.now()}`;
   },
 
-  // Headers for smart cache control
+  // Headers for smart cache control and security
   async headers() {
     return [
+      // Security headers for all routes
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin',
+          },
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=()',
+          },
+          {
+            key: 'Content-Security-Policy',
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://vercel.live; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' https://api.anthropic.com https://api.openai.com https://api.pinecone.io https://*.vercel.app wss://*.vercel.app; frame-src 'self' https://vercel.live;",
+          },
+        ],
+      },
       // Auth routes - must work properly
       {
         source: '/api/auth/:path*',

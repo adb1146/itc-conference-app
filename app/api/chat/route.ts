@@ -8,6 +8,7 @@ import { generateDateContext, parseTimeQuery, getConferenceDay } from '@/lib/con
 import { detectToolIntent, formatAgendaResponse } from '@/lib/chat-tool-detector';
 import { generateFastAgenda } from '@/lib/tools/schedule/fast-agenda-builder';
 import { enhancedSessionSearch } from '@/lib/enhanced-session-search';
+import { withRateLimit, rateLimiters } from '@/lib/rate-limit';
 
 const prisma = new PrismaClient();
 
@@ -174,6 +175,12 @@ async function getRelevantContext(message: string) {
 }
 
 export async function POST(request: NextRequest) {
+  // Apply rate limiting for AI chat endpoints
+  const rateLimitResult = await rateLimiters.ai(request);
+  if (rateLimitResult) {
+    return rateLimitResult; // Return 429 if rate limited
+  }
+
   try {
     const { message, userPreferences } = await request.json();
 

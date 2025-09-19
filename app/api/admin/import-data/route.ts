@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth-guards';
 import prisma from '@/lib/db';
 import fs from 'fs/promises';
 import path from 'path';
@@ -8,11 +7,9 @@ import path from 'path';
 export async function POST(request: Request) {
   try {
     // Check if user is authenticated and is admin
-    const session = await getServerSession(authOptions);
-    const userIsAdmin = session?.user?.email === 'test@example.com' || (session?.user as any)?.isAdmin;
-    
-    if (!session?.user || !userIsAdmin) {
-      return NextResponse.json({ error: 'Unauthorized - Admin access required' }, { status: 401 });
+    const adminCheck = await requireAdmin();
+    if (adminCheck instanceof NextResponse) {
+      return adminCheck; // Return error response if not admin
     }
 
     console.log('🚀 Starting database import via API...');
