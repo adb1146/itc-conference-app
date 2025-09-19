@@ -1,0 +1,53 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔒 Running security checks..."
+
+# Check for secrets and sensitive data
+echo "🔍 Scanning for secrets..."
+if git diff --cached --name-only | xargs grep -l "\$2[aby]\$\|password.*:\|api[_-]?key\|secret\|token\|DATABASE_URL.*://.*:.*@" 2>/dev/null; then
+    echo "❌ COMMIT BLOCKED: Potential secrets detected!"
+    echo "Files contain potential secrets (passwords, API keys, tokens, or database URLs)"
+    echo "Please remove sensitive data before committing."
+    exit 1
+fi
+
+# Check for large files that might contain data dumps
+echo "📏 Checking file sizes..."
+for file in $(git diff --cached --name-only); do
+    if [ -f "$file" ]; then
+        size=$(wc -c < "$file" | tr -d ' ')
+        if [ "$size" -gt 1048576 ]; then  # 1MB
+            echo "❌ COMMIT BLOCKED: Large file detected: $file ($size bytes)"
+            echo "Files over 1MB may contain sensitive data dumps."
+            exit 1
+        fi
+    fi
+done
+
+# Check for sensitive file patterns
+echo "📂 Checking for sensitive file patterns..."
+if git diff --cached --name-only | grep -E "(database-export|\.dump|\.sql|\.backup|\.key|\.pem)$" 2>/dev/null; then
+    echo "❌ COMMIT BLOCKED: Sensitive file patterns detected!"
+    echo "Files match sensitive patterns (exports, dumps, keys, etc.)"
+    exit 1
+fi
+
+# Check for specific sensitive data patterns in JSON files
+echo "🔍 Scanning JSON files for sensitive data..."
+for file in $(git diff --cached --name-only | grep "\.json$"); do
+    if [ -f "$file" ] && grep -q '"password":\s*"\$2[aby]\$' "$file" 2>/dev/null; then
+        echo "❌ COMMIT BLOCKED: Bcrypt hash detected in $file"
+        echo "JSON files must not contain real password hashes."
+        exit 1
+    fi
+done
+
+echo "✅ Security checks passed!"
+
+# Run linting if available
+if npm run lint --silent 2>/dev/null; then
+    echo "🧹 Linting passed!"
+fi
+
+echo "✅ All pre-commit checks passed!"
