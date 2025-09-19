@@ -3,6 +3,7 @@ import { requireAdmin } from '@/lib/auth-guards';
 import prisma from '@/lib/db';
 import fs from 'fs/promises';
 import path from 'path';
+import { safeJoin, validatePath, SAFE_PATH_CONFIG } from '@/lib/security/path-utils';
 
 export async function POST(request: Request) {
   try {
@@ -14,18 +15,26 @@ export async function POST(request: Request) {
 
     console.log('🚀 Starting database import via API...');
     
-    // Read the export file
+    // Read the export file using safe path operations
     const exportsDir = path.join(process.cwd(), 'data', 'exports');
-    const filepath = path.join(exportsDir, 'latest-export.json');
-    
+
+    // Use safe path joining to prevent path traversal
+    const filepath = safeJoin(exportsDir, 'latest-export.json');
+
+    // Validate the path is safe and exists
+    const pathValidation = await validatePath(filepath, exportsDir);
+    if (!pathValidation.isValid || !pathValidation.exists || !pathValidation.isFile) {
+      throw new Error('Invalid or missing export file');
+    }
+
     console.log(`📁 Reading from: ${filepath}`);
-    
+
     const fileContent = await fs.readFile(filepath, 'utf-8');
     const exportData = JSON.parse(fileContent);
-    
+
     const metadata = exportData.metadata;
     console.log(`📊 Export metadata:`, metadata);
-    
+
     // Clear existing data
     console.log('🗑️  Clearing existing data...');
     await prisma.favorite.deleteMany({});

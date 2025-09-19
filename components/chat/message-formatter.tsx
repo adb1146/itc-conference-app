@@ -5,6 +5,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import DOMPurify from 'dompurify';
 
 interface MessageFormatterProps {
   content: string;
@@ -285,12 +286,18 @@ function processTextFormatting(text: string, baseKey: number): React.ReactNode {
     return `<code>${p1}</code>`;
   });
 
-  // If formatting was applied, render as HTML
+  // If formatting was applied, render as HTML (safely sanitized)
   if (processedText !== text) {
+    // Sanitize HTML to prevent XSS attacks
+    const sanitizedHTML = DOMPurify.sanitize(processedText, {
+      ALLOWED_TAGS: ['strong', 'em', 'code'],
+      ALLOWED_ATTR: []
+    });
+
     return (
       <span
         key={`formatted-${key}`}
-        dangerouslySetInnerHTML={{ __html: processedText }}
+        dangerouslySetInnerHTML={{ __html: sanitizedHTML }}
         className="inline"
       />
     );
