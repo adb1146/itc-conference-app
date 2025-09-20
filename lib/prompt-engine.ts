@@ -4,6 +4,11 @@
  */
 
 import { getPSAdvisoryStrictFacts } from './ps-advisory-facts';
+import {
+  generateContextualSuggestions,
+  formatSuggestionsForResponse,
+  SuggestionContext
+} from './suggestion-handler';
 
 export interface QueryContext {
   userMessage: string;
@@ -194,7 +199,18 @@ export function enhanceUserMessage(context: QueryContext): string {
  */
 export function generateResponseGuidelines(context: QueryContext): string {
   const complexity = context.complexity || analyzeQueryComplexity(context.userMessage);
-  
+
+  // Generate contextual suggestions using Anthropic best practices
+  const suggestionContext: SuggestionContext = {
+    currentMessage: context.userMessage,
+    conversationHistory: context.conversationHistory || [],
+    userProfile: context.userProfile,
+    sessionContext: context.sessionData
+  };
+
+  const suggestions = generateContextualSuggestions(suggestionContext);
+  const formattedSuggestions = formatSuggestionsForResponse(suggestions, suggestionContext);
+
   let guidelines = `
 RESPONSE STRUCTURE AND QUALITY:
 
@@ -240,11 +256,23 @@ RESPONSE STRUCTURE AND QUALITY:
   }
 
   guidelines += `
-IMPORTANT: 
+IMPORTANT:
 - Be conversational but professional
 - Use examples to illustrate complex points
 - Admit limitations honestly
-- Focus on practical value over theoretical completeness`;
+- Focus on practical value over theoretical completeness
+
+6. CONTEXTUAL SUGGESTIONS:
+${formattedSuggestions ? `
+   Include these context-aware suggestions at the end of your response:
+${formattedSuggestions}
+
+   Format suggestions as clickable questions that naturally flow from the conversation.
+   Ensure they are relevant to what was just discussed.` : `
+   - Provide 3-5 relevant follow-up questions
+   - Base them on the current topic and conversation context
+   - Make them actionable and specific
+   - Group by category (follow-up, explore, action)`}`;
 
   return guidelines;
 }

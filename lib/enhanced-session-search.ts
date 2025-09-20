@@ -1,110 +1,116 @@
 /**
- * Enhanced Session Search with Fallback
- * Ensures sessions can be found via multiple methods
+ * Enhanced Session Search with Fallback and Post-Query Enhancement Pipeline
+ * Ensures sessions can be found via multiple methods with intelligent reranking and personalization
  */
 
 import prisma from '@/lib/db';
-import { searchSimilarSessions } from '@/lib/vector-db';
-import { detectMealQuery, identifyMealSessions } from '@/lib/meal-session-detector';
+import { searchSimilarSessions, searchMealSessions } from '@/lib/vector-db';
+import { rerankResults, filterLowQualityResults, deduplicateResults, applyDiversityBoosting, UserContext } from '@/lib/result-enhancer';
+import { personalizeResults } from '@/lib/personalization';
+import { enrichResults } from '@/lib/response-enrichment';
+import { optimizeResponseFormat, classifyQueryType } from '@/lib/response-formatter';
 
 export interface SessionSearchResult {
   sessions: any[];
-  searchMethod: 'vector' | 'database' | 'combined' | 'meal-specific';
+  searchMethod: 'vector' | 'database' | 'combined' | 'meal';
   totalFound: number;
+  isRecommendationQuery?: boolean;
   isMealQuery?: boolean;
+  agendaBuilderOffer?: string;
+  formattedResponse?: string;
+  queryType?: string;
+  performance?: {
+    searchTime: number;
+    enhancementTime: number;
+    totalTime: number;
+  };
 }
 
 /**
- * Search for sessions using multiple strategies
+ * Check if query is asking for recommendations
+ */
+function isRecommendationQuery(query: string): boolean {
+  const lowerQuery = query.toLowerCase();
+  const recommendationPatterns = [
+    'what should i attend',
+    'what sessions should',
+    'recommend sessions',
+    'suggest sessions',
+    'which sessions should',
+    'what talks',
+    'sessions for me',
+    'best sessions',
+    'must-see sessions',
+    'top sessions'
+  ];
+
+  return recommendationPatterns.some(pattern => lowerQuery.includes(pattern));
+}
+
+/**
+ * Check if query is about meals
+ */
+function isMealQuery(query: string): boolean {
+  const lowerQuery = query.toLowerCase();
+  const mealPatterns = [
+    'lunch', 'breakfast', 'dinner', 'meal', 'food', 'dining',
+    'eat', 'catered', 'snack', 'reception', 'coffee break'
+  ];
+
+  // Check if query contains meal words
+  const hasMealWords = mealPatterns.some(pattern => lowerQuery.includes(pattern));
+
+  // Exclude if it's explicitly asking for restaurants
+  const isRestaurantQuery = lowerQuery.includes('restaurant') ||
+                           lowerQuery.includes('steakhouse') ||
+                           lowerQuery.includes('bar');
+
+  return hasMealWords && !isRestaurantQuery;
+}
+
+/**
+ * Search for sessions using multiple strategies with post-query enhancement
  */
 export async function enhancedSessionSearch(
   query: string,
-  limit: number = 10
-): Promise<SessionSearchResult> {
-  const results: any[] = [];
-  let searchMethod: 'vector' | 'database' | 'combined' | 'meal-specific' = 'vector';
-
-  // Check if this is a meal-related query
-  const mealDetection = detectMealQuery(query);
-
-  // Strategy 0: Handle meal queries specifically
-  if (mealDetection.isMealQuery && mealDetection.queryType !== 'external-dining') {
-    console.log('[Search] Detected meal query:', mealDetection);
-    searchMethod = 'meal-specific';
-
-    // Fetch meal sessions
-    const mealSessions = await prisma.session.findMany({
-      where: {
-        OR: [
-          { title: { contains: 'Breakfast', mode: 'insensitive' } },
-          { title: { contains: 'Lunch', mode: 'insensitive' } },
-          { title: { contains: 'Dinner', mode: 'insensitive' } },
-          { title: { contains: 'Reception', mode: 'insensitive' } },
-          { location: { contains: 'Lunch Seminar', mode: 'insensitive' } }
-        ]
-      },
-      include: {
-        speakers: {
-          include: {
-            speaker: true
-          }
-        }
-      },
-      orderBy: { startTime: 'asc' }
-    });
-
-    // Identify and filter meal sessions
-    const identifiedMealSessions = identifyMealSessions(mealSessions);
-
-    // Filter by meal type if specific
-    let filteredSessions = mealSessions;
-    if (mealDetection.mealType && mealDetection.mealType !== 'general') {
-      filteredSessions = mealSessions.filter(session => {
-        const titleLower = session.title.toLowerCase();
-        switch (mealDetection.mealType) {
-          case 'breakfast':
-            return titleLower.includes('breakfast');
-          case 'lunch':
-            return titleLower.includes('lunch');
-          case 'dinner':
-            return titleLower.includes('dinner') || titleLower.includes('gala');
-          default:
-            return true;
-        }
-      });
-    }
-
-    // Filter by time context if specified
-    if (mealDetection.timeContext === 'today') {
-      const today = new Date();
-      const todayDate = today.getDate();
-      filteredSessions = filteredSessions.filter(session => {
-        const sessionDate = new Date(session.startTime).getDate();
-        return sessionDate === todayDate;
-      });
-    } else if (mealDetection.timeContext === 'tomorrow') {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const tomorrowDate = tomorrow.getDate();
-      filteredSessions = filteredSessions.filter(session => {
-        const sessionDate = new Date(session.startTime).getDate();
-        return sessionDate === tomorrowDate;
-      });
-    }
-
-    if (filteredSessions.length > 0) {
-      console.log(`[Search] Found ${filteredSessions.length} meal sessions`);
-      return {
-        sessions: filteredSessions.slice(0, limit),
-        searchMethod,
-        totalFound: filteredSessions.length,
-        isMealQuery: true
-      };
-    }
-    // If no meal sessions found, continue with regular search
+  limit: number = 10,
+  options?: {
+    userId?: string;
+    userContext?: UserContext;
+    includeEnrichments?: boolean;
+    includeFormatting?: boolean;
+    applyPersonalization?: boolean;
   }
+): Promise<SessionSearchResult> {
+  const startTime = Date.now();
+  const results: any[] = [];
+  let searchMethod: 'vector' | 'database' | 'combined' | 'meal' = 'vector';
+
+  // Check if this is a recommendation query
+  const isRecommendation = isRecommendationQuery(query);
+  let agendaBuilderOffer: string | undefined;
+
+  // Check if this is a meal query
+  const isMeal = isMealQuery(query);
 
   try {
+    // Strategy 0: If this is a meal query, use specialized meal search
+    if (isMeal) {
+      console.log('[Search] Detected meal query, using specialized meal search');
+      const mealResults = await searchMealSessions(query, limit * 2);
+
+      if (mealResults && mealResults.length > 0) {
+        console.log(`[Search] Meal search found ${mealResults.length} results`);
+        searchMethod = 'meal';
+        results.push(...mealResults);
+      } else {
+        // Fallback to regular search if meal search fails
+        console.log('[Search] Meal search returned no results, falling back to regular search');
+      }
+    }
+
+    // Only proceed with other strategies if not a meal query or meal search failed
+    if (!isMeal || results.length === 0) {
     // Strategy 1: Try vector search first
     console.log('[Search] Attempting vector search for:', query);
     const vectorResults = await searchSimilarSessions(query, undefined, limit);
@@ -118,6 +124,7 @@ export async function enhancedSessionSearch(
     if (results.length < 3) {
       console.log('[Search] Vector results insufficient, trying database search');
       searchMethod = results.length > 0 ? 'combined' : 'database';
+    }
 
       // Extract key terms from query
       const searchTerms = extractSearchTerms(query);
@@ -261,11 +268,91 @@ export async function enhancedSessionSearch(
     }
   }
 
+  // Add agenda builder offer for recommendation queries
+  if (isRecommendation && results.length > 0) {
+    agendaBuilderOffer = '\n\n💡 **Want a personalized agenda?**\nI can create a complete conference schedule tailored to your interests. Just say "Build my agenda" to get started with our Smart Agenda Builder!';
+  }
+
+  const searchTime = Date.now() - startTime;
+  const enhancementStart = Date.now();
+
+  // Apply post-query enhancement pipeline if we have results
+  let enhancedResults = results;
+  let formattedResponse: string | undefined;
+
+  if (results.length > 0 && options) {
+    try {
+      // 1. Deduplicate results
+      enhancedResults = deduplicateResults(results);
+
+      // 2. Rerank results based on relevance and quality
+      enhancedResults = await rerankResults(
+        enhancedResults,
+        query,
+        options.userContext
+      );
+
+      // 3. Apply personalization if user context available
+      if (options.applyPersonalization !== false && options.userId) {
+        enhancedResults = await personalizeResults(
+          enhancedResults,
+          options.userId,
+          { profile: options.userContext }
+        );
+      }
+
+      // 4. Filter low quality results
+      enhancedResults = filterLowQualityResults(enhancedResults, 0.3);
+
+      // 5. Apply diversity boosting to avoid too similar results
+      enhancedResults = applyDiversityBoosting(enhancedResults);
+
+      // 6. Enrich results with additional data
+      if (options.includeEnrichments !== false) {
+        enhancedResults = await enrichResults(enhancedResults, {
+          maxEnrichments: 10
+        });
+      }
+
+      // 7. Format response if requested
+      if (options.includeFormatting !== false) {
+        const queryType = classifyQueryType(query);
+        formattedResponse = await optimizeResponseFormat(
+          enhancedResults.slice(0, limit),
+          query,
+          queryType,
+          {
+            includePersonalization: options.applyPersonalization !== false,
+            includeEnrichments: options.includeEnrichments !== false
+          }
+        );
+      }
+    } catch (enhancementError) {
+      console.error('[Search] Enhancement pipeline error:', enhancementError);
+      // Continue with unenhanced results
+      enhancedResults = results;
+    }
+  }
+
+  const enhancementTime = Date.now() - enhancementStart;
+  const totalTime = Date.now() - startTime;
+
+  console.log(`[Search] Performance - Search: ${searchTime}ms, Enhancement: ${enhancementTime}ms, Total: ${totalTime}ms`);
+
   return {
-    sessions: results.slice(0, limit),
+    sessions: enhancedResults.slice(0, limit),
     searchMethod,
-    totalFound: results.length,
-    isMealQuery: mealDetection.isMealQuery
+    totalFound: enhancedResults.length,
+    isRecommendationQuery: isRecommendation,
+    isMealQuery: isMeal,
+    agendaBuilderOffer,
+    formattedResponse,
+    queryType: classifyQueryType(query),
+    performance: {
+      searchTime,
+      enhancementTime,
+      totalTime
+    }
   };
 }
 

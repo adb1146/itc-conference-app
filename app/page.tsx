@@ -216,10 +216,14 @@ function HomePageContent() {
               <div className="absolute right-2">
                 <button
                   type="submit"
-                  className="p-2 sm:p-3 text-gray-500 hover:text-gray-700 transition-colors"
+                  className="p-2 sm:p-3 transition-all group"
                   aria-label="Ask ITC Concierge"
                 >
-                  <Sparkles className="w-4 sm:w-5 h-4 sm:h-5" />
+                  <div className="relative">
+                    <Sparkles className="w-4 sm:w-5 h-4 sm:h-5 animate-rainbow-shimmer text-purple-600" />
+                    <Sparkles className="w-4 sm:w-5 h-4 sm:h-5 absolute inset-0 animate-rainbow-shimmer opacity-50 blur-sm text-blue-500" style={{ animationDelay: '0.5s' }} />
+                    <Sparkles className="w-4 sm:w-5 h-4 sm:h-5 absolute inset-0 animate-rainbow-shimmer opacity-30 blur-md text-pink-500" style={{ animationDelay: '1s' }} />
+                  </div>
                 </button>
               </div>
             </div>

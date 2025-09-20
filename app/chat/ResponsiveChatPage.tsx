@@ -28,6 +28,21 @@ function ResponsiveChatPageContent() {
   const [dynamicSuggestions, setDynamicSuggestions] = useState<string[]>([]);
   const [conversationContext, setConversationContext] = useState<any>({});
   const hasProcessedUrlMessage = useRef(false);
+  const [userProfile, setUserProfile] = useState<any>(null);
+
+  // Fetch user profile when logged in
+  useEffect(() => {
+    if (session?.user?.email) {
+      fetch('/api/profile')
+        .then(res => res.json())
+        .then(data => {
+          if (!data.error) {
+            setUserProfile(data);
+          }
+        })
+        .catch(err => console.error('Error fetching profile:', err));
+    }
+  }, [session]);
 
   // Detect mobile device
   useEffect(() => {
@@ -139,6 +154,21 @@ function ResponsiveChatPageContent() {
     setIsLoading(true);
 
     try {
+      // Debug: Log the user preferences being sent
+      const userPrefs = userProfile ? {
+        ...userProfile,
+        isFirstTime: isFirstTime
+      } : session?.user ? {
+        name: (session.user as any).name,
+        role: (session.user as any).role,
+        company: (session.user as any).company,
+        interests: (session.user as any).interests || [],
+        isFirstTime: isFirstTime,
+        email: (session.user as any).email
+      } : {};
+
+      console.log('Sending user preferences to chat:', userPrefs);
+
       const response = await fetch('/api/chat/stream', {
         method: 'POST',
         headers: {
@@ -147,14 +177,7 @@ function ResponsiveChatPageContent() {
         body: JSON.stringify({
           message: messageText.trim(),
           sessionId: sessionId,
-          userPreferences: session?.user ? {
-            name: (session.user as any).name,
-            role: (session.user as any).role,
-            company: (session.user as any).company,
-            interests: (session.user as any).interests || [],
-            isFirstTime: isFirstTime,
-            email: (session.user as any).email
-          } : {}
+          userPreferences: userPrefs
         }),
       });
 

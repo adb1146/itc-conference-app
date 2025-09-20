@@ -54,4 +54,3 @@ export async function routeMessage(message: string, ctx: RouteContext): Promise<
     metadata: { toolUsed: 'none' }
   };
 }
-

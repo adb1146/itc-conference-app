@@ -10,8 +10,6 @@ import { generateFastAgenda } from '@/lib/tools/schedule/fast-agenda-builder';
 import { enhancedSessionSearch } from '@/lib/enhanced-session-search';
 import { withRateLimit, rateLimiters } from '@/lib/rate-limit';
 import { preValidateQuery, trackAwareSearch } from '@/lib/track-aware-search';
-import { handleMealQuery, formatMealResponse } from '@/lib/meal-info-handler';
-import { detectMealQuery } from '@/lib/meal-session-detector';
 
 const prisma = new PrismaClient();
 
@@ -64,10 +62,16 @@ async function getRelevantContext(message: string) {
     lowerMessage.includes('details about') ||
     lowerMessage.includes('information about');
 
-  // Check if this is a meal query first
-  const mealDetection = detectMealQuery(message);
-  if (mealDetection.isMealQuery && mealDetection.queryType !== 'external-dining') {
-    console.log('[Chat API] Detected meal query, using meal-specific search');
+  // Check if this is a meal query and use enhanced search
+  const lowerMessageCheck = message.toLowerCase();
+  const isMealQuery = lowerMessageCheck.includes('breakfast') ||
+                      lowerMessageCheck.includes('lunch') ||
+                      lowerMessageCheck.includes('dinner') ||
+                      lowerMessageCheck.includes('meal') ||
+                      lowerMessageCheck.includes('food');
+
+  if (isMealQuery) {
+    console.log('[Chat API] Detected meal query, using enhanced search');
     const searchResults = await enhancedSessionSearch(message, 25);
 
     if (searchResults.sessions.length > 0) {

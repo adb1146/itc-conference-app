@@ -287,13 +287,15 @@ class AIIntentClassifier {
 
     // Check for agenda building requests (including help requests)
     if (
-      lowerMessage.includes('build') && lowerMessage.includes('agenda') ||
-      lowerMessage.includes('create') && lowerMessage.includes('schedule') ||
-      lowerMessage.includes('make') && lowerMessage.includes('itinerary') ||
+      lowerMessage.includes('build') && (lowerMessage.includes('agenda') || lowerMessage.includes('schedule')) ||
+      lowerMessage.includes('create') && (lowerMessage.includes('schedule') || lowerMessage.includes('agenda')) ||
+      lowerMessage.includes('make') && (lowerMessage.includes('itinerary') || lowerMessage.includes('schedule') || lowerMessage.includes('agenda')) ||
       lowerMessage.includes('help') && (lowerMessage.includes('schedule') || lowerMessage.includes('agenda')) ||
       lowerMessage.includes('assist') && (lowerMessage.includes('schedule') || lowerMessage.includes('agenda')) ||
-      lowerMessage.includes('plan') && lowerMessage.includes('schedule') ||
-      lowerMessage.includes('figure out') && lowerMessage.includes('sessions')
+      lowerMessage.includes('plan') && (lowerMessage.includes('schedule') || lowerMessage.includes('agenda') || lowerMessage.includes('day')) ||
+      lowerMessage.includes('figure out') && lowerMessage.includes('sessions') ||
+      lowerMessage.includes('personalized') && (lowerMessage.includes('schedule') || lowerMessage.includes('agenda')) ||
+      lowerMessage.includes('my schedule') || lowerMessage.includes('my agenda')
     ) {
       return {
         primary_intent: 'agenda_building',

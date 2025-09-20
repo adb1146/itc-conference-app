@@ -6,7 +6,6 @@
 import { Pinecone } from '@pinecone-database/pinecone';
 import { OpenAI } from 'openai';
 import { OpenAIEmbeddings } from '@langchain/openai';
-import { getMealContextForEmbedding } from './meal-info-handler';
 
 // Lazy initialization of Pinecone client
 let pineconeClient: Pinecone | null = null;
@@ -26,10 +25,9 @@ export function getPineconeClient(): Pinecone | null {
 let openaiClient: OpenAI | null = null;
 export function getOpenAIClient(): OpenAI | null {
   const apiKey = process.env.OPENAI_API_KEY;
-  console.log('[Vector DB] OpenAI API key check:', apiKey ? `${apiKey.substring(0, 15)}...` : 'NO KEY');
 
-  if (!apiKey || apiKey.includes('<your')) {
-    console.log('[Vector DB] Invalid OpenAI API key, returning null');
+  if (!apiKey || apiKey.length < 10) {
+    console.log('[Vector DB] OpenAI API key not configured');
     return null;
   }
   if (!openaiClient) {
@@ -43,7 +41,7 @@ export function getOpenAIClient(): OpenAI | null {
 // Lazy initialization of OpenAI embeddings for LangChain
 let embeddingsClient: OpenAIEmbeddings | null = null;
 export function getEmbeddings(): OpenAIEmbeddings | null {
-  if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY.includes('<your')) {
+  if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY.length < 10) {
     return null;
   }
   if (!embeddingsClient) {
@@ -57,11 +55,20 @@ export function getEmbeddings(): OpenAIEmbeddings | null {
 
 // Vector database configuration
 export const VECTOR_CONFIG = {
-  indexName: 'itc-sessions',
+  indexName: process.env.PINECONE_INDEX || 'itc-sessions',
   namespace: 'conference-2025',
   dimension: 1536, // Dimension for text-embedding-3-small
   metric: 'cosine',
   topK: 20, // Number of similar results to return
+};
+
+// Meal-specific vector configuration
+export const MEAL_VECTOR_CONFIG = {
+  indexName: process.env.PINECONE_INDEX || 'itc-sessions',
+  namespace: 'conference-meals', // Dedicated namespace for meal content
+  dimension: 1536,
+  metric: 'cosine',
+  topK: 10,
 };
 
 /**
@@ -164,12 +171,64 @@ export function createSessionSearchText(session: any): string {
     });
   }
 
-  // Add meal context if this is a meal session
-  const mealContext = getMealContextForEmbedding(session);
-  if (mealContext) {
-    parts.push(mealContext);
+  // Add meal-related keywords if title contains meal terms
+  const titleLower = session.title?.toLowerCase() || '';
+  if (titleLower.includes('breakfast') || titleLower.includes('lunch') || titleLower.includes('dinner')) {
     parts.push('conference meal', 'food provided', 'dining');
   }
+
+  return parts.filter(Boolean).join(' ');
+}
+
+/**
+ * Create enhanced meal-specific searchable text
+ */
+export function createMealSearchText(session: any): string {
+  const titleLower = session.title?.toLowerCase() || '';
+  const descLower = session.description?.toLowerCase() || '';
+
+  // Determine meal type
+  let mealType = '';
+  let mealKeywords = [];
+
+  if (titleLower.includes('breakfast') || descLower.includes('breakfast')) {
+    mealType = 'breakfast';
+    mealKeywords = ['morning meal', 'continental breakfast', 'coffee and pastries', 'early dining'];
+  } else if (titleLower.includes('lunch') || descLower.includes('lunch')) {
+    mealType = 'lunch';
+    mealKeywords = ['midday meal', 'lunch break', 'networking lunch', 'buffet lunch', 'boxed lunch'];
+  } else if (titleLower.includes('dinner') || descLower.includes('dinner')) {
+    mealType = 'dinner';
+    mealKeywords = ['evening meal', 'gala dinner', 'awards dinner', 'formal dining'];
+  } else if (titleLower.includes('reception') || descLower.includes('reception')) {
+    mealType = 'reception';
+    mealKeywords = ['cocktails', 'hors d\'oeuvres', 'appetizers', 'networking reception'];
+  }
+
+  const parts = [
+    session.title,
+    session.description,
+    mealType,
+    'conference meal',
+    'food provided',
+    'dining included',
+    'catered meal',
+    'meal session',
+    ...mealKeywords,
+    session.location || '',
+    // Add timing context
+    session.startTime ? `meal at ${new Date(session.startTime).toLocaleTimeString()}` : '',
+    // Add dietary options if mentioned
+    descLower.includes('vegetarian') ? 'vegetarian options' : '',
+    descLower.includes('vegan') ? 'vegan options' : '',
+    descLower.includes('gluten') ? 'gluten free options' : '',
+    // Add networking context
+    descLower.includes('network') ? 'networking opportunity' : '',
+    // Conference dining keywords
+    'ITC Vegas dining',
+    'conference catering',
+    'included with registration'
+  ];
 
   return parts.filter(Boolean).join(' ');
 }
@@ -249,6 +308,121 @@ export async function searchSimilarSessions(
   } catch (error) {
     console.error('Error searching sessions:', error);
     return [];
+  }
+}
+
+/**
+ * Search specifically for meal sessions using enhanced meal embeddings
+ */
+export async function searchMealSessions(
+  query: string,
+  topK: number = MEAL_VECTOR_CONFIG.topK
+): Promise<any[]> {
+  try {
+    const index = await getOrCreateIndex();
+    const mealNamespace = index.namespace(MEAL_VECTOR_CONFIG.namespace);
+
+    // Enhance query with meal-specific keywords
+    const enhancedQuery = `${query} conference meal food dining catered breakfast lunch dinner networking included`;
+
+    // Generate embedding for enhanced query
+    const queryEmbedding = await generateEmbedding(enhancedQuery);
+
+    // Search in meal namespace first
+    const mealResults = await mealNamespace.query({
+      vector: queryEmbedding,
+      topK,
+      includeMetadata: true,
+    });
+
+    // If not enough results, fall back to general namespace with meal filter
+    if ((!mealResults.matches || mealResults.matches.length < 3)) {
+      const generalNamespace = index.namespace(VECTOR_CONFIG.namespace);
+      const generalResults = await generalNamespace.query({
+        vector: queryEmbedding,
+        topK,
+        includeMetadata: true,
+        filter: {
+          $or: [
+            { title: { $regex: '.*(?:lunch|breakfast|dinner|meal|reception).*' } },
+            { description: { $regex: '.*(?:lunch|breakfast|dinner|meal|food|dining).*' } }
+          ]
+        }
+      });
+
+      return generalResults.matches || [];
+    }
+
+    return mealResults.matches || [];
+  } catch (error) {
+    console.error('Error searching meal sessions:', error);
+    return [];
+  }
+}
+
+/**
+ * Upsert meal vectors to dedicated meal namespace
+ */
+export async function upsertMealVectors(sessions: any[]) {
+  const index = await getOrCreateIndex();
+  const mealNamespace = index.namespace(MEAL_VECTOR_CONFIG.namespace);
+
+  // Filter for meal sessions
+  const mealSessions = sessions.filter(session => {
+    const text = (session.title + ' ' + session.description).toLowerCase();
+    return text.includes('lunch') || text.includes('breakfast') ||
+           text.includes('dinner') || text.includes('reception') ||
+           text.includes('meal') || text.includes('food');
+  });
+
+  const batchSize = 5;
+
+  for (let i = 0; i < mealSessions.length; i += batchSize) {
+    const batch = mealSessions.slice(i, i + batchSize);
+    const vectors = [];
+
+    for (const session of batch) {
+      try {
+        const mealSearchText = createMealSearchText(session);
+        const embedding = await generateEmbedding(mealSearchText);
+
+        // Determine meal type for metadata
+        const titleLower = session.title?.toLowerCase() || '';
+        let mealType = 'other';
+        if (titleLower.includes('breakfast')) mealType = 'breakfast';
+        else if (titleLower.includes('lunch')) mealType = 'lunch';
+        else if (titleLower.includes('dinner')) mealType = 'dinner';
+        else if (titleLower.includes('reception')) mealType = 'reception';
+
+        vectors.push({
+          id: `meal-${session.id}`,
+          values: embedding,
+          metadata: {
+            sessionId: session.id,
+            title: session.title,
+            description: session.description?.substring(0, 500),
+            mealType,
+            location: session.location,
+            startTime: session.startTime?.toISOString(),
+            endTime: session.endTime?.toISOString(),
+            track: session.track,
+            tags: session.tags || [],
+            hasFood: true,
+            searchText: mealSearchText.substring(0, 1000)
+          },
+        });
+      } catch (error) {
+        console.error(`Error processing meal session ${session.id}:`, error);
+      }
+    }
+
+    if (vectors.length > 0) {
+      await mealNamespace.upsert(vectors);
+      console.log(`Upserted ${vectors.length} meal vectors (batch ${i / batchSize + 1})`);
+    }
+
+    // Rate limiting
+    await new Promise(resolve => setTimeout(resolve, 1000));
   }
 }
 

@@ -31,7 +31,7 @@ export async function aiRouteMessage(
   ctx: AIRouteContext
 ): Promise<AIRouteOutput> {
   console.log('[AI Router] Processing message with AI intent classification');
-  
+
   try {
     // Step 1: Use AI to classify the intent
     const intentClassification = await classifyUserIntent(message, {

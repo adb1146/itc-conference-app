@@ -53,6 +53,8 @@ import { validateOnStartup } from '@/lib/startup-validation';
 import { shouldOrchestratorHandle, extractAndPersistUserInfo, activateOrchestrator } from '@/lib/agents/orchestrator-state-fix';
 import { processSimpleOrchestration, getOrCreateState } from '@/lib/agents/orchestrator-fix';
 import { extractDayFromQuery, filterSessionsByDate } from '@/lib/day-extractor';
+import { enhancedSessionSearch } from '@/lib/enhanced-session-search';
+import { getConferenceContext, getVenueNavigationHelp, getNetworkingTips, getDiningRecommendations } from '@/lib/prompts/conference-context';
 
 // Validate environment on startup
 validateOnStartup();
@@ -513,24 +515,29 @@ export async function POST(request: NextRequest) {
         }
 
         // Handle local recommendations via centralized agent router
+        // BUT FIRST check if this is actually a meal query about conference meals
         if (toolDetection.shouldUseTool && toolDetection.toolType === 'local_recommendations') {
           console.log('[Stream API] Detected local recommendations request with confidence:', toolDetection.confidence);
 
+          // Meal detection removed - meal queries now go through vector search
+          // Conference meal queries will be handled by vector search automatically
+
+          // Process local recommendations normally
           try {
             const routed = await routeMessage(message, { sessionId, userId });
 
             if (routed && routed.metadata?.toolUsed === 'local_recommendations') {
-              await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(routed.message)}}\n\n`));
+                await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(routed.message)}}\n\n`));
 
-              // Track and update state
-              addMessage(sessionId, 'assistant', routed.message);
-              updateConversationState(sessionId, { lastToolUsed: 'local_recommendations' });
+                // Track and update state
+                addMessage(sessionId, 'assistant', routed.message);
+                updateConversationState(sessionId, { lastToolUsed: 'local_recommendations' });
 
-              await writer.write(encoder.encode(`data: {"type":"metadata","content":${JSON.stringify(routed.metadata)}}\n\n`));
-              await writer.write(encoder.encode(`data: {"type":"done","sessionId":"${sessionId}"}\n\n`));
-              await writer.close();
-              return;
-            }
+                await writer.write(encoder.encode(`data: {"type":"metadata","content":${JSON.stringify(routed.metadata)}}\n\n`));
+                await writer.write(encoder.encode(`data: {"type":"done","sessionId":"${sessionId}"}\n\n`));
+                await writer.close();
+                return;
+              }
           } catch (routerError) {
             console.error('[Stream API] Agent router error for local recommendations:', routerError);
             await writer.write(encoder.encode(`data: {"type":"status","content":"Switching to regular chat mode..."}\n\n`));
@@ -865,6 +872,10 @@ export async function POST(request: NextRequest) {
         const vectorSearchPromise = (async () => {
           if (hasExternalAPIs) {
             try {
+              // Let all queries (including meal queries) go through vector search
+              // This ensures proper formatting for link generation
+              console.log('[Search] Processing query through vector search:', message);
+
               // Use enhanced search query for better matching on abstract queries
               let searchQuery = queryInterpretation.searchStrategy === 'direct' ? message : enhancedSearchQuery;
 
@@ -1240,8 +1251,6 @@ function extractKeywords(message: string): string[] {
   return keywords;
 }
 
-import { getConferenceContext, getVenueNavigationHelp, getNetworkingTips, getDiningRecommendations } from '@/lib/prompts/conference-context';
-
 function createSystemPrompt(
   userPreferences: any,
   sessionsContext: any[],
@@ -1258,13 +1267,38 @@ function createSystemPrompt(
   if (messageLower.includes('network') || messageLower.includes('meet') || messageLower.includes('connect')) {
     additionalContext += getNetworkingTips();
   }
-  if (messageLower.includes('food') || messageLower.includes('restaurant') || messageLower.includes('eat') || messageLower.includes('drink')) {
-    additionalContext += getDiningRecommendations();
-  }
+  // Disabled hardcoded dining recommendations - now handled by meal session detection
+  // if (messageLower.includes('food') || messageLower.includes('restaurant') || messageLower.includes('eat') || messageLower.includes('drink')) {
+  //   additionalContext += getDiningRecommendations();
+  // }
+  console.log('[MEAL DEBUG] Skipping hardcoded getDiningRecommendations - using meal detection instead');
 
   return `You are an expert conference concierge AI for ITC Vegas 2025 (October 14-16, 2025 at Mandalay Bay, Las Vegas).
 
 This application is powered by PS Advisory (psadvisory.com), a specialized insurance technology consulting firm founded by Nancy Paul. PS Advisory helps insurance organizations with Salesforce implementations, digital transformation, AI/automation solutions, and custom insurtech development.
+
+## SMART AGENDA BUILDER - IMPORTANT FEATURE
+When users ask about:
+- Building their schedule or agenda
+- Creating a personalized conference plan
+- Help figuring out what sessions to attend
+- Making the most of their conference experience
+
+**ALWAYS direct them to our Smart Agenda Builder at /smart-agenda**
+- It's an AI-powered tool that creates personalized 3-day schedules
+- Requires free registration to save and modify agendas
+- Analyzes 295+ sessions to match their interests and goals
+- Allows them to customize and save their schedule
+
+Don't try to build agendas in chat - redirect to /smart-agenda instead!
+
+## MEAL SESSIONS - CRITICAL FORMATTING
+When users ask about meals (breakfast, lunch, dinner, food):
+- Use the meal sessions from RELEVANT SESSIONS data
+- ALWAYS format as clickable links: [Breakfast Sponsored by Jackson](/agenda/session/{id})
+- Include time, location, and whether it's included
+- DO NOT create a bulleted list without session IDs
+- Every meal must be a clickable link to its session page
 
 ## CRITICAL INSTRUCTION: ALWAYS CONNECT TO CONFERENCE CONTENT
 For EVERY query, you MUST:
@@ -1273,6 +1307,7 @@ For EVERY query, you MUST:
 3. Never give generic responses - always tie back to specific ITC Vegas content
 4. For compound topics (e.g., "AI and weather"), find sessions at the intersection (e.g., climate risk, parametric insurance)
 5. Think beyond literal keywords - understand the underlying business need
+6. For schedule/agenda building requests, ALWAYS redirect to /smart-agenda
 
 ${getConferenceContext()}
 
@@ -1292,6 +1327,7 @@ RESPONSE GUIDELINES:
 2. Include clickable links for EVERY session and speaker mentioned:
    - [Session Title](/agenda/session/{session.id})
    - [Speaker Name](/speakers/{speaker.id}) - NEVER use external ITC Vegas URLs
+   - IMPORTANT FOR MEAL QUERIES: When asked about meals (breakfast, lunch, dinner), you MUST format meal sessions as clickable links using their session IDs from the RELEVANT SESSIONS data
    - Format track mentions with proper URL encoding:
      * For "AI Track": [AI Track](/agenda?track=AI%20Track)
      * For "Data & Analytics": [Data & Analytics](/agenda?track=Data%20%26%20Analytics)

@@ -251,7 +251,13 @@ export function MobileChatInterfaceAnimated({
                   }`}
                 >
                   {message.role === 'assistant' ? (
-                    <MessageFormatter content={message.content} />
+                    <MessageFormatter
+                      content={message.content}
+                      onSuggestionClick={(suggestion) => {
+                        onInputChange?.(suggestion)
+                        inputRef.current?.focus()
+                      }}
+                    />
                   ) : (
                     <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                   )}

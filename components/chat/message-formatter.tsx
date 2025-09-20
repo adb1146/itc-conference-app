@@ -291,7 +291,7 @@ function processTextFormatting(text: string, baseKey: number): React.ReactNode {
       <span
         key={`formatted-${key}`}
         dangerouslySetInnerHTML={{ __html: processedText }}
-        className="inline"
+        className="inline [&_strong]:font-bold [&_em]:italic [&_code]:bg-gray-100 [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-sm [&_code]:font-mono"
       />
     );
   }

@@ -315,7 +315,20 @@ export class LocalRecommendationsAgent {
     const notLocalPatterns = [
       'keynote', 'speaker', 'session', 'presentation', 'talk',
       'agenda', 'schedule', 'conference', 'track', 'panel',
-      'sponsor', 'exhibitor', 'booth', 'workshop', 'attendee'
+      'sponsor', 'exhibitor', 'booth', 'workshop', 'attendee',
+      // Also exclude simple meal queries that should check conference meals first
+      'when is lunch', 'when is breakfast', 'when is dinner',
+      'where is lunch', 'where is breakfast', 'where is dinner',
+      'where to get lunch', 'where to get breakfast', 'where to get dinner',
+      'where can i get lunch', 'where can i get breakfast', 'where can i get dinner',
+      'lunch today', 'breakfast today', 'dinner today',
+      'conference lunch', 'conference breakfast', 'conference dinner',
+      'included lunch', 'included breakfast', 'included dinner',
+      'what about lunch', 'what about breakfast', 'what about dinner',
+      'lunch location', 'breakfast location', 'dinner location',
+      'lunch options', 'breakfast options', 'dinner options',
+      'meal sessions', 'food sessions', 'dining sessions',
+      'lunch session', 'breakfast session', 'dinner session'
     ];
 
     // If query contains conference-specific terms, it's NOT a local query
@@ -323,13 +336,34 @@ export class LocalRecommendationsAgent {
       return false;
     }
 
+    // Additional checks for meal-related queries
+    const mealWords = ['lunch', 'breakfast', 'dinner', 'meal', 'food', 'dining'];
+
+    // If query contains meal words, only treat as local if explicitly asking for restaurants/bars
+    if (mealWords.some(meal => lowerQuery.includes(meal))) {
+      // ONLY consider it local if explicitly mentioning restaurant/bar/steakhouse
+      const explicitVenueWords = ['restaurant', 'bar', 'steakhouse', 'cafe', 'bistro', 'grill', 'pub'];
+      if (!explicitVenueWords.some(venue => lowerQuery.includes(venue))) {
+        // It's about meals but not explicitly about restaurants - NOT local
+        return false;
+      }
+    }
+
+    // Also exclude if "what about" + meal word (common conference meal query)
+    if (lowerQuery.includes('what about') && mealWords.some(meal => lowerQuery.includes(meal))) {
+      return false;
+    }
+
     // Check for local venue keywords
+    // NOTE: Removed generic terms like 'hungry' that could conflict with conference meals
+    // Only explicit restaurant/venue queries should trigger local recommendations
     const keywords = [
-      'restaurant', 'eat', 'food', 'lunch', 'dinner', 'breakfast', 'hungry',
-      'bar', 'drink', 'cocktail', 'beer', 'wine',
-      'mandalay', 'nearby', 'around here', 'walking distance',
-      'where can i eat', 'where should i eat', 'where to eat',
-      'things to do', 'activities', 'relax', 'spa', 'pool'
+      'restaurant', 'steakhouse', 'cafe', 'bistro', 'grill', 'pub',
+      'bar', 'cocktail', 'beer', 'wine', 'nightlife',
+      'mandalay bay restaurant', 'nearby restaurant',
+      'where should i eat outside', 'where can i eat outside', 'eat outside the conference',
+      'external dining', 'restaurants near',
+      'things to do', 'activities', 'relax', 'spa', 'pool', 'casino', 'gambling'
     ];
 
     // Handle "show" carefully

@@ -17,6 +17,102 @@
   animation: slide-up 0.3s ease-out;
 }
 
+/* Sparkle/Twinkle animation */
+@keyframes twinkle {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1) rotate(0deg);
+    filter: hue-rotate(0deg) brightness(1);
+  }
+  20% {
+    opacity: 1;
+    transform: scale(1.2) rotate(10deg);
+    filter: hue-rotate(60deg) brightness(1.5);
+  }
+  40% {
+    opacity: 0.8;
+    transform: scale(0.9) rotate(-5deg);
+    filter: hue-rotate(120deg) brightness(1.3);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.15) rotate(8deg);
+    filter: hue-rotate(240deg) brightness(1.6);
+  }
+  80% {
+    opacity: 0.7;
+    transform: scale(1.05) rotate(-3deg);
+    filter: hue-rotate(300deg) brightness(1.2);
+  }
+}
+
+.animate-twinkle {
+  animation: twinkle 3s ease-in-out infinite;
+  background: linear-gradient(45deg, #8B5CF6, #3B82F6, #10B981);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+/* Alternative rainbow shimmer for the icon */
+@keyframes rainbow-shimmer {
+  0% {
+    filter: hue-rotate(0deg) brightness(1.5) saturate(2) drop-shadow(0 0 8px rgba(139, 92, 246, 0.8));
+    transform: scale(1) rotate(0deg);
+  }
+  16% {
+    filter: hue-rotate(60deg) brightness(1.6) saturate(1.8) drop-shadow(0 0 10px rgba(236, 72, 153, 0.9));
+    transform: scale(1.15) rotate(10deg);
+  }
+  33% {
+    filter: hue-rotate(120deg) brightness(1.7) saturate(2) drop-shadow(0 0 12px rgba(34, 197, 94, 0.8));
+    transform: scale(1.1) rotate(-8deg);
+  }
+  50% {
+    filter: hue-rotate(180deg) brightness(1.8) saturate(1.9) drop-shadow(0 0 14px rgba(59, 130, 246, 0.9));
+    transform: scale(1.2) rotate(6deg);
+  }
+  66% {
+    filter: hue-rotate(240deg) brightness(1.6) saturate(1.7) drop-shadow(0 0 10px rgba(168, 85, 247, 0.8));
+    transform: scale(1.05) rotate(-4deg);
+  }
+  83% {
+    filter: hue-rotate(300deg) brightness(1.7) saturate(1.8) drop-shadow(0 0 12px rgba(249, 115, 22, 0.9));
+    transform: scale(1.12) rotate(7deg);
+  }
+  100% {
+    filter: hue-rotate(360deg) brightness(1.5) saturate(2) drop-shadow(0 0 8px rgba(139, 92, 246, 0.8));
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.animate-rainbow-shimmer {
+  animation: rainbow-shimmer 3s ease-in-out infinite;
+  transition: all 0.3s ease;
+  filter: drop-shadow(0 0 6px currentColor);
+}
+
+.animate-rainbow-shimmer:hover {
+  animation-duration: 0.8s;
+  filter: drop-shadow(0 0 12px currentColor) brightness(1.8);
+}
+
+/* Pulsing glow effect */
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.3);
+  }
+}
+
+.group:hover .animate-rainbow-shimmer {
+  filter: drop-shadow(0 0 16px currentColor) brightness(2) saturate(2.5);
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -37,6 +133,33 @@ body {
   overflow-x: hidden;
   /* Prevent pull-to-refresh on mobile browsers */
   overscroll-behavior-y: contain;
+}
+
+/* Hide all scrollbars globally */
+html, body {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+/* Ensure scrolling still works */
+html, body {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Hide scrollbar for all elements */
+*::-webkit-scrollbar {
+  display: none;
+}
+
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 /* Mobile-first responsive utilities */

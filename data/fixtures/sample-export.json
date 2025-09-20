@@ -1,0 +1,115 @@
+{
+  "metadata": {
+    "exportedAt": "2025-09-18T00:00:00.000Z",
+    "counts": {
+      "speakers": 2,
+      "sessions": 2,
+      "sessionSpeakers": 2,
+      "users": 2,
+      "favorites": 0
+    },
+    "version": "1.0",
+    "note": "This is a SAFE FIXTURE FILE with redacted data for testing purposes"
+  },
+  "data": {
+    "speakers": [
+      {
+        "id": "sample_speaker_1",
+        "name": "Jane Doe",
+        "bio": "Sample speaker bio",
+        "company": "Example Corp",
+        "role": "Engineering Manager",
+        "imageUrl": null,
+        "linkedinUrl": "https://linkedin.com/in/example",
+        "twitterUrl": null,
+        "websiteUrl": null,
+        "profileSummary": "Sample profile summary for testing purposes",
+        "companyProfile": null,
+        "expertise": ["AI", "Software Engineering"],
+        "achievements": [],
+        "lastProfileSync": "2025-09-18T00:00:00.000Z",
+        "createdAt": "2025-09-18T00:00:00.000Z"
+      },
+      {
+        "id": "sample_speaker_2",
+        "name": "John Smith",
+        "bio": "Another sample speaker bio",
+        "company": "Tech Innovations",
+        "role": "CTO",
+        "imageUrl": null,
+        "linkedinUrl": null,
+        "twitterUrl": null,
+        "websiteUrl": null,
+        "profileSummary": "Another sample profile for testing",
+        "companyProfile": null,
+        "expertise": ["Innovation", "Leadership"],
+        "achievements": [],
+        "lastProfileSync": "2025-09-18T00:00:00.000Z",
+        "createdAt": "2025-09-18T00:00:00.000Z"
+      }
+    ],
+    "sessions": [
+      {
+        "id": "sample_session_1",
+        "title": "Sample Session: AI and the Future",
+        "description": "A sample session description for testing",
+        "startTime": "2025-09-18T10:00:00.000Z",
+        "endTime": "2025-09-18T11:00:00.000Z",
+        "location": "Main Hall",
+        "type": "Keynote",
+        "track": "AI Track",
+        "tags": ["AI", "Future"],
+        "createdAt": "2025-09-18T00:00:00.000Z"
+      },
+      {
+        "id": "sample_session_2",
+        "title": "Sample Workshop: Hands-on Security",
+        "description": "A sample workshop description for testing",
+        "startTime": "2025-09-18T14:00:00.000Z",
+        "endTime": "2025-09-18T16:00:00.000Z",
+        "location": "Workshop Room A",
+        "type": "Workshop",
+        "track": "Security Track",
+        "tags": ["Security", "Workshop"],
+        "createdAt": "2025-09-18T00:00:00.000Z"
+      }
+    ],
+    "sessionSpeakers": [
+      {
+        "sessionId": "sample_session_1",
+        "speakerId": "sample_speaker_1"
+      },
+      {
+        "sessionId": "sample_session_2",
+        "speakerId": "sample_speaker_2"
+      }
+    ],
+    "users": [
+      {
+        "id": "sample_user_1",
+        "email": "test@example.com",
+        "name": "Test User 1",
+        "password": "[REDACTED - BCRYPT HASH REMOVED FOR SECURITY]",
+        "role": "attendee",
+        "company": "Example Corp",
+        "jobTitle": "Software Engineer",
+        "interests": ["AI", "Security"],
+        "createdAt": "2025-09-18T00:00:00.000Z",
+        "lastLoginAt": null
+      },
+      {
+        "id": "sample_user_2",
+        "email": "admin@example.com",
+        "name": "Test Admin",
+        "password": "[REDACTED - BCRYPT HASH REMOVED FOR SECURITY]",
+        "role": "admin",
+        "company": "Conference Organizers",
+        "jobTitle": "Event Manager",
+        "interests": ["Management", "Organization"],
+        "createdAt": "2025-09-18T00:00:00.000Z",
+        "lastLoginAt": "2025-09-18T00:00:00.000Z"
+      }
+    ],
+    "favorites": []
+  }
+}

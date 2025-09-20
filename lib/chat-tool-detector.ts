@@ -3,7 +3,7 @@
  * Analyzes chat messages to determine if they should trigger specific tools/agents
  */
 
-export type ToolType = 'agenda_builder' | 'session_search' | 'speaker_lookup' | 'general_chat' | 'preference_response' | 'local_recommendations' | 'profile_research';
+export type ToolType = 'agenda_builder' | 'session_search' | 'session_recommendations' | 'speaker_lookup' | 'general_chat' | 'preference_response' | 'local_recommendations' | 'profile_research';
 
 export interface ToolDetectionResult {
   shouldUseTool: boolean;
@@ -13,14 +13,13 @@ export interface ToolDetectionResult {
   reason: string;
 }
 
-// Keywords and phrases that indicate EXPLICIT agenda building intent
-// These should only trigger when user explicitly asks for agenda creation
+// Keywords and phrases that indicate DIRECT agenda building intent
+// These should ONLY trigger when user explicitly asks for full agenda creation
 const AGENDA_KEYWORDS = [
   'build my agenda',
   'build me an agenda',
   'create my schedule',
   'build me a schedule',
-  'personalized agenda',
   'create an itinerary',
   'build a personalized agenda',
   'generate my agenda',
@@ -30,11 +29,42 @@ const AGENDA_KEYWORDS = [
   'i need an agenda',
   'create a personalized schedule',
   'build my itinerary',
-  'help designing my schedule',
-  'help me design my schedule',
-  'help with my schedule',
-  'design my schedule',
-  'need help designing'
+  'help me build an agenda',
+  'help me create an agenda',
+  'help me build a schedule',
+  'help me create a schedule',
+  'create my conference plan',
+  'build my conference plan',
+  'make me a personalized schedule',
+  'generate my personalized agenda',
+  'generate my conference plan',
+  'design my full schedule',
+  'plan my entire conference'
+];
+
+// Keywords for session RECOMMENDATIONS (not full agenda building)
+const SESSION_RECOMMENDATION_KEYWORDS = [
+  'what sessions should i attend',
+  'what should i attend',
+  'which sessions should i attend',
+  'recommend sessions',
+  'suggest sessions',
+  'session recommendations',
+  'what talks are good',
+  'which talks should i go to',
+  'which sessions should i go to',
+  'what should i go to',
+  'recommend talks',
+  'suggest talks',
+  'what sessions do you recommend',
+  'what would you recommend',
+  'personalized recommendations',
+  'sessions for me',
+  'talks for me',
+  'best sessions for',
+  'top sessions',
+  'must-see sessions',
+  'can\'t miss sessions'
 ];
 
 // Only match EXPLICIT requests for agenda building
@@ -45,13 +75,19 @@ const AGENDA_PATTERNS = [
   /i\s+(?:want|need|would like).*(?:an?\s+)?(?:agenda|schedule|itinerary)/i,
   /(?:can|could|will)\s+you.*(?:build|create|make).*(?:agenda|schedule|itinerary)/i,
   /(?:help|assist).*(?:design|designing|plan|planning).*(?:my|me).*schedule/i,
-  /(?:i|I)\s+need\s+help\s+(?:design|designing|with).*(?:my|me).*schedule/i
+  /(?:i|I)\s+need\s+help\s+(?:design|designing|with).*(?:my|me).*schedule/i,
+  // NEW: More patterns for natural language
+  /help\s+me\s+(?:build|create).*(?:agenda|schedule)/i,
+  /what\s+(?:should|sessions)\s+(?:i|should\s+i)\s+attend/i,
+  /recommend.*sessions.*(?:for\s+me|to\s+me)/i,
+  /(?:personalize|customize).*(?:my|me).*(?:agenda|schedule)/i,
+  /(?:plan|build)\s+my\s+(?:day|conference)/i
 ];
 
 // Keywords that indicate session search or questions (not full agenda)
+// NOTE: Removed "what sessions" to allow "what sessions should I attend" to be agenda
 const SESSION_SEARCH_KEYWORDS = [
-  'what sessions',
-  'which sessions',
+  'which sessions are',
   'find sessions',
   'show sessions',
   'list sessions',
@@ -73,7 +109,9 @@ const SESSION_SEARCH_KEYWORDS = [
   'tomorrow',
   'today',
   'this morning',
-  'this afternoon'
+  'this afternoon',
+  'what sessions include',
+  'sessions with'
 ];
 
 // Keywords for speaker lookup
@@ -87,13 +125,28 @@ const SPEAKER_KEYWORDS = [
 ];
 
 // Keywords for local recommendations (restaurants, bars, activities)
+// IMPORTANT: Removed meal words to avoid conflict with conference meals
 const LOCAL_KEYWORDS = [
-  'restaurant', 'eat', 'food', 'lunch', 'dinner', 'breakfast', 'meal',
-  'bar', 'drink', 'cocktail', 'beer', 'wine',
-  'mandalay bay', 'nearby', 'around here', 'walking distance',
+  'restaurant', 'steakhouse', 'bar', 'cocktail', 'beer', 'wine',
+  'mandalay bay restaurant', 'nearby restaurant', 'external dining',
   'entertainment', 'show', 'things to do', 'activities', 'fun',
-  'where can i eat', 'where to eat', 'what restaurants', 'any good',
-  'hungry', 'coffee', 'starbucks', 'quick bite', 'snack'
+  'where can i eat outside', 'where to eat outside', 'what restaurants',
+  'starbucks', 'quick bite outside', 'nightlife', 'casino'
+];
+
+// Conference meal patterns that should NOT trigger local recommendations
+const CONFERENCE_MEAL_PATTERNS = [
+  'when is lunch', 'when is breakfast', 'when is dinner',
+  'where is lunch', 'where is breakfast', 'where is dinner',
+  'lunch options', 'breakfast options', 'dinner options',
+  'conference lunch', 'conference breakfast', 'conference dinner',
+  'lunch session', 'breakfast session', 'dinner session',
+  'meal session', 'food session',
+  'where to get lunch', 'where to get breakfast', 'where to get dinner',
+  'lunch today', 'breakfast today', 'dinner today',
+  'what about lunch', 'what about breakfast', 'what about dinner',
+  'lunch time', 'breakfast time', 'dinner time',
+  'meal options', 'food options', 'conference dining'
 ];
 
 // Keywords that indicate preference responses
@@ -178,16 +231,38 @@ export function detectToolIntent(message: string): ToolDetectionResult {
     };
   }
 
+  // Check if this is a conference meal query (should NOT be local)
+  const isConferenceMeal = CONFERENCE_MEAL_PATTERNS.some(pattern =>
+    lowerMessage.includes(pattern)
+  );
+
+  if (isConferenceMeal) {
+    // This is about conference meals, not local restaurants
+    return {
+      shouldUseTool: false,
+      toolType: 'session_search',
+      confidence: 0.9,
+      reason: 'User asking about conference meal sessions'
+    };
+  }
+
   // Check for local recommendations (restaurants, bars, activities) - HIGH PRIORITY for speed
   const hasLocalKeyword = LOCAL_KEYWORDS.some(keyword =>
     lowerMessage.includes(keyword)
   );
 
-  if (hasLocalKeyword) {
+  // Additional check for explicit external dining requests
+  const isExplicitlyExternal = lowerMessage.includes('restaurant') ||
+                               lowerMessage.includes('bar') ||
+                               lowerMessage.includes('outside') ||
+                               lowerMessage.includes('external');
+
+  if (hasLocalKeyword || isExplicitlyExternal) {
     // Quick check to make sure it's actually about venues, not sessions
     const isAboutVenues = !lowerMessage.includes('session') &&
                           !lowerMessage.includes('speaker') &&
-                          !lowerMessage.includes('presentation');
+                          !lowerMessage.includes('presentation') &&
+                          !isConferenceMeal;
 
     if (isAboutVenues) {
       return {
@@ -199,7 +274,22 @@ export function detectToolIntent(message: string): ToolDetectionResult {
     }
   }
 
-  // Check for session search or informational queries BEFORE agenda building
+  // Check for session RECOMMENDATIONS (before full agenda building)
+  const hasRecommendationKeyword = SESSION_RECOMMENDATION_KEYWORDS.some(keyword =>
+    lowerMessage.includes(keyword)
+  );
+
+  if (hasRecommendationKeyword) {
+    // User wants recommendations, not a full agenda
+    return {
+      shouldUseTool: false,
+      toolType: 'session_recommendations',
+      confidence: 0.85,
+      reason: 'User asking for session recommendations (will offer agenda builder)'
+    };
+  }
+
+  // Check for session search or informational queries
   const hasSessionSearch = SESSION_SEARCH_KEYWORDS.some(keyword =>
     lowerMessage.includes(keyword)
   );
@@ -214,7 +304,7 @@ export function detectToolIntent(message: string): ToolDetectionResult {
     };
   }
 
-  // Check for explicit agenda building intent - ONLY after ruling out information queries
+  // Check for DIRECT agenda building intent - ONLY explicit requests
   const hasAgendaKeyword = AGENDA_KEYWORDS.some(keyword =>
     lowerMessage.includes(keyword)
   );
