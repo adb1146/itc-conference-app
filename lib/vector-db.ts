@@ -6,7 +6,30 @@
 import { Pinecone } from '@pinecone-database/pinecone';
 import { OpenAI } from 'openai';
 import { OpenAIEmbeddings } from '@langchain/openai';
-import { TRACK_SEMANTIC_CONTEXT } from './track-embeddings.js';
+
+// Simplified track semantic context to avoid import issues in production
+const TRACK_SEMANTIC_CONTEXT: Record<string, any> = {
+  "InsureTech Track": {
+    description: "Sessions focused on insurance technology innovation and digital transformation",
+    relatedTopics: ["insurance technology", "digital insurance", "insurtech startups", "insurance innovation"]
+  },
+  "Innovation Track": {
+    description: "Cutting-edge innovations in insurance including AI, ML, and emerging technologies",
+    relatedTopics: ["artificial intelligence", "machine learning", "automation", "digital transformation"]
+  },
+  "Technology Track": {
+    description: "Technical implementations, platforms, APIs, and system architectures",
+    relatedTopics: ["software platforms", "APIs", "cloud computing", "system integration"]
+  },
+  "Claims Track": {
+    description: "Claims processing, automation, customer service, and fraud detection",
+    relatedTopics: ["claims automation", "fraud detection", "customer experience", "claims settlement"]
+  },
+  "Cyber Track": {
+    description: "Cybersecurity, cyber insurance, risk management, and data protection",
+    relatedTopics: ["cybersecurity", "cyber insurance", "data breach", "risk management"]
+  }
+};
 
 // Lazy initialization of Pinecone client
 let pineconeClient: Pinecone | null = null;
