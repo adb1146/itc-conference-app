@@ -15,7 +15,7 @@ const prisma = new PrismaClient();
 
 async function generateEmbeddings() {
   try {
-    console.log('🚀 Starting postbuild embedding generation (v2 - fixed imports)...');
+    console.log('🚀 Starting postbuild embedding generation (v3 - ES module fix)...');
 
     // Check if we have required API keys
     if (!process.env.PINECONE_API_KEY || !process.env.OPENAI_API_KEY) {
