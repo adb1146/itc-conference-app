@@ -6,7 +6,7 @@
 import { Pinecone } from '@pinecone-database/pinecone';
 import { OpenAI } from 'openai';
 import { OpenAIEmbeddings } from '@langchain/openai';
-import { TRACK_SEMANTIC_CONTEXT } from './track-embeddings';
+import { TRACK_SEMANTIC_CONTEXT } from './track-embeddings.js';
 
 // Lazy initialization of Pinecone client
 let pineconeClient: Pinecone | null = null;
