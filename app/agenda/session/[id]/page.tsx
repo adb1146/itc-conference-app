@@ -48,6 +48,13 @@ export default function SessionDetailPage() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Debug logging
+  useEffect(() => {
+    console.log('Session Detail Page - params:', params);
+    console.log('Session Detail Page - sessionId:', sessionId);
+  }, [params, sessionId]);
+
   const [isFavorite, setIsFavorite] = useState(false);
   const [enriching, setEnriching] = useState(false);
   const [hasAutoEnriched, setHasAutoEnriched] = useState(false);
@@ -56,15 +63,27 @@ export default function SessionDetailPage() {
 
   const fetchSession = async () => {
     try {
-      const response = await fetch(`/api/agenda/sessions/${sessionId}`);
-      if (!response.ok) {
-        throw new Error('Session not found');
+      console.log('Fetching session with ID:', sessionId);
+
+      if (!sessionId) {
+        throw new Error('No session ID provided');
       }
+
+      const response = await fetch(`/api/agenda/sessions/${sessionId}`);
+      console.log('Fetch response status:', response.status);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('API error response:', errorData);
+        throw new Error(errorData.error || 'Session not found');
+      }
+
       const data = await response.json();
+      console.log('Session data received:', data.session?.title);
       setSession(data.session);
     } catch (error) {
       console.error('Error fetching session:', error);
-      setError('Failed to load session details');
+      setError(error instanceof Error ? error.message : 'Failed to load session details');
     } finally {
       setLoading(false);
     }
@@ -116,8 +135,10 @@ export default function SessionDetailPage() {
   };
 
   useEffect(() => {
-    fetchSession();
-    checkFavoriteStatus();
+    if (sessionId) {
+      fetchSession();
+      checkFavoriteStatus();
+    }
   }, [sessionId]);
 
   // Fetch personalized reasons when session is loaded

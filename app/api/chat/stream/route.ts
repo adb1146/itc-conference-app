@@ -41,7 +41,6 @@ import {
 import { validatePSAdvisoryResponse } from '@/lib/ps-advisory-validation';
 import { filterOutPSAdvisoryFakeSessions, cleanPSAdvisoryFromResponse, responseHasPSAdvisoryAsSession } from '@/lib/ps-advisory-response-filter';
 import { formatPSAdvisoryLinks } from '@/lib/ps-advisory-link-formatter';
-import { LocalRecommendationsAgent } from '@/lib/agents/local-recommendations-agent';
 import { getAttendeeNeedResponse, getTimeAwareActivities, getPracticalInfo } from '@/lib/attendee-experience';
 import { getHelpContent, getQuickHelpResponse } from '@/lib/help-content';
 import { getConferenceInfoResponse } from '@/lib/conference-info-handler';
@@ -482,14 +481,6 @@ export async function POST(request: NextRequest) {
               reason: intentClassification.reasoning || 'AI classified as agenda building intent',
               extractedParams: intentClassification.extracted_entities || {}
             };
-          } else if (intentClassification.primary_intent === 'local_recommendations') {
-            toolDetection = {
-              shouldUseTool: true,
-              toolType: 'local_recommendations',
-              confidence: intentClassification.confidence,
-              reason: intentClassification.reasoning || 'AI classified as local recommendations intent',
-              extractedParams: {}
-            };
           } else if (intentClassification.primary_intent === 'profile_research' && intentClassification.confidence > 0.8) {
             // Only trigger profile research for very confident explicit requests
             toolDetection = {
@@ -514,35 +505,6 @@ export async function POST(request: NextRequest) {
           // Continue with original keyword-based toolDetection
         }
 
-        // Handle local recommendations via centralized agent router
-        // BUT FIRST check if this is actually a meal query about conference meals
-        if (toolDetection.shouldUseTool && toolDetection.toolType === 'local_recommendations') {
-          console.log('[Stream API] Detected local recommendations request with confidence:', toolDetection.confidence);
-
-          // Meal detection removed - meal queries now go through vector search
-          // Conference meal queries will be handled by vector search automatically
-
-          // Process local recommendations normally
-          try {
-            const routed = await routeMessage(message, { sessionId, userId });
-
-            if (routed && routed.metadata?.toolUsed === 'local_recommendations') {
-                await writer.write(encoder.encode(`data: {"type":"content","content":${JSON.stringify(routed.message)}}\n\n`));
-
-                // Track and update state
-                addMessage(sessionId, 'assistant', routed.message);
-                updateConversationState(sessionId, { lastToolUsed: 'local_recommendations' });
-
-                await writer.write(encoder.encode(`data: {"type":"metadata","content":${JSON.stringify(routed.metadata)}}\n\n`));
-                await writer.write(encoder.encode(`data: {"type":"done","sessionId":"${sessionId}"}\n\n`));
-                await writer.close();
-                return;
-              }
-          } catch (routerError) {
-            console.error('[Stream API] Agent router error for local recommendations:', routerError);
-            await writer.write(encoder.encode(`data: {"type":"status","content":"Switching to regular chat mode..."}\n\n`));
-          }
-        }
 
         // Handle practical needs and emotional support intents (but NOT social_planning - let it use vector search)
         if (intentClassification && ['practical_need', 'emotional_support', 'navigation_help'].includes(intentClassification.primary_intent)) {
@@ -1340,7 +1302,11 @@ RESPONSE GUIDELINES:
    IMPORTANT: For speakers, ALWAYS use internal /speakers/{id} routes, NEVER external vegas.insuretechconnect.com URLs
 3. For abstract queries, interpret the business need and find relevant content
 4. Explain WHY each session is relevant to the user's specific question
-5. End with actionable next steps and related topics to explore
+5. End with 2-3 follow-up questions the user might want to ask (format as plain bullet points ending with ?)
+   IMPORTANT: These should be questions to ask the chat, NOT links. Example:
+   • What other AI sessions are happening on Tuesday?
+   • Who are the keynote speakers in this track?
+   • Can you build me an agenda focused on this topic?
 6. If discussing trends or impacts, cite specific conference sessions as evidence
 
 ${webSearchResults ? `WEB CONTEXT:\n${webSearchResults.content?.substring(0, 500)}` : ''}`;

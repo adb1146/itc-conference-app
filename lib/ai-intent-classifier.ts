@@ -10,7 +10,6 @@ export type IntentType =
   | 'information_seeking'  // User wants information about sessions, speakers, etc.
   | 'agenda_building'      // User explicitly wants an agenda created
   | 'profile_research'     // User explicitly wants profile research/personalization
-  | 'local_recommendations' // User wants restaurant/venue recommendations
   | 'greeting'             // User is introducing themselves or saying hello
   | 'registration'         // User wants to register or sign up
   | 'general_chat'         // General conversation
@@ -64,7 +63,6 @@ Intent Definitions:
 - information_seeking: Questions about sessions, speakers, topics, schedules (but not building/helping with one)
 - agenda_building: Requests to BUILD/CREATE a personalized agenda OR asking for HELP with their schedule/agenda
 - profile_research: EXPLICIT requests to research their background or LinkedIn
-- local_recommendations: Questions about restaurants, bars, venues, things to do in Vegas
 - greeting: Introductions, hellos, stating who they are (without asking for anything specific)
 - registration: Wanting to sign up, create account, save information
 - general_chat: Casual conversation, thank you, feedback
@@ -86,7 +84,7 @@ Examples:
 "Research my LinkedIn profile" → profile_research (explicit request)
 "What sessions should I attend?" → information_seeking (asking for recommendations only)
 "Create my personalized schedule" → agenda_building (explicit creation request)
-"Any good restaurants nearby?" → local_recommendations
+"Any good restaurants nearby?" → information_seeking (asking about a topic)
 "What can you tell me about claims?" → information_seeking (asking about a topic)
 "Tell me about AI sessions" → information_seeking (asking about sessions on a topic)
 "What's available on cybersecurity?" → information_seeking (asking about a topic)
@@ -187,7 +185,6 @@ class AIIntentClassifier {
                   "information_seeking",
                   "agenda_building",
                   "profile_research",
-                  "local_recommendations",
                   "greeting",
                   "registration",
                   "general_chat",
@@ -207,7 +204,7 @@ class AIIntentClassifier {
               },
               suggested_action: {
                 type: "string",
-                enum: ["answer", "build_agenda", "research_profile", "recommend_local", "collect_preferences"],
+                enum: ["answer", "build_agenda", "research_profile", "collect_preferences"],
                 description: "What action the system should take"
               },
               reasoning: {
@@ -392,26 +389,8 @@ class AIIntentClassifier {
       };
     }
 
-    // Check for local recommendations
-    if (
-      lowerMessage.includes('restaurant') ||
-      lowerMessage.includes('bar') ||
-      lowerMessage.includes('food') ||
-      lowerMessage.includes('eat') ||
-      lowerMessage.includes('lunch') ||
-      lowerMessage.includes('dinner') ||
-      lowerMessage.includes('breakfast') ||
-      lowerMessage.includes('drink') ||
-      lowerMessage.includes('entertainment') && (lowerMessage.includes('options') || lowerMessage.includes('show')) ||
-      lowerMessage.includes('coffee') && (lowerMessage.includes('where') || lowerMessage.includes('good'))
-    ) {
-      return {
-        primary_intent: 'local_recommendations',
-        confidence: 0.85,
-        suggested_action: 'recommend_local',
-        reasoning: 'Local venue request detected'
-      };
-    }
+    // Removed local recommendations - all venue/food queries will be handled by main chat
+    // These queries will now be classified as information_seeking
 
     // Check for greetings/introductions (more specific)
     if (

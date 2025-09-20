@@ -128,16 +128,22 @@ function processLineContent(
   if (line.match(/^[\u2022\-•\*]/)) {
     const bulletContent = line.replace(/^[\u2022\-•\*]\s*/, '');
 
-    // Check if it's a clickable question
-    if (bulletContent.endsWith('?') && onSuggestionClick) {
+    // Check if it's a clickable question (including markdown links that end with ?)
+    // Strip markdown link format if present for questions
+    const linkRegex = /\[([^\]]+)\]\([^\)]+\)/;
+    const hasMarkdownLink = linkRegex.test(bulletContent);
+    const strippedContent = hasMarkdownLink ? bulletContent.replace(linkRegex, '$1') : bulletContent;
+
+    if ((bulletContent.endsWith('?') || strippedContent.endsWith('?')) && onSuggestionClick) {
+      const questionText = strippedContent; // Use the text without the link
       return (
         <div key={`bullet-${lineIndex}`} className="flex items-start gap-2 mb-1">
           <span className="text-gray-500 mt-1">•</span>
           <button
-            onClick={() => onSuggestionClick(bulletContent)}
+            onClick={() => onSuggestionClick(questionText)}
             className="text-blue-600 hover:text-blue-800 hover:underline text-left"
           >
-            {bulletContent}
+            {questionText}
           </button>
         </div>
       );

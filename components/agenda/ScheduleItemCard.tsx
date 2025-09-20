@@ -108,7 +108,7 @@ export default function ScheduleItemCard({
               )}
               {isSession && item.item.id ? (
                 <Link
-                  href={`/sessions/${item.item.id}`}
+                  href={`/agenda/session/${item.item.id}`}
                   className="font-semibold text-gray-900 hover:text-blue-600 transition-colors underline decoration-gray-300 hover:decoration-blue-600"
                 >
                   {item.item.title}

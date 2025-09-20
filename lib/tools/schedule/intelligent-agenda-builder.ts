@@ -353,7 +353,11 @@ export async function generateIntelligentAgenda(
         .map(f => f.sessionId)
     };
 
-    console.log('[Intelligent Agenda] User profile:', userProfile);
+    console.log('[Intelligent Agenda] User profile:', {
+      ...userProfile,
+      favoriteIdsCount: userProfile.favoriteIds.length,
+      favoriteIds: userProfile.favoriteIds
+    });
 
     // 3. Create search query from profile
     const searchQuery = [
@@ -467,12 +471,16 @@ export async function generateIntelligentAgenda(
         .sort((a, b) => a[0].localeCompare(b[0]));
 
       // FIRST PASS: Add all user favorites (they have absolute priority)
+      console.log(`[Intelligent Agenda] Day ${dayNumber} - Looking for favorites among ${userProfile.favoriteIds.length} favorite IDs`);
+      let dayFavoritesAdded = 0;
+
       for (const [timeSlot, sessionsAtTime] of sortedTimeSlots) {
         const favoritesAtTime = sessionsAtTime.filter(session =>
           userProfile.favoriteIds.includes(session.id)
         );
 
         if (favoritesAtTime.length > 0) {
+          console.log(`[Intelligent Agenda] Found ${favoritesAtTime.length} favorites at ${timeSlot}`);
           // Add all favorites at this time (user may have selected conflicting favorites intentionally)
           for (const favoriteSession of favoritesAtTime) {
             const startTime = new Date(favoriteSession.startTime);
@@ -516,6 +524,9 @@ export async function generateIntelligentAgenda(
               matchReasons: ['User favorited this session']
             });
 
+            dayFavoritesAdded++;
+            console.log(`[Intelligent Agenda] Added favorite: "${favoriteSession.title}" with source: user-favorite`);
+
             // Block this time range from AI suggestions (except for long sessions)
             const duration = (endTime.getTime() - startTime.getTime()) / (60 * 60 * 1000);
             if (duration < 3) { // Only block time for regular sessions, not masterclasses/summits
@@ -529,6 +540,8 @@ export async function generateIntelligentAgenda(
           }
         }
       }
+
+      console.log(`[Intelligent Agenda] Day ${dayNumber} - Total favorites added in first pass: ${dayFavoritesAdded}`);
 
       // First, ensure we include at least one networking/social event for the day
       let hasNetworkingEvent = false;
@@ -863,6 +876,21 @@ export async function generateIntelligentAgenda(
     const totalSessions = days.reduce((sum, day) => sum + day.stats.totalSessions, 0);
     const totalFavorites = days.reduce((sum, day) => sum + day.stats.favoritesCovered, 0);
     const totalAI = days.reduce((sum, day) => sum + day.stats.aiSuggestions, 0);
+
+    console.log('[Intelligent Agenda] Metrics calculation:', {
+      userFavoriteIds: userProfile.favoriteIds,
+      userFavoriteIdsLength: userProfile.favoriteIds.length,
+      totalFavoritesIncluded: totalFavorites,
+      dayStats: days.map(d => ({
+        day: d.dayNumber,
+        favoritesCovered: d.stats.favoritesCovered,
+        scheduleWithFavorites: d.schedule.filter(item => item.source === 'user-favorite').map(item => ({
+          id: item.id,
+          title: item.item?.title,
+          source: item.source
+        }))
+      }))
+    });
 
     const agenda: SmartAgenda & { insights?: AgendaInsights } = {
       userId,

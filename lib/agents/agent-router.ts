@@ -1,5 +1,4 @@
 import { AgentResult } from './agent-types';
-import { LocalRecommendationsAgent } from './local-recommendations-agent';
 import { getOrchestrator } from './orchestrator-singleton';
 
 export interface RouteContext {
@@ -17,17 +16,7 @@ export type RouteOutput = AgentResult<{ agenda?: any }, { toolUsed?: string; pha
 export async function routeMessage(message: string, ctx: RouteContext): Promise<RouteOutput> {
   const lower = message.toLowerCase();
 
-  // 1) Local recommendations (fast path)
-  if (LocalRecommendationsAgent.isLocalQuery(message)) {
-    const local = new LocalRecommendationsAgent();
-    const content = await local.getRecommendations(message);
-    return {
-      message: content,
-      metadata: { toolUsed: 'local_recommendations' }
-    };
-  }
-
-  // 2) Profile research / agenda building intents
+  // Profile research / agenda building intents
   const wantsAgenda =
     lower.includes('agenda') || lower.includes('schedule') || lower.includes('personalized') || lower.includes('build') ||
     (lower.includes('help') && (lower.includes('schedule') || lower.includes('agenda')));
@@ -48,9 +37,9 @@ export async function routeMessage(message: string, ctx: RouteContext): Promise<
     };
   }
 
-  // 3) Default: hand back a neutral prompt
+  // Default: hand back a neutral prompt
   return {
-    message: "How can I help? I can research your background and build a personalized agenda, or suggest local places to eat and relax at Mandalay Bay.",
+    message: "How can I help? I can research your background and build a personalized agenda for the conference.",
     metadata: { toolUsed: 'none' }
   };
 }

@@ -5,7 +5,6 @@
  */
 
 import { classifyUserIntent, type IntentClassification } from '@/lib/ai-intent-classifier';
-import { LocalRecommendationsAgent } from './local-recommendations-agent';
 import { getOrchestrator } from './orchestrator-singleton';
 import { AgentResult } from './agent-types';
 
@@ -46,22 +45,7 @@ export async function aiRouteMessage(
 
     // Step 2: Route based on AI understanding, not keywords!
     switch (intentClassification.primary_intent) {
-      // Local venue recommendations
-      case 'local_recommendations':
-      case 'practical_need':
-        if (shouldHandleAsLocal(intentClassification)) {
-          const local = new LocalRecommendationsAgent();
-          const content = await local.getRecommendations(message);
-          return {
-            message: content,
-            metadata: { 
-              toolUsed: 'local_recommendations',
-              aiIntent: intentClassification.primary_intent,
-              confidence: intentClassification.confidence
-            }
-          };
-        }
-        break;
+      // Removed local recommendations - these queries will be handled by main chat
 
       // Agenda building
       case 'agenda_building':
@@ -101,22 +85,8 @@ export async function aiRouteMessage(
           }
         };
 
-      // Information seeking - check if it's about local venues
+      // Information seeking - about conference info - don't route to agents
       case 'information_seeking':
-        // Let AI determine if this is about local venues or conference info
-        if (isAskingAboutLocalVenues(message, intentClassification)) {
-          const local = new LocalRecommendationsAgent();
-          const content = await local.getRecommendations(message);
-          return {
-            message: content,
-            metadata: { 
-              toolUsed: 'local_recommendations',
-              aiIntent: 'local_query_from_info_seeking',
-              confidence: intentClassification.confidence
-            }
-          };
-        }
-        // Otherwise, it's about conference info - don't route to agents
         break;
     }
 
@@ -133,59 +103,18 @@ export async function aiRouteMessage(
   } catch (error) {
     console.error('[AI Router] AI classification failed, using fallback:', error);
     
-    // Fallback: Use the OLD keyword-based routing as backup
-    // This ensures the system doesn't break if AI fails
-    return fallbackToKeywordRouting(message, ctx);
+    // Fallback: Return a simple error message
+    return {
+      message: "I had trouble understanding your request. Could you please rephrase it?",
+      metadata: {
+        toolUsed: 'none',
+        aiIntent: 'classification_failed',
+        confidence: 0
+      }
+    };
   }
 }
 
-/**
- * Check if an intent should be handled as local recommendation
- */
-function shouldHandleAsLocal(intent: IntentClassification): boolean {
-  // Check entities and context to confirm it's really about local venues
-  const entities = intent.extracted_entities;
-  
-  // If AI extracted location-related entities, it's likely local
-  if (entities?.location || 
-      intent.reasoning?.toLowerCase().includes('restaurant') ||
-      intent.reasoning?.toLowerCase().includes('food') ||
-      intent.reasoning?.toLowerCase().includes('entertainment')) {
-    return true;
-  }
-
-  return intent.confidence > 0.7; // Trust high-confidence classifications
-}
-
-/**
- * Determine if an information_seeking query is about local venues
- */
-function isAskingAboutLocalVenues(
-  message: string, 
-  intent: IntentClassification
-): boolean {
-  // The AI should have picked this up, but let's double-check
-  const lower = message.toLowerCase();
-  
-  // Clear indicators it's NOT about local venues
-  if (intent.reasoning?.toLowerCase().includes('keynote') ||
-      intent.reasoning?.toLowerCase().includes('speaker') ||
-      intent.reasoning?.toLowerCase().includes('session') ||
-      intent.reasoning?.toLowerCase().includes('conference')) {
-    return false;
-  }
-
-  // Clear indicators it IS about local venues
-  if (intent.extracted_entities?.location ||
-      lower.includes('restaurant') ||
-      lower.includes('eat') ||
-      lower.includes('drink') ||
-      lower.includes('mandalay')) {
-    return true;
-  }
-
-  return false;
-}
 
 /**
  * Generate appropriate default response based on intent
@@ -208,28 +137,6 @@ function getDefaultResponse(intent: IntentClassification): string {
  * Fallback to keyword routing if AI fails
  * This is the OLD method - only used as emergency backup
  */
-async function fallbackToKeywordRouting(
-  message: string,
-  ctx: AIRouteContext
-): Promise<AIRouteOutput> {
-  console.warn('[AI Router] Falling back to keyword routing');
-  
-  // Import the old router dynamically to avoid circular deps
-  const { routeMessage } = await import('./agent-router');
-  const result = await routeMessage(message, {
-    sessionId: ctx.sessionId,
-    userId: ctx.userId
-  });
-  
-  return {
-    ...result,
-    metadata: {
-      ...result.metadata,
-      aiIntent: 'fallback_keyword_routing',
-      confidence: 0
-    }
-  };
-}
 
 /**
  * Check if AI routing is enabled via feature flag
