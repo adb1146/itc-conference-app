@@ -15,7 +15,7 @@ const prisma = new PrismaClient();
 
 async function generateEmbeddings() {
   try {
-    console.log('🚀 Starting postbuild embedding generation (v4 - inlined track data)...');
+    console.log('🚀 Starting postbuild embedding generation (v5 - removed all track-embedding imports)...');
 
     // Check if we have required API keys
     if (!process.env.PINECONE_API_KEY || !process.env.OPENAI_API_KEY) {
