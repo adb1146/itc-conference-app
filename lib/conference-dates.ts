@@ -12,7 +12,7 @@ export const CONFERENCE_DATES = {
     dayOfWeek: 'Tuesday',
     fullDate: 'Tuesday, October 14, 2025',
     shortDate: 'Oct 14',
-    tag: 'day1'
+    tag: 'tuesday'
   },
   DAY_2: {
     dayNumber: 2,
@@ -21,7 +21,7 @@ export const CONFERENCE_DATES = {
     dayOfWeek: 'Wednesday',
     fullDate: 'Wednesday, October 15, 2025',
     shortDate: 'Oct 15',
-    tag: 'day2'
+    tag: 'wednesday'
   },
   DAY_3: {
     dayNumber: 3,
@@ -30,7 +30,7 @@ export const CONFERENCE_DATES = {
     dayOfWeek: 'Thursday',
     fullDate: 'Thursday, October 16, 2025',
     shortDate: 'Oct 16',
-    tag: 'day3'
+    tag: 'thursday'
   },
 
   // Conference details
