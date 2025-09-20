@@ -6,6 +6,7 @@
 import { Pinecone } from '@pinecone-database/pinecone';
 import { OpenAI } from 'openai';
 import { OpenAIEmbeddings } from '@langchain/openai';
+import { TRACK_SEMANTIC_CONTEXT } from './track-embeddings';
 
 // Lazy initialization of Pinecone client
 let pineconeClient: Pinecone | null = null;
@@ -147,7 +148,7 @@ export function createSessionSearchText(session: any): string {
     parts.push(session.track);
 
     // Add track semantic context if available
-    const { TRACK_SEMANTIC_CONTEXT } = require('./track-embeddings');
+    // Import moved to top of file to avoid dynamic require
     const trackContext = TRACK_SEMANTIC_CONTEXT[session.track];
     if (trackContext) {
       parts.push(trackContext.description);

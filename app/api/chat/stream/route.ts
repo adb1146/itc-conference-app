@@ -506,17 +506,27 @@ export async function POST(request: NextRequest) {
         }
 
 
-        // Handle practical needs and emotional support intents (but NOT social_planning - let it use vector search)
-        if (intentClassification && ['practical_need', 'emotional_support', 'navigation_help'].includes(intentClassification.primary_intent)) {
+        // Check if this is a meal query - these should use vector search for conference sessions
+        const isMealQuery = /\b(lunch|breakfast|dinner|meal|food|eat|hungry|dining)\b/i.test(message.toLowerCase());
+
+        // Handle practical needs and emotional support intents (but NOT social_planning or meal queries - let them use vector search)
+        if (intentClassification &&
+            ['practical_need', 'emotional_support', 'navigation_help'].includes(intentClassification.primary_intent) &&
+            !isMealQuery) {
           console.log('[Stream API] Handling attendee need:', intentClassification.primary_intent);
 
           // Map other intents to attendee needs
           const needMapping: Record<string, string> = {
             'practical_need': message.toLowerCase().includes('tired') ? 'tired' :
                              message.toLowerCase().includes('hungry') ? 'hungry' :
+                             message.toLowerCase().includes('lunch') ? 'hungry' :
+                             message.toLowerCase().includes('breakfast') ? 'hungry' :
+                             message.toLowerCase().includes('dinner') ? 'hungry' :
+                             message.toLowerCase().includes('food') ? 'hungry' :
+                             message.toLowerCase().includes('eat') ? 'hungry' :
                              message.toLowerCase().includes('coffee') ? 'tired' :
                              message.toLowerCase().includes('wifi') ? 'practical' :
-                             message.toLowerCase().includes('charging') ? 'practical' : 'tired',
+                             message.toLowerCase().includes('charging') ? 'practical' : 'practical',
             'emotional_support': message.toLowerCase().includes('overwhelmed') ? 'overwhelmed' :
                                 message.toLowerCase().includes('anxious') ? 'overwhelmed' :
                                 message.toLowerCase().includes('bored') ? 'bored' : 'overwhelmed',
